@@ -1,0 +1,4 @@
+-r requirements.txt
+flexmock==0.9.6
+pytest==2.2.3
+psycopg2>=2.5
