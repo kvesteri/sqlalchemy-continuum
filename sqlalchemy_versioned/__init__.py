@@ -1,5 +1,5 @@
 from itertools import chain
-
+import sqlalchemy as sa
 from .versioned import Versioned, configure_versioned
 
 __all__ = (
@@ -12,13 +12,13 @@ def versioned_objects(iterator):
     return [obj for obj in iterator if hasattr(obj, '__versioned__')]
 
 
-def create_version(obj, transaction_obj, session, deleted=False):
-    obj_mapper = object_mapper(obj)
+def create_version(obj, transaction_obj, session):
+    obj_mapper = sa.orm.object_mapper(obj)
     history_mapper = obj.__versioned__['class'].__mapper__
     history_cls = obj.__versioned__['class']
+    deleted = obj in session.deleted
 
-    obj_state = attributes.instance_state(obj)
-
+    obj_state = sa.orm.attributes.instance_state(obj)
     attr = {}
 
     obj_changed = False
@@ -42,7 +42,7 @@ def create_version(obj, transaction_obj, session, deleted=False):
             # that have a different keyname than that of the mapped column.
             try:
                 prop = obj_mapper.get_property_by_column(obj_col)
-            except UnmappedColumnError:
+            except sa.orm.exc.UnmappedColumnError:
                 # in the case of single table inheritance, there may be
                 # columns on the mapped table intended for the subclass only.
                 # the "unmapped" status of the subclass column on the
@@ -55,24 +55,27 @@ def create_version(obj, transaction_obj, session, deleted=False):
             if prop.key not in obj_state.dict:
                 getattr(obj, prop.key)
 
-            a, u, d = attributes.get_history(obj, prop.key)
-
-            if d:
-                attr[hist_col.key] = d[0]
+            added, updated, deleted = sa.orm.attributes.get_history(
+                obj, prop.key
+            )
+            #print added, updated, deleted
+            if deleted:
+                attr[hist_col.key] = deleted[0]
                 obj_changed = True
-            elif u:
-                attr[hist_col.key] = u[0]
+            elif updated:
+                attr[hist_col.key] = updated[0]
             else:
                 # if the attribute had no value.
-                attr[hist_col.key] = a[0]
+                attr[hist_col.key] = added[0]
                 obj_changed = True
 
     if not obj_changed:
-        # not changed, but we have relationships.  OK
-        # check those too
+        # Not changed, but we have relationships. OK check those too
         for prop in obj_mapper.iterate_properties:
-            if (isinstance(prop, RelationshipProperty) and
-                    attributes.get_history(obj, prop.key).has_changes()):
+            if (
+                    isinstance(prop, sa.orm.RelationshipProperty) and
+                    sa.orm.attributes.get_history(obj, prop.key).has_changes()
+            ):
                 obj_changed = True
                 break
 
@@ -87,11 +90,14 @@ def create_version(obj, transaction_obj, session, deleted=False):
 
 
 def versioned_session(session):
-    @event.listens_for(session, 'before_flush')
-    def before_flush(session, flush_context, instances):
+    # SQLAlchemy sets relationship foreign key values after before_flush event,
+    # hence we need to listen to after_flush event instead before_flush.
+    @sa.event.listens_for(session, 'after_flush')
+    def after_flush(session, flush_context):
         objects = versioned_objects(
             chain(session.new, session.dirty, session.deleted)
         )
+
         if objects:
             transaction_class = objects[0].__versioned__['transaction_log']
             transaction_object = transaction_class()
@@ -102,5 +108,4 @@ def versioned_session(session):
                 obj,
                 transaction_object,
                 session,
-                obj in session.deleted
             )
