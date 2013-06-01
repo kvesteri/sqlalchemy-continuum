@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, izip
 import sqlalchemy as sa
 from .versioned import Versioned, configure_versioned
 
@@ -14,15 +14,15 @@ def versioned_objects(iterator):
 
 def create_version(obj, transaction_obj, session):
     obj_mapper = sa.orm.object_mapper(obj)
-    history_mapper = obj.__versioned__['class'].__mapper__
     history_cls = obj.__versioned__['class']
+    history_mapper = history_cls.__mapper__
     deleted = obj in session.deleted
 
     obj_state = sa.orm.attributes.instance_state(obj)
     attr = {}
 
     obj_changed = False
-    zipped_iterator = zip(
+    zipped_iterator = izip(
         obj_mapper.iterate_to_root(),
         history_mapper.iterate_to_root()
     )
@@ -69,15 +69,17 @@ def create_version(obj, transaction_obj, session):
                 attr[hist_col.key] = added[0]
                 obj_changed = True
 
-    if not obj_changed:
-        # Not changed, but we have relationships. OK check those too
-        for prop in obj_mapper.iterate_properties:
-            if (
-                    isinstance(prop, sa.orm.RelationshipProperty) and
-                    sa.orm.attributes.get_history(obj, prop.key).has_changes()
-            ):
-                obj_changed = True
-                break
+    many_to_many_properties = []
+
+    # Check relationships
+    for prop in obj_mapper.iterate_properties:
+        if (
+                isinstance(prop, sa.orm.RelationshipProperty) and
+                sa.orm.attributes.get_history(obj, prop.key).has_changes()
+        ):
+            obj_changed = True
+            if prop.secondary is not None:
+                many_to_many_properties.append(prop)
 
     if not obj_changed and not deleted:
         return
@@ -90,6 +92,18 @@ def create_version(obj, transaction_obj, session):
 
 
 def versioned_session(session):
+    @sa.event.listens_for(session, 'before_flush')
+    def before_flush(session, flush_context, instances):
+        objects = versioned_objects(
+            chain(session.new, session.dirty, session.deleted)
+        )
+
+        if objects:
+            # Create one transaction object globally per transaction.
+            transaction_class = objects[0].__versioned__['transaction_log']
+            transaction_object = transaction_class()
+            session.add(transaction_object)
+
     # SQLAlchemy sets relationship foreign key values after before_flush event,
     # hence we need to listen to after_flush event instead before_flush.
     @sa.event.listens_for(session, 'after_flush')
@@ -97,11 +111,10 @@ def versioned_session(session):
         objects = versioned_objects(
             chain(session.new, session.dirty, session.deleted)
         )
-
-        if objects:
-            transaction_class = objects[0].__versioned__['transaction_log']
-            transaction_object = transaction_class()
-            session.add(transaction_object)
+        for obj in session.new:
+            if obj.__table__.name == 'transaction_log':
+                transaction_object = obj
+                break
 
         for obj in objects:
             create_version(

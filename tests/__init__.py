@@ -10,7 +10,7 @@ from sqlalchemy_versioned import (
 class TestCase(object):
     def setup_method(self, method):
         self.engine = create_engine(
-            'postgres://postgres@localhost/sqlalchemy_i18n_test'
+            'postgres://postgres@localhost/sqlalchemy_versioned_test'
         )
         self.Model = declarative_base()
 

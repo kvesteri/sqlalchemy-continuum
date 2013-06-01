@@ -27,15 +27,6 @@ class TestVersionedModel(TestCase):
         assert version.id == 1
         assert version.article_id == 1
 
-    def test_versioned_model_copies_relationships(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        article.tags.append(self.Tag(name=u'some tag'))
-        self.session.add(article)
-        self.session.commit()
-        assert article.versions[0].tags
-
     def test_versioned_table_structure(self):
         table = self.Article.__versioned__['class'].__table__
         assert 'id' in table.c

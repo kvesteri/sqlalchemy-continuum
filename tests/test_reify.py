@@ -1,3 +1,6 @@
+import sqlalchemy as sa
+from sqlalchemy_versioned import Versioned
+
 from tests import TestCase
 
 
@@ -29,7 +32,89 @@ class TestReify(TestCase):
         article.tags = []
         self.session.commit()
         self.session.refresh(article)
+        assert article.tags == []
+        assert len(article.versions[0].tags) == 1
         article.versions[0].reify()
+
+        assert article.name == u'Some article'
+        assert article.content == u'Some content'
+        assert len(article.tags) == 1
+        assert article.tags[0].name == u'some tag'
+
+
+class TestReifyManyToManyRelationship(TestCase):
+    def create_models(self):
+        class Article(self.Model, Versioned):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        class ArticleTag(self.Model, Versioned):
+            __tablename__ = 'article_tag'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+            article_id = sa.Column(
+                'article_id',
+                sa.Integer,
+                sa.ForeignKey('article.id', ondelete='CASCADE'),
+                primary_key=True,
+            )
+            tag_id = sa.Column(
+                'tag_id',
+                sa.Integer,
+                sa.ForeignKey('tag.id', ondelete='CASCADE'),
+                primary_key=True
+            )
+
+        class Tag(self.Model, Versioned):
+            __tablename__ = 'tag'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        Tag.articles = sa.orm.relationship(
+            Article,
+            secondary=ArticleTag.__table__,
+            backref='tags'
+        )
+
+        self.Article = Article
+        self.Tag = Tag
+        self.ArticleTag = ArticleTag
+
+    def test_relationships(self):
+        ArticleHistory = self.Article.__versioned__['class']
+        ArticleTagHistory = self.ArticleTag.__versioned__['class']
+        article_history = ArticleHistory.__table__
+        article_tag_history = ArticleTagHistory.__table__
+        relation = ArticleHistory.tags.property
+        assert relation.primaryjoin.left == article_history.c.id
+        assert relation.primaryjoin.right == article_tag_history.c.article_id
+
+    def test_reify_parent_with_many_to_many_relation(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        self.session.add(article)
+        self.session.commit()
+        assert article.versions[0].tags
+        article_tag = self.session.query(self.ArticleTag).first()
+        self.session.delete(article_tag)
+        self.session.commit()
+        self.session.refresh(article)
+        assert article.tags == []
+        article.versions[0].reify()
+
         assert article.name == u'Some article'
         assert article.content == u'Some content'
         assert len(article.tags) == 1
