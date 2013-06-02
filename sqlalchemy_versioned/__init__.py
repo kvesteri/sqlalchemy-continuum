@@ -102,23 +102,25 @@ def versioned_session(session):
             # Create one transaction object globally per transaction.
             transaction_class = objects[0].__versioned__['transaction_log']
             transaction_object = transaction_class()
-            session.add(transaction_object)
+
+        for obj in objects:
+            obj.last_transaction = transaction_object
 
     # SQLAlchemy sets relationship foreign key values after before_flush event,
     # hence we need to listen to after_flush event instead before_flush.
-    @sa.event.listens_for(session, 'after_flush')
-    def after_flush(session, flush_context):
-        objects = versioned_objects(
-            chain(session.new, session.dirty, session.deleted)
-        )
-        for obj in session.new:
-            if obj.__table__.name == 'transaction_log':
-                transaction_object = obj
-                break
+    # @sa.event.listens_for(session, 'after_flush')
+    # def after_flush(session, flush_context):
+    #     objects = versioned_objects(
+    #         chain(session.new, session.dirty, session.deleted)
+    #     )
+    #     for obj in session.new:
+    #         if obj.__table__.name == 'transaction_log':
+    #             transaction_object = obj
+    #             break
 
-        for obj in objects:
-            create_version(
-                obj,
-                transaction_object,
-                session,
-            )
+    #     for obj in objects:
+    #         create_version(
+    #             obj,
+    #             transaction_object,
+    #             session,
+    #         )

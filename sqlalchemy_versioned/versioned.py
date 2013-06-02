@@ -1,5 +1,6 @@
 from copy import copy
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
@@ -13,6 +14,13 @@ class Versioned(object):
     def __declare_last__(cls):
         if not cls.__versioned__.get('class'):
             cls.__pending__.append(cls)
+
+    @declared_attr
+    def transaction_id(cls):
+        return sa.Column(
+            sa.BigInteger,
+            sa.ForeignKey('transaction_log.id', ondelete='CASCADE')
+        )
 
 
 def create_postgresql_triggers(pending):
@@ -29,19 +37,26 @@ def create_postgresql_triggers(pending):
         BEGIN
             IF (TG_OP = 'UPDATE') THEN
                 EXECUTE
-                    format('INSERT INTO %%I VALUES ($1.*)', TG_TABLE_NAME)
+                    format(
+                        'INSERT INTO %%I VALUES ($1.*)',
+                        TG_TABLE_NAME || '_history'
+                    )
                 USING NEW;
                 RETURN NEW;
             ELSIF (TG_OP = 'DELETE') THEN
                 EXECUTE
                     format(
-                        'INSERT INTO %%I (id) VALUES ($1.id)', TG_TABLE_NAME
+                        'INSERT INTO %%I (id) VALUES ($1.id)',
+                        TG_TABLE_NAME || '_history'
                     )
                 USING OLD;
                 RETURN NEW;
             ELSIF (TG_OP = 'INSERT') THEN
                 EXECUTE
-                    format('INSERT INTO %%I VALUES ($1.*)', TG_TABLE_NAME)
+                    format(
+                        'INSERT INTO %%I VALUES ($1.*)',
+                        TG_TABLE_NAME || '_history'
+                    )
                 USING NEW;
                 RETURN NEW;
             END IF;
@@ -53,12 +68,12 @@ def create_postgresql_triggers(pending):
         first_table,
         'after_drop',
         sa.schema.DDL("""
-        DROP FUNCTION create_history_record() CASCADe
+        DROP FUNCTION create_history_record() CASCADE
         """)
     )
     for cls in pending:
         sa.event.listen(
-            cls.__versioned__['class'].__table__,
+            cls.__table__,
             'after_create',
             sa.schema.DDL(
                 '''
@@ -68,23 +83,10 @@ def create_postgresql_triggers(pending):
                 EXECUTE PROCEDURE create_history_record();
                 ''' %
                 dict(
-                    tablename=cls.__versioned__['class'].__table__.name
+                    tablename=cls.__tablename__
                 )
             )
         )
-        # sa.event.listen(
-        #     cls.__versioned__['class'].__table__,
-        #     'before_drop',
-        #     sa.schema.DDL(
-        #         '''
-        #         DROP TRIGGER %(tablename)s_version_trigger
-        #         ON %(tablename)s
-        #         ''' %
-        #         dict(
-        #             tablename=cls.__versioned__['class'].__table__.name
-        #         )
-        #     )
-        # )
 
 
 def configure_versioned():
@@ -127,3 +129,6 @@ def configure_versioned():
     for cls in pending_copy:
         builder = VersionedRelationshipBuilder(cls)
         builder.build_reflected_relationships()
+        cls.last_transaction = sa.orm.relationship(
+            cls.__versioned__['transaction_log']
+        )

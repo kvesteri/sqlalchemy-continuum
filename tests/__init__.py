@@ -12,6 +12,7 @@ class TestCase(object):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_versioned_test'
         )
+        #self.engine.echo = True
         self.Model = declarative_base()
 
         self.create_models()
