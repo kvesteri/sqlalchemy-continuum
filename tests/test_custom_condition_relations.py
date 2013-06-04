@@ -46,13 +46,17 @@ class TestVersionedModel(TestCase):
         self.Article = Article
         self.Tag = Tag
 
-    def test_relationship_primaryjoin(self):
-        ArticleHistory = self.Article.__versioned__['class']
-        assert str(ArticleHistory.primary_tags.property.primaryjoin) == (
-            "tag_history.article_id = article_history.id AND "
-            "tag_history.category = :category_1 AND tag_history.transaction_id"
-            " = (SELECT max(tag_history.transaction_id) AS max_1 \n"
-            "FROM tag_history, article_history \n"
-            "WHERE tag_history.transaction_id <= "
-            "article_history.transaction_id)"
+    def test_relationship_condition_reflection(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        article.primary_tags.append(
+            self.Tag(name=u'tag #1', category=u'primary')
         )
+        article.secondary_tags.append(
+            self.Tag(name=u'tag #2', category=u'secondary')
+        )
+        self.session.add(article)
+        self.session.commit()
+        assert article.versions[0].primary_tags.all()
+        assert article.versions[0].secondary_tags.all()

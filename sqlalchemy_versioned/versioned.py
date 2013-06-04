@@ -127,6 +127,3 @@ def configure_versioned():
     for cls in pending_copy:
         builder = VersionedRelationshipBuilder(cls)
         builder.build_reflected_relationships()
-        # cls.last_transaction = sa.orm.relationship(
-        #     cls.__versioned__['transaction_log']
-        # )

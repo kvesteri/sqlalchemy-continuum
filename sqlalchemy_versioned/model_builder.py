@@ -5,10 +5,28 @@ from .builder import VersionedBuilder
 
 
 class VersionClassBase(object):
-    def reify(self):
-        for key, attr in self.__mapper__.class_manager.items():
-            if key not in ['transaction', 'transaction_id']:
-                setattr(self.parent, key, getattr(self, key))
+    def reify(self, visited_objects=[]):
+        if self in visited_objects:
+            return
+        visited_objects.append(self)
+        parent_mapper = self.__parent_class__.__mapper__
+        for key, attr in parent_mapper.class_manager.items():
+            if key not in ['versions', 'transaction', 'transaction_id']:
+                if isinstance(attr.property, sa.orm.RelationshipProperty):
+                    if attr.property.secondary is not None:
+                        setattr(self.parent, key, [])
+                        for value in getattr(self, key):
+                            value = value.reify()
+                            if value:
+                                getattr(self.parent, key).append(
+                                    value
+                                )
+                    else:
+                        for value in getattr(self, key):
+                            value.reify(visited_objects)
+                else:
+                    setattr(self.parent, key, getattr(self, key))
+        return self.parent
 
 
 class VersionedModelBuilder(VersionedBuilder):

@@ -20,6 +20,20 @@ class TestReify(TestCase):
         assert article.name == u'Some article'
         assert article.content == u'Some content'
 
+    def test_reify_deleted_model(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        version = article.versions[0]
+        self.session.delete(article)
+        self.session.commit()
+        self.session.refresh(article)
+        version.reify()
+        assert article.name == u'Some article'
+        assert article.content == u'Some content'
+
     def test_reify_parent_with_one_to_many_relation(self):
         article = self.Article()
         article.name = u'Some article'
@@ -33,9 +47,10 @@ class TestReify(TestCase):
         self.session.commit()
         self.session.refresh(article)
         assert article.tags == []
-        print self.ArticleHistory.tags
-        assert len(article.versions[0].tags) == 1
+        assert len(article.versions[0].tags.all()) == 1
+        assert article.versions[0].tags[0].article
         article.versions[0].reify()
+        self.session.commit()
 
         assert article.name == u'Some article'
         assert article.content == u'Some content'
@@ -91,15 +106,6 @@ class TestReifyManyToManyRelationship(TestCase):
         self.Tag = Tag
         self.ArticleTag = ArticleTag
 
-    def test_relationships(self):
-        ArticleHistory = self.Article.__versioned__['class']
-        ArticleTagHistory = self.ArticleTag.__versioned__['class']
-        article_history = ArticleHistory.__table__
-        article_tag_history = ArticleTagHistory.__table__
-        relation = ArticleHistory.tags.property
-        assert relation.primaryjoin.left == article_history.c.id
-        assert relation.primaryjoin.right == article_tag_history.c.article_id
-
     def test_reify_parent_with_many_to_many_relation(self):
         article = self.Article()
         article.name = u'Some article'
@@ -108,13 +114,14 @@ class TestReifyManyToManyRelationship(TestCase):
         article.tags.append(tag)
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags
+        assert article.versions[0].tags.count() == 1
         article_tag = self.session.query(self.ArticleTag).first()
         self.session.delete(article_tag)
         self.session.commit()
         self.session.refresh(article)
         assert article.tags == []
         article.versions[0].reify()
+        self.session.commit()
 
         assert article.name == u'Some article'
         assert article.content == u'Some content'
