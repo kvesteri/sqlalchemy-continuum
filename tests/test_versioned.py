@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from tests import TestCase
 
 
-class TestVersionedModel(TestCase):
+class VersionedModelTestCase(TestCase):
     def test_builds_relationship(self):
         assert self.Article.versions
 
@@ -44,10 +44,9 @@ class TestVersionedModel(TestCase):
         version = article.versions.all()[-1]
         assert version.name == u'Some article'
         assert version.content == u'Some content'
-        assert version.transaction.id == 1
-        assert version.transaction_id == 1
+        assert version.transaction.id == version.transaction_id
 
-    def test_creates_versions_on_session_commit(self):
+    def test_creates_versions_on_update(self):
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
@@ -62,8 +61,33 @@ class TestVersionedModel(TestCase):
         version = article.versions.all()[-1]
         assert version.name == u'Updated name'
         assert version.content == u'Updated content'
-        assert version.transaction.id == 2
-        assert version.transaction_id == 2
+        assert version.transaction.id == version.transaction_id
+
+    def test_creates_versions_on_delete(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+
+        self.session.delete(article)
+        self.session.commit()
+
+        versions = self.session.query(self.ArticleHistory).all()
+        assert len(versions) == 2
+
+    def test_multiple_consecutive_flushes(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.flush()
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.flush()
+        self.session.commit()
 
     def test_relationships(self):
         article = self.Article()
@@ -77,3 +101,7 @@ class TestVersionedModel(TestCase):
         assert version.content == u'Some content'
         version = article.tags[0].versions.all()[0]
         assert version.name == u'some tag'
+
+
+class TestNativeVersioning(VersionedModelTestCase):
+    pass

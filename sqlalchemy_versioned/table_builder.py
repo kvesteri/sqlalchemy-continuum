@@ -24,21 +24,23 @@ class VersionedTableBuilder(VersionedBuilder):
         return sa.schema.ForeignKeyConstraint(
             [self.option('version_column_name')],
             ['transaction_log.id'],
-            ondelete='CASCADE'
+            ondelete='CASCADE',
+            deferrable=True,
+            initially='DEFERRED'
         )
 
-    # def build_version_column(self):
-    #     return sa.Column(
-    #         self.option('version_column_name'),
-    #         sa.BigInteger,
-    #         primary_key=True
-    #     )
+    def build_version_column(self):
+        return sa.Column(
+            self.option('version_column_name'),
+            sa.BigInteger,
+            primary_key=True
+        )
 
     def build_table(self, extends=None):
         items = []
         if extends is None:
             items.extend(self.build_reflected_columns())
-            #items.append(self.build_version_column())
+            items.append(self.build_version_column())
 
         if extends is None:
             items.append(self.build_transaction_table_foreign_key())

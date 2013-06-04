@@ -33,6 +33,7 @@ class TestReify(TestCase):
         self.session.commit()
         self.session.refresh(article)
         assert article.tags == []
+        print self.ArticleHistory.tags
         assert len(article.versions[0].tags) == 1
         article.versions[0].reify()
 

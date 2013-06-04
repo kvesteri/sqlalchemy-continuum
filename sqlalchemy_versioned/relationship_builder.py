@@ -55,7 +55,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                 [sa.func.max(remote_cls.transaction_id)]
             ).where(
                 remote_cls.transaction_id <= local_cls.transaction_id
-            ).correlate(local_cls.__table__)
+            ).correlate(remote_cls)
         )
 
     def relationship_kwargs(self, property_):

@@ -12,7 +12,7 @@ class TestCase(object):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_versioned_test'
         )
-        #self.engine.echo = True
+        self.engine.echo = True
         self.Model = declarative_base()
 
         self.create_models()
@@ -22,6 +22,7 @@ class TestCase(object):
         )
 
         sa.orm.configure_mappers()
+        self.ArticleHistory = self.Article.__versioned__['class']
         self.Model.metadata.create_all(self.engine)
 
         Session = sessionmaker(bind=self.engine)

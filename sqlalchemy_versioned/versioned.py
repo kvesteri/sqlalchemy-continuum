@@ -1,6 +1,5 @@
 from copy import copy
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declared_attr
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
@@ -14,13 +13,6 @@ class Versioned(object):
     def __declare_last__(cls):
         if not cls.__versioned__.get('class'):
             cls.__pending__.append(cls)
-
-    @declared_attr
-    def transaction_id(cls):
-        return sa.Column(
-            sa.BigInteger,
-            sa.ForeignKey('transaction_log.id', ondelete='CASCADE')
-        )
 
 
 def create_postgresql_triggers(pending):
@@ -38,7 +30,7 @@ def create_postgresql_triggers(pending):
             IF (TG_OP = 'UPDATE') THEN
                 EXECUTE
                     format(
-                        'INSERT INTO %%I VALUES ($1.*)',
+                        'INSERT INTO %%I VALUES ($1.*, txid_current())',
                         TG_TABLE_NAME || '_history'
                     )
                 USING NEW;
@@ -46,7 +38,7 @@ def create_postgresql_triggers(pending):
             ELSIF (TG_OP = 'DELETE') THEN
                 EXECUTE
                     format(
-                        'INSERT INTO %%I (id) VALUES ($1.id)',
+                        'INSERT INTO %%I VALUES ($1.*, txid_current())',
                         TG_TABLE_NAME || '_history'
                     )
                 USING OLD;
@@ -54,7 +46,7 @@ def create_postgresql_triggers(pending):
             ELSIF (TG_OP = 'INSERT') THEN
                 EXECUTE
                     format(
-                        'INSERT INTO %%I VALUES ($1.*)',
+                        'INSERT INTO %%I VALUES ($1.*, txid_current())',
                         TG_TABLE_NAME || '_history'
                     )
                 USING NEW;
@@ -89,6 +81,15 @@ def create_postgresql_triggers(pending):
         )
 
 
+def create_transaction_log(cls):
+    class TransactionLog(cls.__versioned__['base_classes'][0]):
+        __tablename__ = 'transaction_log'
+        id = sa.Column(sa.BigInteger, primary_key=True)
+        issued_at = sa.Column(sa.DateTime)
+
+    return TransactionLog
+
+
 def configure_versioned():
     tables = {}
     cls = None
@@ -107,10 +108,7 @@ def configure_versioned():
             tables[cls] = table
 
     if cls:
-        class TransactionLog(cls.__versioned__['base_classes'][0]):
-            __tablename__ = 'transaction_log'
-            id = sa.Column(sa.BigInteger, primary_key=True, autoincrement=True)
-            issued_at = sa.Column(sa.DateTime)
+        TransactionLog = create_transaction_log(cls)
 
     for cls in Versioned.__pending__:
         if cls in tables:
@@ -129,6 +127,6 @@ def configure_versioned():
     for cls in pending_copy:
         builder = VersionedRelationshipBuilder(cls)
         builder.build_reflected_relationships()
-        cls.last_transaction = sa.orm.relationship(
-            cls.__versioned__['transaction_log']
-        )
+        # cls.last_transaction = sa.orm.relationship(
+        #     cls.__versioned__['transaction_log']
+        # )
