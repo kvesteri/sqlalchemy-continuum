@@ -26,15 +26,16 @@ class TestReify(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
+        old_article_id = article.id
         version = article.versions[0]
         self.session.delete(article)
         self.session.commit()
-        self.session.refresh(article)
         version.reify()
+        assert article.id == old_article_id
         assert article.name == u'Some article'
         assert article.content == u'Some content'
 
-    def test_reify_parent_with_one_to_many_relation(self):
+    def test_reify_version_with_one_to_many_relation(self):
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
@@ -106,7 +107,7 @@ class TestReifyManyToManyRelationship(TestCase):
         self.Tag = Tag
         self.ArticleTag = ArticleTag
 
-    def test_reify_parent_with_many_to_many_relation(self):
+    def test_reify_version_with_many_to_many_relation(self):
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
