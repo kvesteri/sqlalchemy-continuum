@@ -18,6 +18,10 @@ class VersionClassBase(object):
 
     @property
     def _previous_query(self):
+        """
+        Returns the query that fetches the previous version relative to this
+        version in the version history.
+        """
         session = sa.orm.object_session(self)
         alias = sa.orm.aliased(self)
         subquery = (
@@ -59,6 +63,10 @@ class VersionClassBase(object):
 
     @property
     def _next_query(self):
+        """
+        Returns the query that fetches the next version relative to this
+        version in the version history.
+        """
         session = sa.orm.object_session(self)
 
         alias = sa.orm.aliased(self)

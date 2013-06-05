@@ -1,5 +1,5 @@
 """
-SQLAlchemy-Versioned
+SQLAlchemy-Continuum
 --------------------
 
 Versioning and auditing extension for SQLAlchemy.
@@ -23,7 +23,7 @@ class PyTest(Command):
         raise SystemExit(errno)
 
 setup(
-    name='SQLAlchemy-Versioned',
+    name='SQLAlchemy-Continuum',
     version='0.1',
     url='https://github.com/kvesteri/sqlalchemy-i18n',
     license='BSD',
@@ -31,7 +31,7 @@ setup(
     author_email='konsta@fastmonkeys.com',
     description='Versioning and auditing extension for SQLAlchemy.',
     long_description=__doc__,
-    packages=['sqlalchemy_versioned'],
+    packages=['sqlalchemy_continuum'],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
