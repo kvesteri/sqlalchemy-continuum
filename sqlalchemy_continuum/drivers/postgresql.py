@@ -9,7 +9,7 @@ def create_postgresql_triggers(pending):
         first_table,
         'before_create',
         sa.schema.DDL("""
-        CREATE FUNCTION
+        CREATE OR REPLACE FUNCTION
             create_history_record()
             RETURNS TRIGGER AS $$
         BEGIN

@@ -3,6 +3,7 @@ class VersionedBuilder(object):
         'base_classes': None,
         'table_name': '%s_history',
         'version_column_name': 'transaction_id',
+        'inspect_column_order': False
     }
 
     def __init__(self, model):

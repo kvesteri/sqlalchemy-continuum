@@ -8,6 +8,8 @@ from sqlalchemy_continuum import (
 
 
 class TestCase(object):
+    inspect_column_order = False
+
     def setup_method(self, method):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_versioned_test'
@@ -23,16 +25,23 @@ class TestCase(object):
         )
 
         sa.orm.configure_mappers()
-        self.ArticleHistory = self.Article.__versioned__['class']
-        self.Model.metadata.create_all(self.connection)
+        if hasattr(self, 'Article'):
+            self.ArticleHistory = self.Article.__versioned__['class']
+        self.create_tables()
 
         Session = sessionmaker(bind=self.connection)
         versioned_session(Session)
         self.session = Session()
 
+    def create_tables(self):
+        self.Model.metadata.create_all(self.connection)
+
+    def drop_tables(self):
+        self.Model.metadata.drop_all(self.connection)
+
     def teardown_method(self, method):
         self.session.close_all()
-        self.Model.metadata.drop_all(self.connection)
+        self.drop_tables()
         self.engine.dispose()
         self.connection.close()
 
@@ -40,7 +49,8 @@ class TestCase(object):
         class Article(self.Model, Versioned):
             __tablename__ = 'article'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model, ),
+                'inspect_column_order': self.inspect_column_order
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
@@ -51,7 +61,8 @@ class TestCase(object):
         class Tag(self.Model, Versioned):
             __tablename__ = 'tag'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model, ),
+                'inspect_column_order': self.inspect_column_order
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
