@@ -12,6 +12,7 @@ class TestCase(object):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_versioned_test'
         )
+        self.connection = self.engine.connect()
         #self.engine.echo = True
         self.Model = declarative_base()
 
@@ -23,16 +24,17 @@ class TestCase(object):
 
         sa.orm.configure_mappers()
         self.ArticleHistory = self.Article.__versioned__['class']
-        self.Model.metadata.create_all(self.engine)
+        self.Model.metadata.create_all(self.connection)
 
-        Session = sessionmaker(bind=self.engine)
+        Session = sessionmaker(bind=self.connection)
         versioned_session(Session)
         self.session = Session()
 
     def teardown_method(self, method):
         self.session.close_all()
-        self.Model.metadata.drop_all(self.engine)
+        self.Model.metadata.drop_all(self.connection)
         self.engine.dispose()
+        self.connection.close()
 
     def create_models(self):
         class Article(self.Model, Versioned):

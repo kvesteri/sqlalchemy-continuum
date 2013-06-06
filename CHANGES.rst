@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.1.3 (2013-06-06)
+^^^^^^^^^^^^^^^^^^
+
+- Removed foreign key dependency from version table and transaction table
+
+
 0.1.2 (2013-06-06)
 ^^^^^^^^^^^^^^^^^^
 

@@ -20,14 +20,14 @@ class VersionedTableBuilder(VersionedBuilder):
             columns.append(column_copy)
         return columns
 
-    def build_transaction_table_foreign_key(self):
-        return sa.schema.ForeignKeyConstraint(
-            [self.option('version_column_name')],
-            ['transaction_log.id'],
-            ondelete='CASCADE',
-            deferrable=True,
-            initially='DEFERRED'
-        )
+    # def build_transaction_table_foreign_key(self):
+    #     return sa.schema.ForeignKeyConstraint(
+    #         [self.option('version_column_name')],
+    #         ['transaction_log.id'],
+    #         ondelete='CASCADE',
+    #         deferrable=True,
+    #         initially='DEFERRED'
+    #     )
 
     def build_version_column(self):
         return sa.Column(
@@ -42,8 +42,8 @@ class VersionedTableBuilder(VersionedBuilder):
             items.extend(self.build_reflected_columns())
             items.append(self.build_version_column())
 
-        if extends is None:
-            items.append(self.build_transaction_table_foreign_key())
+        # if extends is None:
+        #     items.append(self.build_transaction_table_foreign_key())
 
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,

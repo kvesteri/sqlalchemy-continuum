@@ -39,6 +39,11 @@ class VersionedModelBuilder(VersionedBuilder):
         if not hasattr(self.extension_class, 'transaction'):
             self.extension_class.transaction = sa.orm.relationship(
                 transaction_log_class,
+                primaryjoin=(
+                    transaction_log_class.id ==
+                    self.extension_class.transaction_id
+                ),
+                foreign_keys=[self.extension_class.transaction_id]
             )
 
     def find_closest_versioned_parent(self):
