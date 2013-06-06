@@ -24,14 +24,17 @@ class PyTest(Command):
 
 setup(
     name='SQLAlchemy-Continuum',
-    version='0.1.1',
+    version='0.1.2',
     url='https://github.com/kvesteri/sqlalchemy-i18n',
     license='BSD',
     author='Konsta Vesterinen',
     author_email='konsta@fastmonkeys.com',
     description='Versioning and auditing extension for SQLAlchemy.',
     long_description=__doc__,
-    packages=['sqlalchemy_continuum'],
+    packages=[
+        'sqlalchemy_continuum',
+        'sqlalchemy_continuum.drivers'
+    ],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
