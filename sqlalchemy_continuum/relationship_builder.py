@@ -1,67 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy.sql.expression import (
-    BooleanClauseList,
-    BinaryExpression,
-    BindParameter
-)
 from .builder import VersionedBuilder
-
-
-class RelationshipExpressionReflector(object):
-    def __init__(self, parent):
-        self.parent = parent
-
-    def expression(self, expression):
-        """
-        Parses SQLAlchemy expression
-        """
-        if expression is None:
-            return
-        if isinstance(expression, BinaryExpression):
-            return self.binary_expression(expression)
-        elif isinstance(expression, BooleanClauseList):
-            return self.boolean_expression(expression)
-
-    def parameter(self, parameter):
-        """
-        Parses SQLAlchemy BindParameter
-        """
-        if isinstance(parameter, sa.Column):
-            table = self.parent.__class__.metadata.tables[
-                parameter.table.name + '_history'
-            ]
-            if table == self.parent.__table__:
-                return getattr(self.parent, parameter.name)
-            else:
-                return table.c[parameter.name]
-        elif isinstance(parameter, BindParameter):
-            # somehow bind parameters passed as unicode are converted to
-            # ascii strings along the way, force convert them back to avoid
-            # sqlalchemy unicode warnings
-            if isinstance(parameter.type, sa.Unicode):
-                parameter.value = unicode(parameter.value)
-            return parameter
-
-    def binary_expression(self, expression):
-        """
-        Parses SQLAlchemy BinaryExpression
-        """
-        return expression.operator(
-            self.parameter(expression.left),
-            self.parameter(expression.right)
-        )
-
-    def boolean_expression(self, expression):
-        """
-        Parses SQLAlchemy BooleanExpression
-        """
-        return expression.operator(*[
-            self.expression(child_expr)
-            for child_expr in expression.get_children()
-        ])
-
-    def __call__(self, expression):
-        return self.expression(expression)
+from .expression_reflector import ObjectExpressionReflector
 
 
 class VersionedRelationshipBuilder(VersionedBuilder):
@@ -81,7 +20,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                     remote_cls.transaction_id <= obj.transaction_id
                 ).correlate(local_cls)
             )
-            reflector = RelationshipExpressionReflector(obj)
+            reflector = ObjectExpressionReflector(obj)
             return (
                 session.query(remote_cls)
                 .filter(

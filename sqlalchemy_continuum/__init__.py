@@ -1,5 +1,6 @@
 import sqlalchemy as sa
-from .versioned import Versioned, configure_versioned
+from .versioned import Versioned
+from .listener import configure_versioned
 
 __all__ = (
     Versioned,

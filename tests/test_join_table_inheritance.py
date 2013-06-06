@@ -7,7 +7,9 @@ class TestJoinTableInheritance(TestCase):
     def create_models(self):
         class TextItem(self.Model, Versioned):
             __tablename__ = 'text_item'
-
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             discriminator = sa.Column(
@@ -38,9 +40,14 @@ class TestJoinTableInheritance(TestCase):
 
         self.TextItem = TextItem
         self.Article = Article
+        self.BlogPost = BlogPost
 
     def test_each_class_has_distinct_translation_class(self):
-        class_ = self.TextItem.__versioned__['class']
-        assert class_.__name__ == 'TextItemHistory'
-        class_ = self.Article.__versioned__['class']
-        assert class_.__name__ == 'ArticleHistory'
+        TextItemHistory = self.TextItem.__versioned__['class']
+        ArticleHistory = self.Article.__versioned__['class']
+        BlogPostHistory = self.BlogPost.__versioned__['class']
+        assert TextItemHistory.__table__.name == 'text_item_history'
+        assert ArticleHistory.__table__.name == 'article_history'
+        assert BlogPostHistory.__table__.name == 'blog_post_history'
+        assert issubclass(ArticleHistory, TextItemHistory)
+        assert issubclass(BlogPostHistory, TextItemHistory)
