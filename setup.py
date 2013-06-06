@@ -25,7 +25,7 @@ class PyTest(Command):
 setup(
     name='SQLAlchemy-Continuum',
     version='0.1.2',
-    url='https://github.com/kvesteri/sqlalchemy-i18n',
+    url='https://github.com/kvesteri/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
     author_email='konsta@fastmonkeys.com',
