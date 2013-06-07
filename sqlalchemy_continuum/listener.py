@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
-from .drivers.postgresql import create_postgresql_triggers
+from .drivers.postgresql import PostgreSQLAdapter
 from .versioned import Versioned
 
 
@@ -42,7 +42,8 @@ def configure_versioned():
             builder(tables[cls], TransactionLog)
 
     if Versioned.__pending__:
-        create_postgresql_triggers(Versioned.__pending__)
+        adapter = PostgreSQLAdapter()
+        adapter.build_triggers(Versioned.__pending__)
 
     # Create copy of all pending versioned classes so that we can inspect them
     # later when creating relationships.

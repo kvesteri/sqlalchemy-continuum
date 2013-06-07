@@ -4,7 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-0.1.5 (2013-06-06)
+0.1.6 (2013-06-07)
+^^^^^^^^^^^^^^^^^^
+
+- Added PostgreSQLAdapter class
+
+
+0.1.5 (2013-06-07)
 ^^^^^^^^^^^^^^^^^^
 
 - Made trigger procedures table specific to allow more fine-grained control.
