@@ -14,19 +14,6 @@ class VersionedModelTestCase(TestCase):
             self.Article.__versioned__['class'].__table__, sa.Table
         )
 
-    def test_creates_versions_on_delete(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        self.session.add(article)
-        self.session.commit()
-
-        self.session.delete(article)
-        self.session.commit()
-
-        versions = self.session.query(self.ArticleHistory).all()
-        assert len(versions) == 2
-
     def test_multiple_consecutive_flushes(self):
         article = self.Article()
         article.name = u'Some article'
