@@ -1,10 +1,13 @@
 import sqlalchemy as sa
 from .versioned import Versioned
-from .listener import configure_versioned
+from .listener import (
+    configure_versioned_classes, instrument_versioned_classes
+)
 
 __all__ = (
     Versioned,
-    configure_versioned
+    configure_versioned_classes,
+    instrument_versioned_classes
 )
 
 

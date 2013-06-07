@@ -3,7 +3,21 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
-    Versioned, versioned_session, configure_versioned
+    Versioned,
+    versioned_session,
+    configure_versioned_classes,
+    instrument_versioned_classes
+)
+
+
+sa.event.listen(
+    sa.orm.mapper, 'instrument_class', instrument_versioned_classes
+
+)
+
+
+sa.event.listen(
+    sa.orm.mapper, 'after_configured', configure_versioned_classes
 )
 
 
@@ -19,10 +33,6 @@ class TestCase(object):
         self.Model = declarative_base()
 
         self.create_models()
-
-        sa.event.listen(
-            sa.orm.mapper, 'after_configured', configure_versioned
-        )
 
         sa.orm.configure_mappers()
         if hasattr(self, 'Article'):

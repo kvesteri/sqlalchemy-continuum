@@ -16,8 +16,15 @@ def create_transaction_log(cls):
     return TransactionLog
 
 
-def configure_versioned():
+def instrument_versioned_classes(mapper, cls):
+    if issubclass(cls, Versioned):
+        if not cls.__versioned__.get('class') and cls not in cls.__pending__:
+            cls.__pending__.append(cls)
+
+
+def configure_versioned_classes():
     tables = {}
+
     cls = None
     for cls in Versioned.__pending__:
         existing_table = None
