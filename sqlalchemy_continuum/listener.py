@@ -7,6 +7,15 @@ from .drivers.postgresql import PostgreSQLAdapter
 from .versioned import Versioned
 
 
+def make_versioned(mapper):
+    sa.event.listen(
+        mapper, 'instrument_class', instrument_versioned_classes
+    )
+    sa.event.listen(
+        mapper, 'after_configured', configure_versioned_classes
+    )
+
+
 def create_transaction_log(cls):
     class TransactionLog(cls.__versioned__['base_classes'][0]):
         __tablename__ = 'transaction_log'

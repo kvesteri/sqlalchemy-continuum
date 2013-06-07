@@ -5,20 +5,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
     Versioned,
     versioned_session,
-    configure_versioned_classes,
-    instrument_versioned_classes
+    make_versioned
 )
 
 
-sa.event.listen(
-    sa.orm.mapper, 'instrument_class', instrument_versioned_classes
-
-)
-
-
-sa.event.listen(
-    sa.orm.mapper, 'after_configured', configure_versioned_classes
-)
+make_versioned(sa.orm.mapper)
 
 
 class TestCase(object):
