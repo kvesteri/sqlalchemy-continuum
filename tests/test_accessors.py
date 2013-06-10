@@ -2,6 +2,15 @@ from tests import TestCase
 
 
 class TestVersionModelAccessors(TestCase):
+    def test_previous_for_first_version(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+
+        assert not article.versions[0].previous
+
     def test_previous_for_live_parent(self):
         article = self.Article()
         article.name = u'Some article'
@@ -29,6 +38,15 @@ class TestVersionModelAccessors(TestCase):
             .order_by(self.ArticleHistory.id)
         ).all()
         assert versions[1].previous.name == u'Some article'
+
+    def test_next_for_last_version(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+
+        assert not article.versions[0].next
 
     def test_next_for_live_parent(self):
         article = self.Article()

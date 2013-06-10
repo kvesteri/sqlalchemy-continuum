@@ -7,12 +7,14 @@ class VersionClassBase(object):
     def previous(self):
         """
         Returns the previous version relative to this version in the version
-        history.
+        history. If current version is the first version this method returns
+        None.
         """
         if not self.parent:
             # parent object has been deleted
             return self._previous_query.first()
-        return self.parent.versions[self.index - 1]
+        if self.index > 0:
+            return self.parent.versions[self.index - 1]
 
     @property
     def _previous_query(self):
@@ -52,12 +54,14 @@ class VersionClassBase(object):
     def next(self):
         """
         Returns the next version relative to this version in the version
-        history.
+        history. If current version is the last version this method returns
+        None.
         """
         if not self.parent:
             # parent object has been deleted
             return self._next_query.first()
-        return self.parent.versions[self.index + 1]
+        if self.index < (self.parent.versions.count() - 1):
+            return self.parent.versions[self.index + 1]
 
     @property
     def _next_query(self):
@@ -115,6 +119,24 @@ class VersionClassBase(object):
         for index_, version in enumerate(self.parent.versions):
             if version == self:
                 return index_
+
+    @property
+    def changeset(self):
+        data = {}
+        class_manager = self.__parent_class__.__mapper__.class_manager
+        for key, attr in class_manager.items():
+            if isinstance(attr.property, sa.orm.ColumnProperty):
+                if not self.previous:
+                    old = None
+                else:
+                    old = getattr(self.previous, key)
+                new = getattr(self, key)
+                if old != new:
+                    data[key] = [
+                        old,
+                        new
+                    ]
+        return data
 
     def reify(self, visited_objects=[]):
         if self in visited_objects:
