@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.1.8 (2013-06-10)
+^^^^^^^^^^^^^^^^^^
+
+- Better checking of model table name in scenarios where model does not have __tablename__ defined.
+
+
 0.1.7 (2013-06-07)
 ^^^^^^^^^^^^^^^^^^
 

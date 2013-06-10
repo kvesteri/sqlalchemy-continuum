@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_utils import table_name
 
 
 class Adapter(object):
@@ -63,7 +64,7 @@ class PostgreSQLAdapter(Adapter):
             'before_create',
             sa.schema.DDL(
                 self.create_version_trigger_procedure_sql(
-                    model_class.__tablename__,
+                    table_name(model_class),
                     column_names,
                     primary_keys
                 )
@@ -84,7 +85,7 @@ class PostgreSQLAdapter(Adapter):
             model_class.__table__,
             'after_create',
             sa.schema.DDL(
-                self.create_version_trigger_sql(model_class.__tablename__)
+                self.create_version_trigger_sql(table_name(model_class))
             )
         )
 
@@ -100,7 +101,7 @@ class PostgreSQLAdapter(Adapter):
             model_class.__table__,
             'after_drop',
             sa.schema.DDL(
-                self.drop_version_trigger_sql(model_class.__tablename__)
+                self.drop_version_trigger_sql(table_name(model_class))
             )
         )
 
@@ -118,15 +119,15 @@ class PostgreSQLAdapter(Adapter):
                 column.name for column in model_class.__table__.c
                 if column.primary_key
             ]
-            table_name = model_class.__tablename__
+            tbl_name = table_name(model_class)
 
             sql += [
                 self.create_version_trigger_procedure_sql(
-                    table_name,
+                    tbl_name,
                     column_names,
                     primary_keys
                 ),
-                self.create_version_trigger_sql(table_name),
-                self.drop_version_trigger_sql(table_name)
+                self.create_version_trigger_sql(tbl_name),
+                self.drop_version_trigger_sql(tbl_name)
             ]
         return sql

@@ -1,11 +1,12 @@
 import sqlalchemy as sa
+from sqlalchemy_utils import table_name
 from .builder import VersionedBuilder
 
 
 class VersionedTableBuilder(VersionedBuilder):
     @property
     def table_name(self):
-        return self.option('table_name') % self.model.__tablename__
+        return self.option('table_name') % table_name(self.model)
 
     @property
     def parent_columns(self):
