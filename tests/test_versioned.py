@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from tests import TestCase
 
 
-class VersionedModelTestCase(TestCase):
+class TestVersionModelBuilding(TestCase):
     def test_builds_relationship(self):
         assert self.Article.versions
 
@@ -39,7 +39,3 @@ class VersionedModelTestCase(TestCase):
         assert version.content == u'Some content'
         version = article.tags[0].versions.all()[0]
         assert version.name == u'some tag'
-
-
-class TestNativeVersioning(VersionedModelTestCase):
-    pass

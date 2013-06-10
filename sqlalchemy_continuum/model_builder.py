@@ -1,4 +1,5 @@
 from copy import copy
+from inflection import pluralize, underscore
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import primary_keys
 from .builder import VersionedBuilder
@@ -43,7 +44,8 @@ class VersionedModelBuilder(VersionedBuilder):
                     transaction_log_class.id ==
                     self.extension_class.transaction_id
                 ),
-                foreign_keys=[self.extension_class.transaction_id]
+                foreign_keys=[self.extension_class.transaction_id],
+                backref=pluralize(underscore(self.model.__name__))
             )
 
     def find_closest_versioned_parent(self):

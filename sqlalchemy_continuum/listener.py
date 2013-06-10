@@ -1,3 +1,4 @@
+from inflection import underscore, pluralize
 from copy import copy
 import sqlalchemy as sa
 from .model_builder import VersionedModelBuilder
@@ -21,6 +22,17 @@ def create_transaction_log(cls):
         __tablename__ = 'transaction_log'
         id = sa.Column(sa.BigInteger, primary_key=True)
         issued_at = sa.Column(sa.DateTime)
+
+        @property
+        def all_affected_entities(self):
+            tuples = set(Versioned.HISTORY_CLASS_MAP.items())
+            return dict([
+                (
+                    history_class,
+                    getattr(self, pluralize(underscore(class_.__name__)))
+                )
+                for class_, history_class in tuples
+            ])
 
     return TransactionLog
 

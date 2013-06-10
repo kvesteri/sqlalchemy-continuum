@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.2.0 (2013-06-10)
+^^^^^^^^^^^^^^^^^^
+
+- Added backref relations to TransactionLog
+- Added all_affected_entities property to TransactionLog
+
 0.1.9 (2013-06-10)
 ^^^^^^^^^^^^^^^^^^
 

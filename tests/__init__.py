@@ -28,6 +28,8 @@ class TestCase(object):
         sa.orm.configure_mappers()
         if hasattr(self, 'Article'):
             self.ArticleHistory = self.Article.__versioned__['class']
+        if hasattr(self, 'Tag'):
+            self.TagHistory = self.Tag.__versioned__['class']
         self.create_tables()
 
         Session = sessionmaker(bind=self.connection)
@@ -41,6 +43,7 @@ class TestCase(object):
         self.Model.metadata.drop_all(self.connection)
 
     def teardown_method(self, method):
+        Versioned.HISTORY_CLASS_MAP = {}
         self.session.close_all()
         self.drop_tables()
         self.engine.dispose()
