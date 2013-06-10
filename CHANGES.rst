@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.1.9 (2013-06-10)
+^^^^^^^^^^^^^^^^^^
+
+- Renamed internal attribute __pending__ to __pending_versioned__ in order to avoid variable naming collisions.
+
+
 0.1.8 (2013-06-10)
 ^^^^^^^^^^^^^^^^^^
 

@@ -1,4 +1,4 @@
 class Versioned(object):
     HISTORY_CLASS_MAP = {}
     __versioned__ = {}
-    __pending__ = []
+    __pending_versioned__ = []

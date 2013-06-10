@@ -27,15 +27,16 @@ def create_transaction_log(cls):
 
 def instrument_versioned_classes(mapper, cls):
     if issubclass(cls, Versioned):
-        if not cls.__versioned__.get('class') and cls not in cls.__pending__:
-            cls.__pending__.append(cls)
+        if (not cls.__versioned__.get('class')
+                and cls not in cls.__pending_versioned__):
+            cls.__pending_versioned__.append(cls)
 
 
 def configure_versioned_classes():
     tables = {}
 
     cls = None
-    for cls in Versioned.__pending__:
+    for cls in Versioned.__pending_versioned__:
         existing_table = None
         for class_ in tables:
             if issubclass(cls, class_) and cls.__table__ == class_.__table__:
@@ -52,19 +53,19 @@ def configure_versioned_classes():
     if cls:
         TransactionLog = create_transaction_log(cls)
 
-    for cls in Versioned.__pending__:
+    for cls in Versioned.__pending_versioned__:
         if cls in tables:
             builder = VersionedModelBuilder(cls)
             builder(tables[cls], TransactionLog)
 
-    if Versioned.__pending__:
+    if Versioned.__pending_versioned__:
         adapter = PostgreSQLAdapter()
-        adapter.build_triggers(Versioned.__pending__)
+        adapter.build_triggers(Versioned.__pending_versioned__)
 
     # Create copy of all pending versioned classes so that we can inspect them
     # later when creating relationships.
-    pending_copy = copy(Versioned.__pending__)
-    Versioned.__pending__ = []
+    pending_copy = copy(Versioned.__pending_versioned__)
+    Versioned.__pending_versioned__ = []
 
     # Build relationships for all history classes.
     for cls in pending_copy:
