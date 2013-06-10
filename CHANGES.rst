@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.1.7 (2013-06-07)
+^^^^^^^^^^^^^^^^^^
+
+- Added make_versioned for more robust declaration of versioned mappers
+
+
 0.1.6 (2013-06-07)
 ^^^^^^^^^^^^^^^^^^
 
