@@ -20,9 +20,11 @@ class PostgreSQLAdapter(Adapter):
                 RETURNS TRIGGER AS $$
             BEGIN
                 IF (TG_OP = 'UPDATE') THEN
-                    INSERT INTO %(table_name)s_history
-                        (%(column_names)s)
-                        VALUES (%(column_values)s, txid_current());
+                    IF (NEW != OLD) THEN
+                        INSERT INTO %(table_name)s_history
+                            (%(column_names)s)
+                            VALUES (%(column_values)s, txid_current());
+                    END IF;
                     RETURN NEW;
                 ELSIF (TG_OP = 'DELETE') THEN
                     INSERT INTO %(table_name)s_history

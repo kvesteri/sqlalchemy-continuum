@@ -9,6 +9,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 - Model changesets
 - Fixed previous and next accessors
+- Updates generate versions only if actual changes occur
 
 
 0.2.1 (2013-06-10)

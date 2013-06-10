@@ -37,6 +37,18 @@ class TestUpdate(TestCase):
         assert version.content == u'Updated content'
         assert version.transaction.id == version.transaction_id
 
+    def test_update_with_same_values(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+
+        article.name = u'Some article'
+
+        self.session.commit()
+        assert article.versions.count() == 1
+
     def test_partial_raw_sql_update(self):
         article = self.Article()
         article.name = u'Some article'
