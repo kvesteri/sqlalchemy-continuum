@@ -26,13 +26,16 @@ def create_transaction_log(cls):
         @property
         def all_affected_entities(self):
             tuples = set(Versioned.HISTORY_CLASS_MAP.items())
-            return dict([
-                (
-                    history_class,
-                    getattr(self, pluralize(underscore(class_.__name__)))
-                )
-                for class_, history_class in tuples
-            ])
+            entities = []
+            for class_, history_class in tuples:
+                try:
+                    entities.append((
+                        history_class,
+                        getattr(self, pluralize(underscore(class_.__name__)))
+                    ))
+                except AttributeError:
+                    pass
+            return dict(entities)
 
     return TransactionLog
 
