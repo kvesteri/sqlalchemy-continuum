@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.1 (2013-06-12)
+^^^^^^^^^^^^^^^^^^
+
+- Versioned mixin no longer holds lists of pending objects
+- Added VersioningManager for more customizable versioning syntax
+
+
 0.3.0 (2013-06-10)
 ^^^^^^^^^^^^^^^^^^
 

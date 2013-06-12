@@ -1,12 +1,6 @@
 class VersionedBuilder(object):
-    DEFAULT_OPTIONS = {
-        'base_classes': None,
-        'table_name': '%s_history',
-        'version_column_name': 'transaction_id',
-        'inspect_column_order': False
-    }
-
-    def __init__(self, model):
+    def __init__(self, versioning_manager, model):
+        self.manager = versioning_manager
         self.model = model
         self.attrs = self.model.__mapper__.class_manager.values()
 
@@ -14,4 +8,4 @@ class VersionedBuilder(object):
         try:
             return self.model.__versioned__[name]
         except (AttributeError, KeyError):
-            return self.DEFAULT_OPTIONS[name]
+            return self.manager.DEFAULT_OPTIONS[name]

@@ -42,7 +42,7 @@ class TestJoinTableInheritance(TestCase):
         self.Article = Article
         self.BlogPost = BlogPost
 
-    def test_each_class_has_distinct_translation_class(self):
+    def test_each_class_has_distinct_history_class(self):
         TextItemHistory = self.TextItem.__versioned__['class']
         ArticleHistory = self.Article.__versioned__['class']
         BlogPostHistory = self.BlogPost.__versioned__['class']
