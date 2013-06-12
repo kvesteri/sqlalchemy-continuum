@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.3 (2013-06-12)
+^^^^^^^^^^^^^^^^^^
+
+- Creating TransactionLog now checks if it already exists.
+
+
 0.3.2 (2013-06-12)
 ^^^^^^^^^^^^^^^^^^
 

@@ -40,31 +40,34 @@ class VersioningManager(object):
 
     def create_transaction_log(self, cls):
         naming_func = self.DEFAULT_OPTIONS['relation_naming_function']
+        base = self.declarative_base(cls)
 
-        class TransactionLog(self.declarative_base(cls)):
-            __tablename__ = 'transaction_log'
-            id = sa.Column(sa.BigInteger, primary_key=True)
-            issued_at = sa.Column(sa.DateTime)
+        if 'TransactionLog' not in cls._decl_class_registry:
+            class TransactionLog(base):
+                __tablename__ = 'transaction_log'
+                id = sa.Column(sa.BigInteger, primary_key=True)
+                issued_at = sa.Column(sa.DateTime)
 
-            @property
-            def all_affected_entities(obj_self):
-                tuples = set(self.history_class_map.items())
-                entities = []
+                @property
+                def all_affected_entities(obj_self):
+                    tuples = set(self.history_class_map.items())
+                    entities = []
 
-                for class_, history_class in tuples:
-                    try:
-                        entities.append((
-                            history_class,
-                            getattr(
-                                obj_self,
-                                naming_func(class_.__name__)
-                            )
-                        ))
-                    except AttributeError:
-                        pass
-                return dict(entities)
+                    for class_, history_class in tuples:
+                        try:
+                            entities.append((
+                                history_class,
+                                getattr(
+                                    obj_self,
+                                    naming_func(class_.__name__)
+                                )
+                            ))
+                        except AttributeError:
+                            pass
+                    return dict(entities)
 
-        return TransactionLog
+            return TransactionLog
+        return cls._decl_class_registry['TransactionLog']
 
     def build_tables(self):
         for cls in self.pending_classes:
