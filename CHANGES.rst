@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.4 (2013-06-12)
+^^^^^^^^^^^^^^^^^^
+
+- VersioningManager now added in __versioned__ dict of each versioned class
+
+
 0.3.3 (2013-06-12)
 ^^^^^^^^^^^^^^^^^^
 

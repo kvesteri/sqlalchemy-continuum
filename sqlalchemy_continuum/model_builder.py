@@ -94,6 +94,7 @@ class VersionedModelBuilder(VersionedBuilder):
         # option dict
         self.model.__versioned__ = copy(self.model.__versioned__)
         self.model.__versioned__['transaction_log'] = transaction_log_class
+        self.model.__versioned__['manager'] = self.manager
         self.extension_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(transaction_log_class)

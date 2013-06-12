@@ -1,19 +1,7 @@
-import sqlalchemy as sa
 from tests import TestCase
 
 
 class TestVersionModelBuilding(TestCase):
-    def test_builds_relationship(self):
-        assert self.Article.versions
-
-    def test_parent_has_versioned_class_defined(self):
-        assert self.Article.__versioned__['class']
-
-    def test_versioned_model_has_table_object(self):
-        assert isinstance(
-            self.Article.__versioned__['class'].__table__, sa.Table
-        )
-
     def test_multiple_consecutive_flushes(self):
         article = self.Article()
         article.name = u'Some article'
