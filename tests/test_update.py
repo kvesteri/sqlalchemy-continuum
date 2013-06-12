@@ -64,6 +64,18 @@ class TestUpdate(TestCase):
         assert version.name == u'Some article'
         assert version.content == u'Updated content'
 
+    def test_stores_operation_type(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+
+        article.name = u'Some other article'
+
+        self.session.commit()
+        assert article.versions[-1].operation_type == 1
+
 
 class TestUpdateWithDefaultValues(TestCase):
     def create_models(self):

@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.2 (2013-06-12)
+^^^^^^^^^^^^^^^^^^
+
+- Added operation_type column to version tables.
+
+
 0.3.1 (2013-06-12)
 ^^^^^^^^^^^^^^^^^^
 

@@ -23,19 +23,19 @@ class PostgreSQLAdapter(Adapter):
                     IF (NEW != OLD) THEN
                         INSERT INTO %(table_name)s_history
                             (%(column_names)s)
-                            VALUES (%(column_values)s, txid_current());
+                            VALUES (%(column_values)s, 1, txid_current());
                     END IF;
                     RETURN NEW;
                 ELSIF (TG_OP = 'DELETE') THEN
                     INSERT INTO %(table_name)s_history
                         (%(primary_keys)s)
                         VALUES
-                        (%(primary_key_values)s, txid_current());
+                        (%(primary_key_values)s, 2, txid_current());
                     RETURN NEW;
                 ELSIF (TG_OP = 'INSERT') THEN
                     INSERT INTO %(table_name)s_history
                         (%(column_names)s)
-                        VALUES (%(column_values)s, txid_current());
+                        VALUES (%(column_values)s, 0, txid_current());
                     RETURN NEW;
                 END IF;
             END;
@@ -43,11 +43,15 @@ class PostgreSQLAdapter(Adapter):
             ''' %
             dict(
                 table_name=table_name,
-                column_names=', '.join(column_names + ['transaction_id']),
+                column_names=', '.join(
+                    column_names + ['operation_type', 'transaction_id']
+                ),
                 column_values=', '.join([
                     'NEW.%s' % name for name in column_names
                 ]),
-                primary_keys=', '.join(primary_keys + ['transaction_id']),
+                primary_keys=', '.join(
+                    primary_keys + ['operation_type', 'transaction_id']
+                ),
                 primary_key_values=', '.join([
                     'OLD.%s' % name for name in primary_keys
                 ])

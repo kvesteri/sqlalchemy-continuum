@@ -46,6 +46,12 @@ class VersionedTableBuilder(VersionedBuilder):
             primary_key=True
         )
 
+    def build_operation_type_column(self):
+        return sa.Column(
+            self.option('operation_type_column_name'),
+            sa.SmallInteger
+        )
+
     @property
     def metadata(self):
         for base in self.model.__bases__:
@@ -61,6 +67,7 @@ class VersionedTableBuilder(VersionedBuilder):
         if extends is None:
             items.extend(self.build_reflected_columns())
             items.append(self.build_version_column())
+            items.append(self.build_operation_type_column())
 
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
