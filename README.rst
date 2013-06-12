@@ -1,4 +1,4 @@
-SQLAlchemy-Versioned
+SQLAlchemy-Continuum
 ====================
 
 Versioning and auditing extension for SQLAlchemy.
@@ -7,6 +7,6 @@ Versioning and auditing extension for SQLAlchemy.
 Resources
 ---------
 
-- `Documentation <http://sqlalchemy-versioned.readthedocs.org/>`_
-- `Issue Tracker <http://github.com/kvesteri/sqlalchemy-versioned/issues>`_
-- `Code <http://github.com/kvesteri/sqlalchemy-versioned/>`_
+- `Documentation <http://sqlalchemy-continuum.readthedocs.org/>`_
+- `Issue Tracker <http://github.com/kvesteri/sqlalchemy-continuum/issues>`_
+- `Code <http://github.com/kvesteri/sqlalchemy-continuum/>`_
