@@ -12,12 +12,28 @@ from sqlalchemy_continuum import (
 make_versioned(sa.orm.mapper)
 
 
+class QueryPool(object):
+    queries = []
+
+
+@sa.event.listens_for(sa.engine.Engine, 'before_cursor_execute')
+def log_sql(
+    conn,
+    cursor,
+    statement,
+    parameters,
+    context,
+    executemany
+):
+    QueryPool.queries.append(statement)
+
+
 class TestCase(object):
     inspect_column_order = False
 
     def setup_method(self, method):
         self.engine = create_engine(
-            'postgres://postgres@localhost/sqlalchemy_versioned_test'
+            'postgres://postgres@localhost/sqlalchemy_continuum_test'
         )
         self.connection = self.engine.connect()
         #self.engine.echo = True
@@ -43,6 +59,7 @@ class TestCase(object):
         self.Model.metadata.drop_all(self.connection)
 
     def teardown_method(self, method):
+        QueryPool.queries = []
         Versioned.HISTORY_CLASS_MAP = {}
         self.session.close_all()
         self.drop_tables()
