@@ -155,12 +155,19 @@ class PostgreSQLAdapter(Adapter):
     builder_class = TriggerBuilder
 
     def build_triggers(self, models):
+        # In order to support single table inheritance we need keep track of
+        # already visited tables so that triggers don't get created multiple
+        # times for same table.
+        visited_tables = []
         for model_class in models:
             table = model_class.__versioned__['class'].__table__
+            if table in visited_tables:
+                continue
             builder = self.builder_class(table)
             builder.attach_trigger_procedure_listener()
             builder.attach_trigger_listener()
             builder.attach_drop_trigger_listener()
+            visited_tables.append(table)
 
     def build_triggers_sql(self, models):
         sql = []

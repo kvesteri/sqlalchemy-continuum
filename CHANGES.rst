@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.11 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Single table inheritance support added
+
+
 0.3.10 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 
