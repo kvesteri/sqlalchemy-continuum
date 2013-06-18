@@ -36,16 +36,15 @@ class VersionedTableBuilder(VersionedBuilder):
             column_copy.unique = False
             column_copy.autoincrement = False
             column_copy.nullable = True
-            if column_copy.name == self.option('version_column_name'):
-                column_copy.primary_key = True
             columns.append(column_copy)
         return columns
 
-    def build_version_column(self):
+    def build_revision_column(self):
         return sa.Column(
-            self.option('version_column_name'),
+            self.option('revision_column_name'),
             sa.BigInteger,
-            primary_key=True
+            primary_key=True,
+            autoincrement=True
         )
 
     def build_operation_type_column(self):
@@ -53,6 +52,12 @@ class VersionedTableBuilder(VersionedBuilder):
             self.option('operation_type_column_name'),
             sa.SmallInteger,
             nullable=False
+        )
+
+    def build_transaction_column(self):
+        return sa.Column(
+            self.option('transaction_column_name'),
+            sa.BigInteger,
         )
 
     @property
@@ -69,7 +74,8 @@ class VersionedTableBuilder(VersionedBuilder):
         items = []
         if extends is None:
             items.extend(self.build_reflected_columns())
-            items.append(self.build_version_column())
+            items.append(self.build_revision_column())
+            items.append(self.build_transaction_column())
             items.append(self.build_operation_type_column())
 
         return sa.schema.Table(

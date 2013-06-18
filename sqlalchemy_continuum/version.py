@@ -40,13 +40,18 @@ class VersionClassBase(object):
 
     def _pk_correlation_condition(self, skip_transaction_id=True):
         conditions = []
-        for primary_key in primary_keys(self):
-            if skip_transaction_id and primary_key.name == 'transaction_id':
+        pks = (
+            [pk.name for pk in primary_keys(self.__parent_class__)] +
+            ['transaction_id']
+        )
+
+        for column_name in pks:
+            if skip_transaction_id and column_name == 'transaction_id':
                 continue
             conditions.append(
-                getattr(self, primary_key.name)
+                getattr(self, column_name)
                 ==
-                getattr(self.__class__, primary_key.name)
+                getattr(self.__class__, column_name)
             )
         return conditions
 
@@ -143,7 +148,6 @@ class VersionClassBase(object):
             return
 
         if self.operation_type == 2:
-            print "jep"
             session = sa.orm.object_session(self)
             session.delete(self.parent)
             return

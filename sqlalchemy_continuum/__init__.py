@@ -1,10 +1,10 @@
 import sqlalchemy as sa
 from .versioned import Versioned
-from .listener import make_versioned
+from .manager import VersioningManager
 
 __all__ = (
     Versioned,
-    make_versioned
+    VersioningManager
 )
 
 
@@ -19,3 +19,13 @@ def versioned_session(session):
             '''INSERT INTO transaction_log (id, issued_at)
             VALUES (txid_current(), NOW())'''
         )
+
+
+def make_versioned(mapper, manager_class=VersioningManager):
+    manager = manager_class()
+    sa.event.listen(
+        mapper, 'instrument_class', manager.instrument_versioned_classes
+    )
+    sa.event.listen(
+        mapper, 'after_configured', manager.configure_versioned_classes
+    )

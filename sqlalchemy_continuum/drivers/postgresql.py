@@ -7,7 +7,7 @@ class Adapter(object):
 
 
 class TriggerBuilder(object):
-    skipped_columns = ['operation_type', 'transaction_id']
+    skipped_columns = ['revision', 'operation_type', 'transaction_id']
 
     def __init__(self, table):
         self.table = table
@@ -68,13 +68,13 @@ class TriggerBuilder(object):
             dict(
                 table_name=self.table.name,
                 column_names=', '.join(
-                    self.column_names + self.skipped_columns
+                    self.column_names + self.skipped_columns[1:]
                 ),
                 column_values=', '.join([
                     'NEW.%s' % name for name in self.column_names
                 ]),
                 primary_keys=', '.join(
-                    self.primary_keys + self.skipped_columns
+                    self.primary_keys + self.skipped_columns[1:]
                 ),
                 primary_key_values=', '.join([
                     'OLD.%s' % name for name in self.primary_keys

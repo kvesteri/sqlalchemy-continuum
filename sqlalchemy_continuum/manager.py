@@ -12,7 +12,8 @@ class VersioningManager(object):
     DEFAULT_OPTIONS = {
         'base_classes': None,
         'table_name': '%s_history',
-        'version_column_name': 'transaction_id',
+        'revision_column_name': 'revision',
+        'transaction_column_name': 'transaction_id',
         'operation_type_column_name': 'operation_type',
         'inspect_column_order': False,
         'relation_naming_function': lambda a: pluralize(underscore(a))
@@ -116,13 +117,3 @@ class VersioningManager(object):
         pending_copy = copy(self.pending_classes)
         self.pending_classes = []
         self.build_relationships(pending_copy)
-
-
-def make_versioned(mapper, manager_class=VersioningManager):
-    manager = manager_class()
-    sa.event.listen(
-        mapper, 'instrument_class', manager.instrument_versioned_classes
-    )
-    sa.event.listen(
-        mapper, 'after_configured', manager.configure_versioned_classes
-    )

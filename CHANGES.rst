@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.4.0 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Added support for multiple updates for same row within single transaction
+- History tables have now own revision column
+
+
 0.3.12 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 
