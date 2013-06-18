@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.10 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Generated operation_type column not nullable by default
+
+
 0.3.9 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

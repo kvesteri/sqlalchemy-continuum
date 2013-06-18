@@ -50,7 +50,8 @@ class VersionedTableBuilder(VersionedBuilder):
     def build_operation_type_column(self):
         return sa.Column(
             self.option('operation_type_column_name'),
-            sa.SmallInteger
+            sa.SmallInteger,
+            nullable=False
         )
 
     @property
