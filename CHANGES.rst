@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.8 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Autoincrementation automatically removed from reflected primary keys
+
+
 0.3.7 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

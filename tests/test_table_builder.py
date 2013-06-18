@@ -23,3 +23,7 @@ class TestTableBuilder(TestCase):
         assert 'description'in table.c
         assert 'transaction_id' in table.c
         assert 'operation_type' in table.c
+
+    def test_removes_autoincrementation(self):
+        table = self.Article.__versioned__['class'].__table__
+        assert table.c.id.autoincrement is False
