@@ -16,20 +16,22 @@ class TestAlembicHelpers(TestCase):
             'article_history',
             sa.Column('some_added_column', sa.Unicode(255))
         )
-        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-1]
-        assert 'NEW."some_added_column"' in QueryPool.queries[-1]
+        assert 'CREATE TRIGGER' in QueryPool.queries[-1]
+        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-2]
+        assert 'NEW."some_added_column"' in QueryPool.queries[-2]
 
-        assert 'DROP FUNCTION' in QueryPool.queries[-2]
+        assert 'DROP FUNCTION' in QueryPool.queries[-3]
 
     def test_drop_column(self):
         self.op.drop_column(
             'article_history',
             'name'
         )
-        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-1]
-        assert 'NEW."name"' not in QueryPool.queries[-1]
+        assert 'CREATE TRIGGER' in QueryPool.queries[-1]
+        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-2]
+        assert 'NEW."name"' not in QueryPool.queries[-2]
 
-        assert 'DROP FUNCTION' in QueryPool.queries[-2]
+        assert 'DROP FUNCTION' in QueryPool.queries[-3]
 
     def test_create_table(self):
         self.op.create_table(

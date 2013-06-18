@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.4.2 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Alembic trigger syncing fixed for drop column and add column
+
+
 0.4.1 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

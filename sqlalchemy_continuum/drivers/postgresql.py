@@ -151,6 +151,7 @@ class TriggerSynchronizer(object):
     def sync_alter_table(self):
         self.op.execute(self.builder.drop_trigger_procedure_sql)
         self.op.execute(self.builder.create_trigger_procedure_sql)
+        self.op.execute(self.builder.create_trigger_sql)
 
 
 class PostgreSQLAdapter(Adapter):
