@@ -1,11 +1,12 @@
 import sqlalchemy as sa
+from sqlalchemy import Table, MetaData
 
 
 class Adapter(object):
     pass
 
 
-class TableTriggerBuilder(object):
+class TriggerBuilder(object):
     skipped_columns = ['operation_type', 'transaction_id']
 
     def __init__(self, table):
@@ -126,8 +127,32 @@ class TableTriggerBuilder(object):
         )
 
 
+class TriggerSynchronizer(object):
+    def __init__(self, op, table_name):
+        self.op = op
+        self.table_name = table_name
+        metadata = MetaData(bind=self.op.get_bind())
+        table = Table(
+            table_name,
+            metadata,
+            autoload=True
+        )
+        self.builder = TriggerBuilder(table)
+
+    def sync_create_table(self):
+        self.op.execute(self.builder.create_trigger_procedure_sql)
+        self.op.execute(self.builder.create_trigger_sql)
+
+    def sync_drop_table(self):
+        self.op.execute(self.builder.drop_trigger_procedure_sql)
+
+    def sync_alter_table(self):
+        self.op.execute(self.builder.drop_trigger_procedure_sql)
+        self.op.execute(self.builder.create_trigger_procedure_sql)
+
+
 class PostgreSQLAdapter(Adapter):
-    builder_class = TableTriggerBuilder
+    builder_class = TriggerBuilder
 
     def build_triggers(self, models):
         for model_class in models:

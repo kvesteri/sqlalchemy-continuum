@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.9 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Added drop_table trigger synchronization
+
+
 0.3.8 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

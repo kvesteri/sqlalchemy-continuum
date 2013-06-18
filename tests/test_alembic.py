@@ -42,7 +42,25 @@ class TestAlembicHelpers(TestCase):
             sa.Column('id', sa.Integer, autoincrement=True, primary_key=True),
             sa.Column('name', sa.Unicode(255))
         )
+        assert 'CREATE TRIGGER' in QueryPool.queries[-1]
+        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-2]
+
         self.op.drop_table('some_table_history')
         self.op.drop_table('some_table')
-        assert 'CREATE TRIGGER' in QueryPool.queries[-3]
-        assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-4]
+
+    def test_drop_table(self):
+        self.op.create_table(
+            'some_table',
+            sa.Column('id', sa.Integer, autoincrement=True, primary_key=True),
+            sa.Column('name', sa.Unicode(255))
+        )
+        self.op.create_table(
+            'some_table_history',
+            sa.Column('id', sa.Integer, autoincrement=True, primary_key=True),
+            sa.Column('name', sa.Unicode(255))
+        )
+        self.op.drop_table('some_table_history')
+        self.op.drop_table('some_table')
+        assert 'DROP TABLE' in QueryPool.queries[-1]
+        assert 'DROP TABLE' in QueryPool.queries[-2]
+        assert 'DROP FUNCTION' in QueryPool.queries[-3]
