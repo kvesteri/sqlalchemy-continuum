@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.6 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Identifier quoting for create_trigger_sql
+
+
 0.3.5 (2013-06-12)
 ^^^^^^^^^^^^^^^^^^
 

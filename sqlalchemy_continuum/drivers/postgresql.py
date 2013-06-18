@@ -6,6 +6,8 @@ class Adapter(object):
 
 
 class TableTriggerBuilder(object):
+    skipped_columns = ['operation_type', 'transaction_id']
+
     def __init__(self, table):
         self.table = table
 
@@ -19,7 +21,7 @@ class TableTriggerBuilder(object):
     def column_names(self):
         return [
             name for name in self.table.c.keys()
-            if name not in ['operation_type', 'transaction_id']
+            if name not in self.skipped_columns
         ]
 
     @property
@@ -28,7 +30,7 @@ class TableTriggerBuilder(object):
             column.name for column in self.table.c
             if (
                 column.primary_key and
-                column.name not in ['operation_type', 'transaction_id']
+                column.name not in self.skipped_columns
             )
         ]
 
@@ -65,13 +67,13 @@ class TableTriggerBuilder(object):
             dict(
                 table_name=self.table.name,
                 column_names=', '.join(
-                    self.column_names + ['operation_type', 'transaction_id']
+                    self.column_names + self.skipped_columns
                 ),
                 column_values=', '.join([
                     'NEW.%s' % name for name in self.column_names
                 ]),
                 primary_keys=', '.join(
-                    self.primary_keys + ['operation_type', 'transaction_id']
+                    self.primary_keys + self.skipped_columns
                 ),
                 primary_key_values=', '.join([
                     'OLD.%s' % name for name in self.primary_keys
@@ -83,7 +85,7 @@ class TableTriggerBuilder(object):
     def create_trigger_sql(self):
         return (
             '''CREATE TRIGGER %(table_name)s_version_trigger
-            AFTER INSERT OR UPDATE OR DELETE ON %(table_name)s
+            AFTER INSERT OR UPDATE OR DELETE ON "%(table_name)s"
             FOR EACH ROW
             EXECUTE PROCEDURE create_%(table_name)s_history_record();
             ''' % dict(
