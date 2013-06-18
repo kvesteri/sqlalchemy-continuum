@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.7 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Added identifier quoting for all column names
+
+
 0.3.6 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

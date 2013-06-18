@@ -17,7 +17,7 @@ class TestAlembicHelpers(TestCase):
             sa.Column('some_added_column', sa.Unicode(255))
         )
         assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-1]
-        assert 'NEW.some_added_column' in QueryPool.queries[-1]
+        assert 'NEW."some_added_column"' in QueryPool.queries[-1]
 
         assert 'DROP FUNCTION' in QueryPool.queries[-2]
 
@@ -27,7 +27,7 @@ class TestAlembicHelpers(TestCase):
             'name'
         )
         assert 'CREATE OR REPLACE FUNCTION' in QueryPool.queries[-1]
-        assert 'NEW.name' not in QueryPool.queries[-1]
+        assert 'NEW."name"' not in QueryPool.queries[-1]
 
         assert 'DROP FUNCTION' in QueryPool.queries[-2]
 

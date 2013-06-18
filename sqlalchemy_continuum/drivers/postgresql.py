@@ -20,14 +20,14 @@ class TableTriggerBuilder(object):
     @property
     def column_names(self):
         return [
-            name for name in self.table.c.keys()
+            '"%s"' % name for name in self.table.c.keys()
             if name not in self.skipped_columns
         ]
 
     @property
     def primary_keys(self):
         return [
-            column.name for column in self.table.c
+            '"%s"' % column.name for column in self.table.c
             if (
                 column.primary_key and
                 column.name not in self.skipped_columns
