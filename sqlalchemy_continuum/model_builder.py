@@ -28,7 +28,9 @@ class VersionedModelBuilder(VersionedBuilder):
                 primaryjoin=sa.and_(*conditions),
                 foreign_keys=foreign_keys,
                 lazy='dynamic',
-                backref=sa.orm.backref('parent'),
+                backref=sa.orm.backref(
+                    'parent'
+                ),
                 viewonly=True
             )
 

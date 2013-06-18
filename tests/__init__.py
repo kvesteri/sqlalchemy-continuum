@@ -75,7 +75,7 @@ class TestCase(object):
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
-            name = sa.Column(sa.Unicode(255))
+            name = sa.Column(sa.Unicode(255), nullable=False)
             content = sa.Column(sa.UnicodeText)
             description = sa.Column(sa.UnicodeText)
 

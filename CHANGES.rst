@@ -4,6 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.3.12 (2013-06-18)
+^^^^^^^^^^^^^^^^^^
+
+- Not null constraints removed from all reflected columns
+- Fixed reify when parent has not null constraints
+- Added support for reifying deletion
+
+
 0.3.11 (2013-06-18)
 ^^^^^^^^^^^^^^^^^^
 

@@ -35,6 +35,22 @@ class TestReify(TestCase):
         assert article.name == u'Some article'
         assert article.content == u'Some content'
 
+    def test_reify_deletion(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        old_article_id = article.id
+        version = article.versions[0]
+        self.session.delete(article)
+        self.session.commit()
+        version.reify()
+        self.session.commit()
+        version.next.reify()
+        self.session.commit()
+        assert not self.session.query(self.Article).get(old_article_id)
+
     def test_reify_version_with_one_to_many_relation(self):
         article = self.Article()
         article.name = u'Some article'

@@ -35,6 +35,7 @@ class VersionedTableBuilder(VersionedBuilder):
             # Remove unique constraints
             column_copy.unique = False
             column_copy.autoincrement = False
+            column_copy.nullable = True
             if column_copy.name == self.option('version_column_name'):
                 column_copy.primary_key = True
             columns.append(column_copy)

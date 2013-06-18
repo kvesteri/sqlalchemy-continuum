@@ -27,3 +27,8 @@ class TestTableBuilder(TestCase):
     def test_removes_autoincrementation(self):
         table = self.Article.__versioned__['class'].__table__
         assert table.c.id.autoincrement is False
+
+    def test_removes_not_null_constraints(self):
+        assert self.Article.__table__.c.name.nullable is False
+        table = self.Article.__versioned__['class'].__table__
+        assert table.c.name.nullable is True
