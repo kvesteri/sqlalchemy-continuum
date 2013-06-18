@@ -36,6 +36,8 @@ class VersionedTableBuilder(VersionedBuilder):
             column_copy.unique = False
             column_copy.autoincrement = False
             column_copy.nullable = True
+            if column_copy.primary_key:
+                column_copy.primary_key = False
             columns.append(column_copy)
         return columns
 

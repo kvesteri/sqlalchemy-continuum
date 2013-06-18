@@ -28,11 +28,8 @@ class TriggerBuilder(object):
     @property
     def primary_keys(self):
         return [
-            '"%s"' % column.name for column in self.table.c
-            if (
-                column.primary_key and
-                column.name not in self.skipped_columns
-            )
+            '"%s"' % column.name for column in self.parent_table.c
+            if column.primary_key
         ]
 
     @property
@@ -134,6 +131,11 @@ class TriggerSynchronizer(object):
         metadata = MetaData(bind=self.op.get_bind())
         table = Table(
             table_name,
+            metadata,
+            autoload=True
+        )
+        Table(
+            table_name[0:-len('_history')],
             metadata,
             autoload=True
         )
