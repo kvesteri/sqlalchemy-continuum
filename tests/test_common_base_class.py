@@ -1,11 +1,10 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import Versioned as _Versioned
 from tests import TestCase
 
 
 class TestCommonBaseClass(TestCase):
     def create_models(self):
-        class Versioned(_Versioned):
+        class Versioned(object):
             __versioned__ = {
                 'base_classes': (self.Model, )
             }

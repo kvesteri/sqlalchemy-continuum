@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import Versioned
 
 from tests import TestCase
 
@@ -77,7 +76,7 @@ class TestReify(TestCase):
 
 class TestReifyManyToManyRelationship(TestCase):
     def create_models(self):
-        class Article(self.Model, Versioned):
+        class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
                 'base_classes': (self.Model, )
@@ -86,7 +85,7 @@ class TestReifyManyToManyRelationship(TestCase):
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
 
-        class ArticleTag(self.Model, Versioned):
+        class ArticleTag(self.Model):
             __tablename__ = 'article_tag'
             __versioned__ = {
                 'base_classes': (self.Model, )
@@ -104,7 +103,7 @@ class TestReifyManyToManyRelationship(TestCase):
                 primary_key=True
             )
 
-        class Tag(self.Model, Versioned):
+        class Tag(self.Model):
             __tablename__ = 'tag'
             __versioned__ = {
                 'base_classes': (self.Model, )

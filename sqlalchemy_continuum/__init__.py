@@ -1,31 +1,28 @@
 import sqlalchemy as sa
-from .versioned import Versioned
 from .manager import VersioningManager
 
 __all__ = (
-    Versioned,
     VersioningManager
 )
 
 
-def versioned_objects(iterator):
-    return [obj for obj in iterator if hasattr(obj, '__versioned__')]
+versioning_manager = VersioningManager()
 
 
-def versioned_session(session):
-    @sa.event.listens_for(session, 'before_commit')
-    def before_commit(session):
-        session.execute(
-            '''INSERT INTO transaction_log (id, issued_at)
-            VALUES (txid_current(), NOW())'''
-        )
-
-
-def make_versioned(mapper, manager_class=VersioningManager):
-    manager = manager_class()
+def make_versioned(
+    mapper=sa.orm.mapper,
+    session=sa.orm.session.Session,
+    manager=versioning_manager
+):
     sa.event.listen(
         mapper, 'instrument_class', manager.instrument_versioned_classes
     )
     sa.event.listen(
         mapper, 'after_configured', manager.configure_versioned_classes
+    )
+    sa.event.listen(
+        session, 'before_commit', manager.create_transaction_log_entries
+    )
+    sa.event.listen(
+        session, 'before_commit', manager.create_transaction_changes_entries
     )

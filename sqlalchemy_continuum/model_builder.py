@@ -34,18 +34,33 @@ class VersionedModelBuilder(VersionedBuilder):
                 viewonly=True
             )
 
-    def build_transaction_relationship(self, transaction_log_class):
+    def build_transaction_relationship(self, tx_log_class):
         # Only define transaction relation if it doesn't already exist in
         # parent class.
         naming_func = self.manager.DEFAULT_OPTIONS['relation_naming_function']
         if not hasattr(self.extension_class, 'transaction'):
             self.extension_class.transaction = sa.orm.relationship(
-                transaction_log_class,
+                tx_log_class,
                 primaryjoin=(
-                    transaction_log_class.id ==
+                    tx_log_class.id ==
                     self.extension_class.transaction_id
                 ),
                 foreign_keys=[self.extension_class.transaction_id],
+                backref=naming_func(self.model.__name__)
+            )
+
+    def build_changes_relationship(self, tx_changes_class):
+        # Only define changes relation if it doesn't already exist in
+        # parent class.
+        naming_func = self.manager.DEFAULT_OPTIONS['relation_naming_function']
+        if not hasattr(self.extension_class, 'changes'):
+            self.extension_class.changes = sa.orm.relationship(
+                tx_changes_class,
+                primaryjoin=(
+                    tx_changes_class.transaction_id ==
+                    self.extension_class.transaction_id
+                ),
+                foreign_keys=[tx_changes_class.transaction_id],
                 backref=naming_func(self.model.__name__)
             )
 
@@ -90,16 +105,18 @@ class VersionedModelBuilder(VersionedBuilder):
             }
         )
 
-    def __call__(self, table, transaction_log_class):
+    def __call__(self, table, tx_log_class, tx_changes_class):
         # versioned attributes need to be copied for each child class,
         # otherwise each child class would share the same __versioned__
         # option dict
         self.model.__versioned__ = copy(self.model.__versioned__)
-        self.model.__versioned__['transaction_log'] = transaction_log_class
+        self.model.__versioned__['transaction_log'] = tx_log_class
+        self.model.__versioned__['transaction_changes'] = tx_changes_class
         self.model.__versioned__['manager'] = self.manager
         self.extension_class = self.build_model(table)
         self.build_parent_relationship()
-        self.build_transaction_relationship(transaction_log_class)
+        self.build_transaction_relationship(tx_log_class)
+        self.build_changes_relationship(tx_changes_class)
         self.model.__versioned__['class'] = self.extension_class
         self.extension_class.__parent_class__ = self.model
         self.manager.history_class_map[self.model] = self.extension_class

@@ -3,13 +3,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
-    Versioned,
-    versioned_session,
     make_versioned
 )
 
 
-make_versioned(sa.orm.mapper)
+make_versioned()
 
 
 class QueryPool(object):
@@ -29,8 +27,6 @@ def log_sql(
 
 
 class TestCase(object):
-    inspect_column_order = False
-
     def setup_method(self, method):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_continuum_test'
@@ -49,7 +45,6 @@ class TestCase(object):
         self.create_tables()
 
         Session = sessionmaker(bind=self.connection)
-        versioned_session(Session)
         self.session = Session()
 
     def create_tables(self):
@@ -60,18 +55,16 @@ class TestCase(object):
 
     def teardown_method(self, method):
         QueryPool.queries = []
-        Versioned.HISTORY_CLASS_MAP = {}
         self.session.close_all()
         self.drop_tables()
         self.engine.dispose()
         self.connection.close()
 
     def create_models(self):
-        class Article(self.Model, Versioned):
+        class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
-                'base_classes': (self.Model, ),
-                'inspect_column_order': self.inspect_column_order
+                'base_classes': (self.Model, )
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
@@ -79,11 +72,10 @@ class TestCase(object):
             content = sa.Column(sa.UnicodeText)
             description = sa.Column(sa.UnicodeText)
 
-        class Tag(self.Model, Versioned):
+        class Tag(self.Model):
             __tablename__ = 'tag'
             __versioned__ = {
-                'base_classes': (self.Model, ),
-                'inspect_column_order': self.inspect_column_order
+                'base_classes': (self.Model, )
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)

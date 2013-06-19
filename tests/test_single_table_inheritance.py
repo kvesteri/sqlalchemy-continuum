@@ -1,11 +1,10 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import Versioned
 from tests import TestCase
 
 
 class TestSingleTableInheritance(TestCase):
     def create_models(self):
-        class TextItem(self.Model, Versioned):
+        class TextItem(self.Model):
             __tablename__ = 'text_item'
             __versioned__ = {
                 'base_classes': (self.Model, )

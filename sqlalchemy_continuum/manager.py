@@ -1,11 +1,18 @@
+from contextlib import contextmanager
+import itertools
 from inflection import underscore, pluralize
 from copy import copy
 import sqlalchemy as sa
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.dialects.postgresql import HSTORE
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
 from .drivers.postgresql import PostgreSQLAdapter
-from .versioned import Versioned
+
+
+def versioned_objects(iterator):
+    return [obj for obj in iterator if hasattr(obj, '__versioned__')]
 
 
 class VersioningManager(object):
@@ -23,9 +30,17 @@ class VersioningManager(object):
         self.tables = {}
         self.pending_classes = []
         self.history_class_map = {}
+        self.meta = None
+
+    @contextmanager
+    def tx_meta(self, **meta):
+        old_meta = self.meta
+        self.meta = meta
+        yield
+        self.meta = old_meta
 
     def instrument_versioned_classes(self, mapper, cls):
-        if issubclass(cls, Versioned):
+        if hasattr(cls, '__versioned__'):
             if (not cls.__versioned__.get('class')
                     and cls not in self.pending_classes):
                 self.pending_classes.append(cls)
@@ -48,9 +63,10 @@ class VersioningManager(object):
                 __tablename__ = 'transaction_log'
                 id = sa.Column(sa.BigInteger, primary_key=True)
                 issued_at = sa.Column(sa.DateTime)
+                meta = sa.Column(MutableDict.as_mutable(HSTORE))
 
                 @property
-                def all_affected_entities(obj_self):
+                def changed_entities(obj_self):
                     tuples = set(self.history_class_map.items())
                     entities = []
 
@@ -69,6 +85,27 @@ class VersioningManager(object):
 
             return TransactionLog
         return cls._decl_class_registry['TransactionLog']
+
+    def create_transaction_changes(self, cls, transaction_log_class):
+        base = self.declarative_base(cls)
+
+        if 'TransactionChanges' not in cls._decl_class_registry:
+            class TransactionChanges(base):
+                __tablename__ = 'transaction_changes'
+                transaction_id = sa.Column(sa.BigInteger, primary_key=True)
+                entity_name = sa.Column(sa.Unicode(255), primary_key=True)
+
+                transaction_log = sa.orm.relationship(
+                    transaction_log_class,
+                    backref=sa.orm.backref(
+                        'changes'
+                    ),
+                    primaryjoin=transaction_log_class.id == transaction_id,
+                    foreign_keys=[transaction_id]
+                )
+
+            return TransactionChanges
+        return cls._decl_class_registry['TransactionChanges']
 
     def build_tables(self):
         for cls in self.pending_classes:
@@ -95,11 +132,18 @@ class VersioningManager(object):
         if self.pending_classes:
             cls = self.pending_classes[0]
             TransactionLog = self.create_transaction_log(cls)
+            TransactionChanges = self.create_transaction_changes(
+                cls, TransactionLog
+            )
 
             for cls in self.pending_classes:
                 if cls in self.tables:
                     builder = VersionedModelBuilder(self, cls)
-                    builder(self.tables[cls], TransactionLog)
+                    builder(
+                        self.tables[cls],
+                        TransactionLog,
+                        TransactionChanges
+                    )
 
     def build_relationships(self, history_classes):
         # Build relationships for all history classes.
@@ -117,3 +161,32 @@ class VersioningManager(object):
         pending_copy = copy(self.pending_classes)
         self.pending_classes = []
         self.build_relationships(pending_copy)
+
+    def create_transaction_log_entries(self, session):
+        iterator = itertools.chain(session.new, session.dirty, session.deleted)
+        transaction_log_cls = None
+        for obj in versioned_objects(iterator):
+            transaction_log_cls = obj.__versioned__['transaction_log']
+            break
+
+        if transaction_log_cls:
+            session.add(
+                transaction_log_cls(
+                    id=sa.func.txid_current(),
+                    issued_at=sa.func.now(),
+                    meta=self.meta
+                )
+            )
+
+    def create_transaction_changes_entries(self, session):
+        iterator = itertools.chain(session.new, session.dirty, session.deleted)
+        changed_entities = set([])
+        for obj in versioned_objects(iterator):
+            changed_entities.add(obj.__class__)
+        for entity in changed_entities:
+            session.execute(
+                '''INSERT INTO transaction_changes
+                (transaction_id, entity_name)
+                VALUES (txid_current(), :entity_name)''',
+                {'entity_name': entity.__name__}
+            )
