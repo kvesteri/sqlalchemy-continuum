@@ -13,17 +13,7 @@ class VersionedTableBuilder(VersionedBuilder):
         """
         Returns a list of parent table columns.
         """
-        if self.option('inspect_column_order'):
-            inspector = sa.inspect(self.model.metadata.bind)
-            columns = inspector.get_columns(self.model.__table__.name)
-            ordered_columns = []
-            for column in columns:
-                ordered_columns.append(
-                    self.model.__table__.c[column['name']]
-                )
-            return ordered_columns
-        else:
-            return self.model.__table__.c.values()
+        return self.model.__table__.c.values()
 
     def build_reflected_columns(self):
         columns = []

@@ -8,4 +8,4 @@ class VersionedBuilder(object):
         try:
             return self.model.__versioned__[name]
         except (AttributeError, KeyError):
-            return self.manager.DEFAULT_OPTIONS[name]
+            return self.manager.options[name]

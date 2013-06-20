@@ -4,13 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-0.5.0 (2013-06-19)
+0.5.0 (2013-06-20)
 ^^^^^^^^^^^^^^^^^^
 
 - Removed Versioned base class, versioned objects only need to have __versioned__ defined.
 - Session versioning now part of make_versioned function
 - Added meta parameter in TransactionLog
 - TransactionChanges model for tracking changed entities in given transaction
+- Added Flask extension
 
 
 0.4.2 (2013-06-18)

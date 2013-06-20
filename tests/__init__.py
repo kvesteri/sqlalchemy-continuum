@@ -3,7 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
-    make_versioned
+    make_versioned, versioning_manager
+)
+from sqlalchemy_continuum.ext.flask import (
+    versioning_manager as flask_versioning_manager
 )
 
 
@@ -27,6 +30,10 @@ def log_sql(
 
 
 class TestCase(object):
+    def setup_class(cls):
+        versioning_manager.versioning_on = True
+        flask_versioning_manager.versioning_on = False
+
     def setup_method(self, method):
         self.engine = create_engine(
             'postgres://postgres@localhost/sqlalchemy_continuum_test'
