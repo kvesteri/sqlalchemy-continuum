@@ -10,8 +10,12 @@ Features
 - Does not store updates which don't change anything
 - Uses database triggers for extremely fast versioning
 - Supports alembic migrations
-- Can restore objects data as well as all object relations at given transaction
+- Can restore objects data as well as all object relations at given transaction even if the object was deleted
 - Transactions can be queried afterwards using SQLAlchemy query syntax
+- Query for changed records at given transaction
+
+
+.. image:: http://replygif.net/i/1182.gif
 
 
 QuickStart
@@ -48,11 +52,6 @@ QuickStart
     article.versions[1].name
     # u'Updated name'
 
-
-.. image:: http://replygif.net/i/1182.gif
-
-
-::
 
     # lets revert back to first version
     article.versions[0].reify()
