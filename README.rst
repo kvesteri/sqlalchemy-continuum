@@ -61,7 +61,7 @@ QuickStart
     # u'Some article'
 
 
-.. image:: http://replygif.net/thumbnail/159.gif
+.. image:: http://i.imgur.com/UFaRx.gif
 
 
 Resources
