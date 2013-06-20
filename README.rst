@@ -51,6 +51,11 @@ QuickStart
 
 .. image:: http://replygif.net/i/1182.gif
 
+    # lets revert back to first version
+    article.versions[0].reify()
+
+    article.name
+    # u'Some article'
 
 
 .. image:: http://replygif.net/thumbnail/159.gif
