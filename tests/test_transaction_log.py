@@ -42,6 +42,7 @@ class TestTransactionLog(TestCase):
 
     def test_tx_meta_context_manager(self):
         self.article.name = u'Some update article'
-        with versioning_manager.tx_meta(some_key=u'some_value'):
+        meta = {'some_key': u'some_value'}
+        with versioning_manager.tx_context(meta=meta):
             self.session.commit()
         self.article.versions[-1].transaction.meta['some_key'] == u'some_value'

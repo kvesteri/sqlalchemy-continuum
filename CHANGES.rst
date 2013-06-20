@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.5.1 (2013-06-20)
+^^^^^^^^^^^^^^^^^^
+
+- Added improved context managing capabilities for transactions via VersioningManager.tx_context
+
+
 0.5.0 (2013-06-20)
 ^^^^^^^^^^^^^^^^^^
 

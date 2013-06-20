@@ -29,15 +29,15 @@ class VersioningManager(object):
         self.tables = {}
         self.pending_classes = []
         self.history_class_map = {}
-        self.meta = None
+        self._tx_context = {}
         self.versioning_on = True
 
     @contextmanager
-    def tx_meta(self, **meta):
-        old_meta = self.meta
-        self.meta = meta
+    def tx_context(self, **tx_context):
+        old_tx_context = self._tx_context
+        self._tx_context = tx_context
         yield
-        self.meta = old_meta
+        self._tx_context = old_tx_context
 
     def declarative_base(self, model):
         for parent in model.__bases__:
@@ -190,7 +190,7 @@ class VersioningManager(object):
                 transaction_log_cls(
                     id=sa.func.txid_current(),
                     issued_at=sa.func.now(),
-                    meta=self.meta
+                    **self._tx_context
                 )
             )
 
