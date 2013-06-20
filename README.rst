@@ -51,6 +51,9 @@ QuickStart
 
 .. image:: http://replygif.net/i/1182.gif
 
+
+::
+
     # lets revert back to first version
     article.versions[0].reify()
 
