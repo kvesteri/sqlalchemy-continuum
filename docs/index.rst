@@ -73,7 +73,7 @@ You can query history models just like any other sqlalchemy declarative model.
 
     ArticleHistory = Article.__versioned__['class']
 
-    self.session.query(ArticleHistory).filter_by(name=u'some name').all()
+    session.query(ArticleHistory).filter_by(name=u'some name').all()
 
 
 Version traversal
@@ -100,13 +100,69 @@ Transaction Log
 ===============
 
 
+TransactionLog can be queried just like any other sqlalchemy declarative model.
+
+::
+    TransactionLog = Article.__versioned__['transaction_class']
+
+    # find all transactions
+    self.session.query(TransactionLog).all()
+
+
 
 Configuration
 =============
 
+Basic configuration options
+---------------------------
+
+Here is a full list of options that can be passed to __versioned__ attribute:
+
+* base_classes (default: None)
+
+* table_name (default: '%s_history')
+
+* revision_column_name (default: 'revision')
+
+* transaction_column_name (default: 'transaction_id')
+
+* operation_type_column_name (default: 'operation_type')
+
+* relation_naming_function (default: lambda a: pluralize(underscore(a)))
+
+
+Example
+::
+
+    class Article(Base):
+        __versioned__ = {
+            'transaction_column_name': 'tx_id'
+        }
+        __tablename__ = 'user'
+
+        id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+        name = sa.Column(sa.Unicode(255))
+        content = sa.Column(sa.UnicodeText)
+
 
 Alembic migrations
 ==================
+
+::
+
+    from alembic import op
+    from sqlalchemy_continuum.alembic import OperationsProxy
+
+
+    op = OperationsProxy(op)
+
+
+    op.create_table(
+        'article_history',
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True)
+        sa.Column('name', sa.Unicode(255))
+        sa.Column('content', sa.UnicodeText)
+    )
 
 
 
@@ -119,6 +175,10 @@ Extensions
 
 Flask
 -----
+
+
+Writing own versioning extension
+--------------------------------
 
 
 
