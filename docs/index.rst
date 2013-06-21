@@ -60,8 +60,41 @@ In order to make your models versioned you need two things:
         content = sa.Column(sa.UnicodeText)
 
 
-Reverting data
---------------
+Version objects
+===============
+
+Querying
+--------
+
+
+You can query history models just like any other sqlalchemy declarative model.
+
+::
+
+    ArticleHistory = Article.__versioned__['class']
+
+    self.session.query(ArticleHistory).filter_by(name=u'some name').all()
+
+
+Version traversal
+-----------------
+
+::
+
+    first_version = article.versions[0]
+    first_version.index
+    # 0
+
+
+    second_version = first_version.next
+    assert second_version == article.versions[1]
+
+    second_version.previous == first_version
+    # True
+
+    second_version.index
+    # 1
+
 
 Transaction Log
 ===============
