@@ -22,6 +22,16 @@ QuickStart
 ----------
 
 ::
+    pip install SQLAlchemy-Continuum
+
+
+
+In order to make your models versioned you need two things:
+
+1. Call make_versioned() before your models are defined.
+2. Add __versioned__ to all models you wish to add versioning to
+
+::
 
     from sqlalchemy_continuum import make_versioned
 
