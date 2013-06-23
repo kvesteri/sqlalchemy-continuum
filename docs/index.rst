@@ -8,7 +8,6 @@ Why?
 
 SQLAlchemy already has versioning extension. This extension however is very limited. It does not support versioning entire transactions.
 
-
 Hibernate for Java has Envers, which is propably the most advanced database versioning tool out there. Ruby on Rails has `papertrail https://github.com/airblade/paper_trail`_, which has very nice API but lacks the efficiency and feature set of Envers.
 
 As a Python/SQLAlchemy enthusiast I wanted to create a database versioning tool for Python with all the features of Envers and with as intuitive API as papertrail. Also I wanted to make it _fast_ keeping things as close to the database as possible (by using triggers and trigger procedures whenever possible).
@@ -60,20 +59,21 @@ In order to make your models versioned you need two things:
         content = sa.Column(sa.UnicodeText)
 
 
-Version objects
-===============
-
-Querying
---------
-
-
-You can query history models just like any other sqlalchemy declarative model.
 
 ::
 
-    ArticleHistory = Article.__versioned__['class']
+    Article.__versioned__['class']
+    # ArticleHistory class
 
-    session.query(ArticleHistory).filter_by(name=u'some name').all()
+    Article.__versioned__['transaction_changes']
+    # TransactionChanged class
+
+    Article.__versioned__['transaction_log']
+    # TransactionLog class
+
+
+Version objects
+===============
 
 
 Version traversal
@@ -96,8 +96,115 @@ Version traversal
     # 1
 
 
+Changelog
+---------
+
+::
+
+    article = Article(name=u'New article', content=u'Some content')
+    session.add(article)
+    session.commit(article)
+
+    version = article.versions[0]
+    version.changelog
+    # {
+    #   'id': [None, 1],
+    #   'name': [None, u'New article'],
+    #   'content': [None, u'Some content']
+    # }
+    article.name = u'Updated article'
+    session.commit()
+
+    version = article.versions[1]
+    version.changelog
+    # {
+    #   'name': [u'New article', u'Updated article'],
+    # }
+
+    session.delete(article)
+    version = article.versions[1]
+    version.changelog
+    # {
+    #   'id': [1, None]
+    #   'name': [u'Updated article', None],
+    #   'content': [u'Some content', None]
+    # }
+
+
+Reverting changes
+-----------------
+
+::
+
+    article = Article(name=u'New article', content=u'Some content')
+    session.add(article)
+    session.commit(article)
+
+    version = article.versions[0]
+    article.name = u'Updated article'
+    session.commit()
+
+    version.reify()
+    session.commit()
+
+    article.name
+    # u'New article'
+
+
+Version relationships
+---------------------
+
+Each version object reflects all parent object relationships. Lets say you have two models: Article and Category. Each Article has one Category.
+
+As you already know when making these models versioned, SQLAlchemy-Continuum creates two new declarative classes ArticleHistory and CategoryHistory.
+
+
+::
+
+
+    category = Category(name=u'Some category')
+    article = Article(
+        name=u'Some article',
+        category=category
+    )
+    session.add(article)
+    session.commit()
+
+
+    session.delete(category)
+    session.commit()
+
+    # article no longer has category
+
+    article.versions[0].reify()
+    session.commit()
+
+    article.category  # Category object
+
+
+
+
+
+Querying
+--------
+
+
+You can query history models just like any other sqlalchemy declarative model.
+
+::
+
+    ArticleHistory = Article.__versioned__['class']
+
+    session.query(ArticleHistory).filter_by(name=u'some name').all()
+
+
+
+
 Transaction Log
 ===============
+
+
+For each committed transaction SQLAlchemy-Continuum creates a new TransactionLog record.
 
 
 TransactionLog can be queried just like any other sqlalchemy declarative model.
@@ -108,6 +215,30 @@ TransactionLog can be queried just like any other sqlalchemy declarative model.
     # find all transactions
     self.session.query(TransactionLog).all()
 
+
+TransactionChanges
+==================
+
+In order to be able to to fetch efficiently entities that changed in given transaction SQLAlchemy-Continuum keeps track of changed entities in transaction_changes table.
+
+This table has only two fields: transaction_id and entity_name. If for example transaction consisted of saving 5 new User entities and 1 Article entity, two new rows would be inserted into transaction_changes table.
+
+================    =================
+transaction_id          entity_name
+----------------    -----------------
+233678                  User
+233678                  Article
+================    =================
+
+
+
+Find entities that changed in given transaction
+-----------------------------------------------
+
+    tx_log = self.session.query(TransactionLog).first()
+
+    tx_log.changed_entities
+    # dict of changed entities
 
 
 Configuration
@@ -145,8 +276,37 @@ Example
         content = sa.Column(sa.UnicodeText)
 
 
+Customizing versioned mappers
+-----------------------------
+
+By default SQLAlchemy-Continuum versions all mappers. You can override this behaviour by passing the desired mapper class/object to make_versioned function.
+
+
+::
+
+    make_versioned(mapper=my_mapper)
+
+
+Customizing versioned sessions
+------------------------------
+
+
+By default SQLAlchemy-Continuum versions all sessions. You can override this behaviour by passing the desired session class/object to make_versioned function.
+
+
+::
+
+    make_versioned(session=my_session)
+
+
+
 Alembic migrations
 ==================
+
+SQLAlchemy-Continuum relies heavily on database triggers and trigger procedures. Whenever your versioned model schemas are changed the associated triggers and trigger procedures would need to be changed too.
+
+Gladly SQLAlchemy-Continuum provides tools to ease these kind of migrations. Only thing you need to do is add the following lines in your alembic migration files:
+
 
 ::
 
@@ -155,6 +315,10 @@ Alembic migrations
 
 
     op = OperationsProxy(op)
+
+
+Now SQLAlchemy-Continuum is smart enough to regenerate triggers each time history tables are changed. So for example the following create_table call would update the associated triggers and trigger procedures.
+::
 
 
     op.create_table(
@@ -169,12 +333,30 @@ Alembic migrations
 Internals
 =========
 
+Continuum schema
+----------------
+
+By default SQLAlchemy-Continuum creates history tables for all versioned tables. So for example if you have two models Article and Category, SQLAlchemy-Continuum would create two history models ArticleHistory and CategoryHistory.
+
+
 
 Extensions
 ==========
 
 Flask
 -----
+
+    SQLAlchemy-Continuum comes with built-in extension for Flask. This extensions saves current user id as well as user remote address in transaction log.
+
+
+::
+
+    from sqlalchemy_continuum.ext.flask import FlaskVersioningManager
+    from sqlalchemy_continuum import make_versioned
+
+
+    make_versioned(manager=FlaskVersioningManager())
+
 
 
 Writing own versioning extension
