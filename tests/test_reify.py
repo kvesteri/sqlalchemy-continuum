@@ -86,23 +86,23 @@ class TestReifyManyToManyRelationship(TestCase):
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
 
-        class ArticleTag(self.Model, Versioned):
-            __tablename__ = 'article_tag'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
-            article_id = sa.Column(
+        article_tag = sa.Table(
+            'article_tag',
+            self.Model.metadata,
+            sa.Column(
                 'article_id',
                 sa.Integer,
                 sa.ForeignKey('article.id', ondelete='CASCADE'),
                 primary_key=True,
-            )
-            tag_id = sa.Column(
+            ),
+            sa.Column(
                 'tag_id',
                 sa.Integer,
                 sa.ForeignKey('tag.id', ondelete='CASCADE'),
                 primary_key=True
             )
+        )
+
         # article_tag = sa.Table(
         #     'article_tag',
         #     self.Model.metadata,
@@ -131,13 +131,12 @@ class TestReifyManyToManyRelationship(TestCase):
 
         Tag.articles = sa.orm.relationship(
             Article,
-            secondary=ArticleTag.__table__,
+            secondary=article_tag,
             backref='tags'
         )
 
         self.Article = Article
         self.Tag = Tag
-        self.ArticleTag = ArticleTag
 
     def test_reify_version_with_many_to_many_relation(self):
         article = self.Article()
@@ -148,8 +147,7 @@ class TestReifyManyToManyRelationship(TestCase):
         self.session.add(article)
         self.session.commit()
         assert article.versions[0].tags.count() == 1
-        article_tag = self.session.query(self.ArticleTag).first()
-        self.session.delete(article_tag)
+        article.tags.remove(tag)
         self.session.commit()
         self.session.refresh(article)
         assert article.tags == []

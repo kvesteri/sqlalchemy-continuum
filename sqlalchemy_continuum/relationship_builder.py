@@ -108,7 +108,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                 remote_cls = property_.mapper.class_.__versioned__['class']
                 primary_join = property_.primaryjoin
 
-                if property_.remote_side and property_.secondary:
+                if property_.remote_side and property_.secondary is not None:
                     column = list(property_.remote_side)[0]
                     self.manager.association_tables.add(column.table)
                     builder = VersionedTableBuilder(
