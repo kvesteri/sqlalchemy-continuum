@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.0 (2013-06-24)
+^^^^^^^^^^^^^^^^^^
+
+- Added database agnostic versioning (no need for PostgreSQL specific trigger anymore)
+
+
 0.5.1 (2013-06-20)
 ^^^^^^^^^^^^^^^^^^
 

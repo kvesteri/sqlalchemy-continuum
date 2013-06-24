@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import Versioned
 from tests import TestCase
 
 
@@ -48,21 +49,6 @@ class TestUpdate(TestCase):
         self.session.commit()
         assert article.versions.count() == 1
 
-    def test_partial_raw_sql_update(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        self.session.add(article)
-        self.session.commit()
-
-        self.connection.execute(
-            "UPDATE article SET content = 'Updated content'"
-        )
-        self.session.commit()
-        version = article.versions.all()[-1]
-        assert version.name == u'Some article'
-        assert version.content == u'Updated content'
-
     def test_stores_operation_type(self):
         article = self.Article()
         article.name = u'Some article'
@@ -98,7 +84,7 @@ class TestUpdate(TestCase):
 
 class TestUpdateWithDefaultValues(TestCase):
     def create_models(self):
-        class Article(self.Model):
+        class Article(self.Model, Versioned):
             __tablename__ = 'article'
             __versioned__ = {
                 'base_classes': (self.Model, )

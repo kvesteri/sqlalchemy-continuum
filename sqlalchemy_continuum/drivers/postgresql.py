@@ -7,7 +7,7 @@ class Adapter(object):
 
 
 class TriggerBuilder(object):
-    skipped_columns = ['revision', 'operation_type', 'transaction_id']
+    skipped_columns = ['operation_type', 'transaction_id']
 
     def __init__(self, table):
         self.table = table
@@ -29,7 +29,7 @@ class TriggerBuilder(object):
     def primary_keys(self):
         return [
             '"%s"' % column.name for column in self.parent_table.c
-            if column.primary_key
+            if column.primary_key or column.name == 'revision'
         ]
 
     @property
@@ -48,6 +48,7 @@ class TriggerBuilder(object):
                     END IF;
                     RETURN NEW;
                 ELSIF (TG_OP = 'DELETE') THEN
+                    OLD.revision = OLD.revision + 1;
                     INSERT INTO %(table_name)s
                         (%(primary_keys)s)
                         VALUES
@@ -65,13 +66,13 @@ class TriggerBuilder(object):
             dict(
                 table_name=self.table.name,
                 column_names=', '.join(
-                    self.column_names + self.skipped_columns[1:]
+                    self.column_names + self.skipped_columns
                 ),
                 column_values=', '.join([
                     'NEW.%s' % name for name in self.column_names
                 ]),
                 primary_keys=', '.join(
-                    self.primary_keys + self.skipped_columns[1:]
+                    self.primary_keys + self.skipped_columns
                 ),
                 primary_key_values=', '.join([
                     'OLD.%s' % name for name in self.primary_keys

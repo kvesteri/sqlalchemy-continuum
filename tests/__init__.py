@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
-    make_versioned, versioning_manager
+    make_versioned, versioning_manager, Versioned
 )
 from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
@@ -68,7 +68,7 @@ class TestCase(object):
         self.connection.close()
 
     def create_models(self):
-        class Article(self.Model):
+        class Article(self.Model, Versioned):
             __tablename__ = 'article'
             __versioned__ = {
                 'base_classes': (self.Model, )
@@ -79,7 +79,7 @@ class TestCase(object):
             content = sa.Column(sa.UnicodeText)
             description = sa.Column(sa.UnicodeText)
 
-        class Tag(self.Model):
+        class Tag(self.Model, Versioned):
             __tablename__ = 'tag'
             __versioned__ = {
                 'base_classes': (self.Model, )
