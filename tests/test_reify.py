@@ -103,23 +103,6 @@ class TestReifyManyToManyRelationship(TestCase):
             )
         )
 
-        # article_tag = sa.Table(
-        #     'article_tag',
-        #     self.Model.metadata,
-        #     sa.Column(
-        #         'article_id',
-        #         sa.Integer,
-        #         sa.ForeignKey('article.id', ondelete='CASCADE'),
-        #         primary_key=True,
-        #     ),
-        #     sa.Column(
-        #         'tag_id',
-        #         sa.Integer,
-        #         sa.ForeignKey('tag.id', ondelete='CASCADE'),
-        #         primary_key=True
-        #     )
-        # )
-
         class Tag(self.Model, Versioned):
             __tablename__ = 'tag'
             __versioned__ = {

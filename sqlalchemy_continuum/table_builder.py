@@ -50,8 +50,6 @@ class VersionedTableBuilder(VersionedBuilder):
         )
 
     def build_table(self, extends=None):
-        if self.table_name in self.parent_table.metadata.tables:
-            return
         items = []
         if extends is None:
             items.extend(self.build_reflected_columns())

@@ -182,14 +182,21 @@ class VersioningManager(object):
         self.pending_classes = []
         self.build_relationships(pending_copy)
 
+        for cls in pending_copy:
+            # set the "active_history" flag
+            for prop in cls.__mapper__.iterate_properties:
+                getattr(cls, prop.key).impl.active_history = True
+
     def assign_revisions(self, session, flush_context, instances):
         if not self.versioning_on:
             return
         for obj in versioned_objects(session):
-            if not obj.revision:
-                obj.revision = 1
-            else:
-                obj.revision += 1
+            if (session.is_modified(obj, include_collections=False) or
+                    obj in session.deleted):
+                if not obj.revision:
+                    obj.revision = 1
+                else:
+                    obj.revision += 1
 
     def _get_or_create_version_object(self, session, parent_obj):
         history_cls = parent_obj.__versioned__['class']
@@ -213,6 +220,7 @@ class VersioningManager(object):
         if not self.versioning_on:
             return
         for obj in versioned_objects(session):
+
             if not session.is_modified(obj, include_collections=False):
                 continue
 

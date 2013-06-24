@@ -43,7 +43,7 @@ class TestUpdate(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
-
+        self.session.refresh(article)
         article.name = u'Some article'
 
         self.session.commit()

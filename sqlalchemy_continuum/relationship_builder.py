@@ -110,15 +110,19 @@ class VersionedRelationshipBuilder(VersionedBuilder):
 
                 if property_.remote_side and property_.secondary is not None:
                     column = list(property_.remote_side)[0]
+
                     self.manager.association_tables.add(column.table)
                     builder = VersionedTableBuilder(
                         self.manager,
                         column.table,
                         remove_primary_keys=True
                     )
-                    version_table = builder.build_table()
+                    if builder.table_name not in column.table.metadata.tables:
+                        version_table = builder.build_table()
 
-                    self.manager.association_history_tables.add(version_table)
+                        self.manager.association_history_tables.add(
+                            version_table
+                        )
 
                 if property_.secondary is not None:
                     setattr(
