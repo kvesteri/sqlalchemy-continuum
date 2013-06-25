@@ -34,6 +34,7 @@ class VersionedTableBuilder(VersionedBuilder):
             column_copy.autoincrement = False
             if column_copy.name == 'revision':
                 column_copy.primary_key = True
+                column_copy.nullable = False
 
             if not column_copy.primary_key:
                 column_copy.nullable = True

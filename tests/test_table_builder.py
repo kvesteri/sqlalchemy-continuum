@@ -37,3 +37,8 @@ class TestTableBuilder(TestCase):
         assert self.Article.__table__.c.name.nullable is False
         table = self.Article.__versioned__['class'].__table__
         assert table.c.id.nullable is False
+
+    def test_revision_column_not_nullable(self):
+        assert self.Article.__table__.c.name.nullable is False
+        table = self.Article.__versioned__['class'].__table__
+        assert table.c.revision.nullable is False

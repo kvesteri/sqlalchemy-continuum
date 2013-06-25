@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.3 (2013-06-25)
+^^^^^^^^^^^^^^^^^^
+
+- Revision column not nullable in version classes
+
+
 0.6.2 (2013-06-25)
 ^^^^^^^^^^^^^^^^^^
 
