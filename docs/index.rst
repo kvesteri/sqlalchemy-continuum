@@ -10,14 +10,13 @@ SQLAlchemy already has versioning extension. This extension however is very limi
 
 Hibernate for Java has Envers, which is propably the most advanced database versioning tool out there. Ruby on Rails has `papertrail https://github.com/airblade/paper_trail`_, which has very nice API but lacks the efficiency and feature set of Envers.
 
-As a Python/SQLAlchemy enthusiast I wanted to create a database versioning tool for Python with all the features of Envers and with as intuitive API as papertrail. Also I wanted to make it _fast_ keeping things as close to the database as possible (by using triggers and trigger procedures whenever possible).
+As a Python/SQLAlchemy enthusiast I wanted to create a database versioning tool for Python with all the features of Envers and with as intuitive API as papertrail. Also I wanted to make it _fast_ keeping things as close to the database as possible.
 
 
 Features
 --------
 
 * Does not store updates which don't change anything
-* Uses database triggers for extremely fast versioning
 * Supports alembic migrations
 * Can revert objects data as well as all object relations at given transaction even if the object was deleted
 * Transactions can be queried afterwards using SQLAlchemy query syntax
@@ -70,6 +69,25 @@ In order to make your models versioned you need two things:
 
     Article.__versioned__['transaction_log']
     # TransactionLog class
+
+
+Revisions, versions and transactions
+------------------------------------
+
+    article = Article(name=u'Some article')
+    db.session.add(article)
+    db.session.commit()
+    article.revision == 1
+
+    article.versions[0].name == u'Some article'
+
+    article.name = u'Some updated article'
+
+    db.session.commit()
+
+    article.revision == 2
+    article.versions[1].name == u'Some updated article'
+
 
 
 Version objects
@@ -302,32 +320,6 @@ By default SQLAlchemy-Continuum versions all sessions. You can override this beh
 
 Alembic migrations
 ==================
-
-SQLAlchemy-Continuum relies heavily on database triggers and trigger procedures. Whenever your versioned model schemas are changed the associated triggers and trigger procedures would need to be changed too.
-
-Gladly SQLAlchemy-Continuum provides tools to ease these kind of migrations. Only thing you need to do is add the following lines in your alembic migration files:
-
-
-::
-
-    from alembic import op
-    from sqlalchemy_continuum.alembic import OperationsProxy
-
-
-    op = OperationsProxy(op)
-
-
-Now SQLAlchemy-Continuum is smart enough to regenerate triggers each time history tables are changed. So for example the following create_table call would update the associated triggers and trigger procedures.
-::
-
-
-    op.create_table(
-        'article_history',
-        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True)
-        sa.Column('name', sa.Unicode(255))
-        sa.Column('content', sa.UnicodeText)
-    )
-
 
 
 Internals
