@@ -7,7 +7,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 0.6.0 (2013-06-25)
 ^^^^^^^^^^^^^^^^^^
 
-- Added database agnostic versioning (no need for PostgreSQL specific trigger anymore)
+- Added database agnostic versioning (no need for PostgreSQL specific triggers anymore)
 - Fixed version object relationships (never worked properly in previous versions)
 
 
