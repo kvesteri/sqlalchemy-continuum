@@ -14,11 +14,18 @@ class VersionedRelationshipBuilder(VersionedBuilder):
         @property
         def relationship(obj):
             session = sa.orm.object_session(obj)
-            condition = (
-                remote_cls.transaction_id == sa.select(
+            primary_keys = []
+            for column in remote_cls.__table__.c:
+                if column.primary_key and column.name != 'revision':
+                    primary_keys.append(column)
+
+            condition = remote_cls.transaction_id.in_(
+                sa.select(
                     [sa.func.max(remote_cls.transaction_id)]
                 ).where(
                     remote_cls.transaction_id <= obj.transaction_id
+                ).group_by(
+                    *primary_keys
                 ).correlate(local_cls)
             )
             reflector = ObjectExpressionReflector(obj)
@@ -27,7 +34,8 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                 .filter(
                     sa.and_(
                         reflector(primary_join),
-                        condition
+                        condition,
+                        remote_cls.operation_type != 2
                     )
                 )
             )

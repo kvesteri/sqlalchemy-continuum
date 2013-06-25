@@ -3,7 +3,7 @@ from sqlalchemy_continuum import Versioned
 from . import TestCase
 
 
-class TestReifyManyToManyRelationship(TestCase):
+class TestManyToManyRelationships(TestCase):
     def create_models(self):
         class Article(self.Model, Versioned):
             __tablename__ = 'article'
