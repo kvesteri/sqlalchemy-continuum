@@ -107,47 +107,53 @@ class VersionedRelationshipBuilder(VersionedBuilder):
             )
         return relationship
 
+    def build_association_version_tables(self, property_):
+        column = list(property_.remote_side)[0]
+
+        self.manager.association_tables.add(column.table)
+        builder = VersionedTableBuilder(
+            self.manager,
+            column.table,
+            remove_primary_keys=True
+        )
+        if builder.table_name not in column.table.metadata.tables:
+            version_table = builder.build_table()
+
+            self.manager.association_history_tables.add(
+                version_table
+            )
+
+    def build_reflected_relationship(self, property_):
+        local_cls = self.model.__versioned__['class']
+        remote_cls = property_.mapper.class_.__versioned__['class']
+        primary_join = property_.primaryjoin
+
+        if property_.secondary is not None:
+            setattr(
+                local_cls,
+                property_.key,
+                self.reflected_association_factory(
+                    local_cls,
+                    remote_cls,
+                    property_,
+                )
+            )
+        else:
+            setattr(
+                local_cls,
+                property_.key,
+                self.reflected_relationship_factory(
+                    local_cls, remote_cls, primary_join
+                )
+            )
+
     def build_reflected_relationships(self):
         for attr in self.attrs:
             if attr.key == 'versions':
                 continue
             property_ = attr.property
             if isinstance(property_, sa.orm.RelationshipProperty):
-                local_cls = self.model.__versioned__['class']
-                remote_cls = property_.mapper.class_.__versioned__['class']
-                primary_join = property_.primaryjoin
-
                 if property_.remote_side and property_.secondary is not None:
-                    column = list(property_.remote_side)[0]
+                    self.build_association_version_tables(property_)
 
-                    self.manager.association_tables.add(column.table)
-                    builder = VersionedTableBuilder(
-                        self.manager,
-                        column.table,
-                        remove_primary_keys=True
-                    )
-                    if builder.table_name not in column.table.metadata.tables:
-                        version_table = builder.build_table()
-
-                        self.manager.association_history_tables.add(
-                            version_table
-                        )
-
-                if property_.secondary is not None:
-                    setattr(
-                        local_cls,
-                        attr.key,
-                        self.reflected_association_factory(
-                            local_cls,
-                            remote_cls,
-                            property_,
-                        )
-                    )
-                else:
-                    setattr(
-                        local_cls,
-                        attr.key,
-                        self.reflected_relationship_factory(
-                            local_cls, remote_cls, primary_join
-                        )
-                    )
+                self.build_reflected_relationship(property_)
