@@ -1,18 +1,15 @@
 import sqlalchemy as sa
 from .manager import VersioningManager
+from .operation import Operation
+
 
 __all__ = (
+    Operation,
     VersioningManager
 )
 
 
 versioning_manager = VersioningManager()
-
-
-class Operation(object):
-    INSERT = 0
-    UPDATE = 1
-    DELETE = 2
 
 
 class Versioned(object):

@@ -9,11 +9,64 @@ from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
 from .drivers.postgresql import PostgreSQLAdapter
+from .operation import Operation
 
 
 def versioned_objects(session):
     iterator = itertools.chain(session.new, session.dirty, session.deleted)
     return [obj for obj in iterator if hasattr(obj, '__versioned__')]
+
+
+class VersionCreator(object):
+    def get_or_create_version_object(self, session, parent_obj):
+        history_cls = parent_obj.__versioned__['class']
+        for obj in session.new:
+            if isinstance(obj, history_cls):
+                conditions = [obj.revision == parent_obj.revision]
+                for attr in parent_obj._sa_class_manager.values():
+                    prop = attr.property
+                    if isinstance(prop, sa.orm.ColumnProperty):
+                        column = prop.columns[0]
+                        if column.primary_key:
+                            conditions.append(
+                                getattr(obj, column.name) ==
+                                getattr(parent_obj, column.name)
+                            )
+                if all(conditions):
+                    return obj
+        return history_cls()
+
+    def assign_operation_type(self, parent_obj, version_obj, session):
+        if parent_obj in session.new:
+            version_obj.operation_type = Operation.INSERT
+        elif parent_obj in session.dirty:
+            version_obj.operation_type = Operation.UPDATE
+        elif parent_obj in session.deleted:
+            version_obj.operation_type = Operation.DELETE
+
+    def assign_attributes(self, parent_obj, version_obj):
+        for key, attr in parent_obj._sa_class_manager.items():
+            if isinstance(attr.property, sa.orm.ColumnProperty):
+                if (version_obj.operation_type == Operation.DELETE and
+                        attr.property.columns[0].primary_key is not True
+                        and key != 'revision'):
+                    value = None
+                else:
+                    value = getattr(parent_obj, key)
+                setattr(version_obj, key, value)
+
+    def create_version_objects(self, session):
+        for obj in versioned_objects(session):
+
+            if not session.is_modified(obj, include_collections=False):
+                continue
+
+            version_obj = self.get_or_create_version_object(session, obj)
+            self.assign_operation_type(obj, version_obj, session)
+            self.assign_attributes(obj, version_obj)
+
+            version_obj.transaction_id = sa.func.txid_current()
+            session.add(version_obj)
 
 
 class VersioningManager(object):
@@ -27,7 +80,10 @@ class VersioningManager(object):
         'relation_naming_function': lambda a: pluralize(underscore(a))
     }
 
-    def __init__(self):
+    def __init__(
+        self,
+        version_creator=VersionCreator()
+    ):
         self.tables = {}
         self.pending_classes = []
         self.association_tables = set([])
@@ -36,6 +92,7 @@ class VersioningManager(object):
         self._tx_context = {}
         self.versioning_on = True
         self.metadata = None
+        self.version_creator = version_creator
 
     @contextmanager
     def tx_context(self, **tx_context):
@@ -198,52 +255,10 @@ class VersioningManager(object):
                 else:
                     obj.revision += 1
 
-    def _get_or_create_version_object(self, session, parent_obj):
-        history_cls = parent_obj.__versioned__['class']
-        for obj in session.new:
-            if isinstance(obj, history_cls):
-                conditions = [obj.revision == parent_obj.revision]
-                for attr in parent_obj._sa_class_manager.values():
-                    prop = attr.property
-                    if isinstance(prop, sa.orm.ColumnProperty):
-                        column = prop.columns[0]
-                        if column.primary_key:
-                            conditions.append(
-                                getattr(obj, column.name) ==
-                                getattr(parent_obj, column.name)
-                            )
-                if all(conditions):
-                    return obj
-        return history_cls()
-
     def create_version_objects(self, session, flush_context):
         if not self.versioning_on:
             return
-        for obj in versioned_objects(session):
-
-            if not session.is_modified(obj, include_collections=False):
-                continue
-
-            version_obj = self._get_or_create_version_object(session, obj)
-            if obj in session.new:
-                version_obj.operation_type = 0
-            elif obj in session.dirty:
-                version_obj.operation_type = 1
-            elif obj in session.deleted:
-                version_obj.operation_type = 2
-
-            for key, attr in obj._sa_class_manager.items():
-                if isinstance(attr.property, sa.orm.ColumnProperty):
-                    if (version_obj.operation_type == 2 and
-                            attr.property.columns[0].primary_key is not True
-                            and key != 'revision'):
-                        value = None
-                    else:
-                        value = getattr(obj, key)
-                    setattr(version_obj, key, value)
-
-            version_obj.transaction_id = sa.func.txid_current()
-            session.add(version_obj)
+        self.version_creator.create_version_objects(session)
 
     def create_transaction_log_entry(self, session):
         if not self.versioning_on:

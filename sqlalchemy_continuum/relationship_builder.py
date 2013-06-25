@@ -2,6 +2,7 @@ import sqlalchemy as sa
 from .builder import VersionedBuilder
 from .table_builder import VersionedTableBuilder
 from .expression_reflector import ObjectExpressionReflector
+from .operation import Operation
 
 
 class VersionedRelationshipBuilder(VersionedBuilder):
@@ -35,7 +36,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                     sa.and_(
                         reflector(primary_join),
                         condition,
-                        remote_cls.operation_type != 2
+                        remote_cls.operation_type != Operation.DELETE
                     )
                 )
             )
@@ -82,7 +83,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
                 ).where(
                     sa.and_(
                         condition,
-                        table.c.operation_type != 2
+                        table.c.operation_type != Operation.DELETE
                     )
                 )
             )
