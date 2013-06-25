@@ -14,7 +14,18 @@ from .operation import Operation
 
 def versioned_objects(session):
     iterator = itertools.chain(session.new, session.dirty, session.deleted)
-    return [obj for obj in iterator if hasattr(obj, '__versioned__')]
+
+    return [
+        obj for obj in iterator
+        if hasattr(obj, '__versioned__') and
+        (
+            (
+                'versioning' in obj.__versioned__ and
+                obj.__versioned__['versioning']
+            ) or
+            'versioning' not in obj.__versioned__
+        )
+    ]
 
 
 class VersionCreator(object):
@@ -70,16 +81,6 @@ class VersionCreator(object):
 
 
 class VersioningManager(object):
-    strategy = 'orm'
-    options = {
-        'base_classes': None,
-        'table_name': '%s_history',
-        'revision_column_name': 'revision',
-        'transaction_column_name': 'transaction_id',
-        'operation_type_column_name': 'operation_type',
-        'relation_naming_function': lambda a: pluralize(underscore(a))
-    }
-
     def __init__(
         self,
         version_creator=VersionCreator()
@@ -90,9 +91,17 @@ class VersioningManager(object):
         self.association_history_tables = set([])
         self.history_class_map = {}
         self._tx_context = {}
-        self.versioning_on = True
         self.metadata = None
         self.version_creator = version_creator
+        self.options = {
+            'versioning': True,
+            'base_classes': None,
+            'table_name': '%s_history',
+            'revision_column_name': 'revision',
+            'transaction_column_name': 'transaction_id',
+            'operation_type_column_name': 'operation_type',
+            'relation_naming_function': lambda a: pluralize(underscore(a))
+        }
 
     @contextmanager
     def tx_context(self, **tx_context):
@@ -202,6 +211,9 @@ class VersioningManager(object):
             )
 
             for cls in self.pending_classes:
+                if not self.option(cls, 'versioning'):
+                    continue
+
                 if cls in self.tables:
                     builder = VersionedModelBuilder(self, cls)
                     builder(
@@ -213,11 +225,19 @@ class VersioningManager(object):
     def build_relationships(self, history_classes):
         # Build relationships for all history classes.
         for cls in history_classes:
+            if not self.option(cls, 'versioning'):
+                continue
             builder = VersionedRelationshipBuilder(self, cls)
             builder.build_reflected_relationships()
 
+    def option(self, model, name):
+        try:
+            return model.__versioned__[name]
+        except (AttributeError, KeyError):
+            return self.options[name]
+
     def instrument_versioned_classes(self, mapper, cls):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
 
         if hasattr(cls, '__versioned__'):
@@ -227,7 +247,7 @@ class VersioningManager(object):
                 self.metadata = cls.metadata
 
     def configure_versioned_classes(self):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
         self.build_tables()
         self.build_models()
@@ -245,7 +265,7 @@ class VersioningManager(object):
                 getattr(cls, prop.key).impl.active_history = True
 
     def assign_revisions(self, session, flush_context, instances):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
         for obj in versioned_objects(session):
             if (session.is_modified(obj, include_collections=False) or
@@ -256,12 +276,12 @@ class VersioningManager(object):
                     obj.revision += 1
 
     def create_version_objects(self, session, flush_context):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
         self.version_creator.create_version_objects(session)
 
     def create_transaction_log_entry(self, session):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
         transaction_log_cls = None
         for obj in versioned_objects(session):
@@ -277,7 +297,7 @@ class VersioningManager(object):
             )
 
     def create_transaction_changes_entries(self, session):
-        if not self.versioning_on:
+        if not self.options['versioning']:
             return
         changed_entities = set([])
         for obj in versioned_objects(session):
@@ -293,7 +313,8 @@ class VersioningManager(object):
     def version_association_table_records(
         self, conn, cursor, statement, parameters, context, executemany
     ):
-
+        if not self.options['versioning']:
+            return
         if 'INSERT INTO ' == statement[0:12]:
             table_name = statement.split(' ')[2]
             table_names = [table.name for table in self.association_tables]

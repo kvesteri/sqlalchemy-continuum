@@ -31,8 +31,8 @@ def log_sql(
 
 class TestCase(object):
     def setup_class(cls):
-        versioning_manager.versioning_on = True
-        flask_versioning_manager.versioning_on = False
+        versioning_manager.options['versioning'] = True
+        flask_versioning_manager.options['versioning'] = False
 
     def setup_method(self, method):
         self.engine = create_engine(

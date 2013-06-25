@@ -15,12 +15,12 @@ make_versioned(manager=flask_versioning_manager)
 
 class TestFlaskVersioningManager(TestCase):
     def setup_class(cls):
-        versioning_manager.versioning_on = False
-        flask_versioning_manager.versioning_on = True
+        versioning_manager.options['versioning'] = False
+        flask_versioning_manager.options['versioning'] = True
 
     def teardown_class(cls):
-        versioning_manager.versioning_on = True
-        flask_versioning_manager.versioning_on = False
+        versioning_manager.options['versioning'] = True
+        flask_versioning_manager.options['versioning'] = False
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)

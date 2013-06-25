@@ -71,8 +71,9 @@ class VersionedModelBuilder(VersionedBuilder):
 
     def base_classes(self):
         parents = (
-            self.find_closest_versioned_parent() or
-            self.option('base_classes')
+            self.find_closest_versioned_parent()
+            or self.option('base_classes')
+            or (self.manager.declarative_base(self.model), )
         )
         return parents + (VersionClassBase, )
 
@@ -88,11 +89,6 @@ class VersionedModelBuilder(VersionedBuilder):
         return {}
 
     def build_model(self, table):
-        if not self.option('base_classes'):
-            raise Exception(
-                'Missing __versioned__ base_classes option for model %s.'
-                % self.model.__name__
-            )
         mapper_args = {}
         mapper_args.update(self.inheritance_args())
 

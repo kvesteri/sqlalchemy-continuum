@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.1 (2013-06-25)
+^^^^^^^^^^^^^^^^^^
+
+- New configuration option versioning allows setting the versioning on and off per child class.
+
+
 0.6.0 (2013-06-25)
 ^^^^^^^^^^^^^^^^^^
 
