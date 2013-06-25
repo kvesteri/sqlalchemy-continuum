@@ -29,6 +29,9 @@ def versioned_objects(session):
 
 
 class VersionCreator(object):
+    def __init__(self, manager):
+        self.manager = manager
+
     def get_or_create_version_object(self, session, parent_obj):
         history_cls = parent_obj.__versioned__['class']
         for obj in session.new:
@@ -56,7 +59,10 @@ class VersionCreator(object):
             version_obj.operation_type = Operation.DELETE
 
     def assign_attributes(self, parent_obj, version_obj):
+        excluded_attributes = self.manager.option(parent_obj, 'exclude')
         for key, attr in parent_obj._sa_class_manager.items():
+            if key in excluded_attributes:
+                continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if (version_obj.operation_type == Operation.DELETE and
                         attr.property.columns[0].primary_key is not True
@@ -83,7 +89,7 @@ class VersionCreator(object):
 class VersioningManager(object):
     def __init__(
         self,
-        version_creator=VersionCreator()
+        version_creator_cls=VersionCreator
     ):
         self.tables = {}
         self.pending_classes = []
@@ -92,11 +98,12 @@ class VersioningManager(object):
         self.history_class_map = {}
         self._tx_context = {}
         self.metadata = None
-        self.version_creator = version_creator
+        self.version_creator = version_creator_cls(self)
         self.options = {
             'versioning': True,
             'base_classes': None,
             'table_name': '%s_history',
+            'exclude': [],
             'revision_column_name': 'revision',
             'transaction_column_name': 'transaction_id',
             'operation_type_column_name': 'operation_type',
@@ -190,7 +197,11 @@ class VersioningManager(object):
                     inherited_table = self.tables[class_]
                     break
 
-            builder = VersionedTableBuilder(self, cls.__table__)
+            builder = VersionedTableBuilder(
+                self,
+                cls.__table__,
+                model=cls
+            )
             if inherited_table is not None:
                 self.tables[class_] = builder.build_table(inherited_table)
             else:

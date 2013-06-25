@@ -10,6 +10,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Added database agnostic versioning (no need for PostgreSQL specific triggers anymore)
 - Fixed version object relationships (never worked properly in previous versions)
 - New configuration option versioning allows setting the versioning on and off per child class.
+- Added column exclusion
 
 
 0.5.1 (2013-06-20)

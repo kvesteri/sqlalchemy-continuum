@@ -7,11 +7,12 @@ class VersionedTableBuilder(VersionedBuilder):
         self,
         versioning_manager,
         parent_table,
+        model=None,
         remove_primary_keys=False
     ):
         self.manager = versioning_manager
         self.parent_table = parent_table
-        self.model = None
+        self.model = model
         self.remove_primary_keys = remove_primary_keys
 
     @property
@@ -20,8 +21,11 @@ class VersionedTableBuilder(VersionedBuilder):
 
     def build_reflected_columns(self):
         columns = []
+        excluded_column_names = self.option('exclude')
 
         for column in self.parent_table.c:
+            if self.model and column.name in excluded_column_names:
+                continue
             # Make a copy of the column so that it does not point to wrong
             # table.
             column_copy = column.copy()
