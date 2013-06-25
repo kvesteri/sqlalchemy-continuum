@@ -48,7 +48,10 @@ class TestCase(object):
         if hasattr(self, 'Article'):
             self.ArticleHistory = self.Article.__versioned__['class']
         if hasattr(self, 'Tag'):
-            self.TagHistory = self.Tag.__versioned__['class']
+            try:
+                self.TagHistory = self.Tag.__versioned__['class']
+            except (AttributeError, KeyError):
+                pass
         self.create_tables()
 
         Session = sessionmaker(bind=self.connection)

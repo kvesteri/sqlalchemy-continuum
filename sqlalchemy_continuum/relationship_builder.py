@@ -125,7 +125,10 @@ class VersionedRelationshipBuilder(VersionedBuilder):
 
     def build_reflected_relationship(self, property_):
         local_cls = self.model.__versioned__['class']
-        remote_cls = property_.mapper.class_.__versioned__['class']
+        try:
+            remote_cls = property_.mapper.class_.__versioned__['class']
+        except (AttributeError, KeyError):
+            return
         primary_join = property_.primaryjoin
 
         if property_.secondary is not None:
