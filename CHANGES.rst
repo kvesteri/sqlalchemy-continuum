@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.4 (2013-06-25)
+^^^^^^^^^^^^^^^^^^
+
+- Version tables no longer generated when versioning attribute of model set to False
+
+
 0.6.3 (2013-06-25)
 ^^^^^^^^^^^^^^^^^^
 

@@ -15,8 +15,11 @@ class TestVersionedModelWithoutVersioning(TestCase):
 
         self.TextItem = TextItem
 
-    def test_does_not_create_history_class_when_versioning_turned_off(self):
+    def test_does_not_create_history_class(self):
         assert 'class' not in self.TextItem.__versioned__
+
+    def test_does_not_create_history_table(self):
+        assert 'text_item_history' not in self.Model.metadata.tables
 
 
 class TestExclude(TestCase):

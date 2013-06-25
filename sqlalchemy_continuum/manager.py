@@ -190,6 +190,9 @@ class VersioningManager(object):
 
     def build_tables(self):
         for cls in self.pending_classes:
+            if not self.option(cls, 'versioning'):
+                continue
+
             inherited_table = None
             for class_ in self.tables:
                 if (issubclass(cls, class_) and
