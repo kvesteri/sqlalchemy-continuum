@@ -32,9 +32,11 @@ class VersionedTableBuilder(VersionedBuilder):
             # Remove unique constraints
             column_copy.unique = False
             column_copy.autoincrement = False
-            column_copy.nullable = True
             if column_copy.name == 'revision':
                 column_copy.primary_key = True
+
+            if not column_copy.primary_key:
+                column_copy.nullable = True
             if self.remove_primary_keys:
                 column_copy.primary_key = False
             columns.append(column_copy)
