@@ -65,6 +65,7 @@ class TestCase(object):
 
     def teardown_method(self, method):
         QueryPool.queries = []
+        versioning_manager.reset()
         self.session.close_all()
         self.drop_tables()
         self.engine.dispose()

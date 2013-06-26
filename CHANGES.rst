@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+
+0.6.6 (2013-06-26)
+^^^^^^^^^^^^^^^^^^
+
+- Improved transaction log changed_entities schematics
+
+
 0.6.5 (2013-06-26)
 ^^^^^^^^^^^^^^^^^^
 

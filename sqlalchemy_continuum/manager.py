@@ -91,6 +91,14 @@ class VersioningManager(object):
         self,
         version_creator_cls=VersionCreator
     ):
+        self.reset(version_creator_cls)
+
+    def reset(self, version_creator_cls=VersionCreator):
+        """
+        This method should be used in test cases that create models on the fly.
+        Otherwise history_class_map and some other variables would be polluted
+        by no more used model classes.
+        """
         self.tables = {}
         self.pending_classes = []
         self.association_tables = set([])
@@ -137,21 +145,31 @@ class VersioningManager(object):
             meta = sa.Column(MutableDict.as_mutable(HSTORE))
 
             @property
+            def entity_names(obj_self):
+                return [changes.entity_name for changes in obj_self.changes]
+
+            @property
             def changed_entities(obj_self):
                 tuples = set(self.history_class_map.items())
                 entities = []
 
                 for class_, history_class in tuples:
+                    if class_.__name__ not in obj_self.entity_names:
+                        continue
+
                     try:
+                        value = getattr(
+                            obj_self,
+                            naming_func(class_.__name__)
+                        )
+                    except AttributeError:
+                        continue
+
+                    if value:
                         entities.append((
                             history_class,
-                            getattr(
-                                obj_self,
-                                naming_func(class_.__name__)
-                            )
+                            value
                         ))
-                    except AttributeError:
-                        pass
                 return dict(entities)
 
         return TransactionLogBase
