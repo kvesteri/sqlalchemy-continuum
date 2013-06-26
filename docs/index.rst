@@ -252,7 +252,49 @@ TransactionLog can be queried just like any other sqlalchemy declarative model.
     TransactionLog = Article.__versioned__['transaction_class']
 
     # find all transactions
-    self.session.query(TransactionLog).all()
+    session.query(TransactionLog).all()
+
+
+Transaction contexts
+--------------------
+
+::
+
+    from sqlalchemy_continuum import versioning_manager
+
+    article = Article()
+    session.add(article)
+
+    with versioning_manager.tx_context(meta={'tags': 'article'})
+        session.commit()
+
+
+    # find all transactions with 'article' tags
+    query = (
+        session.query(TransactionLog)
+        .filter(TransactionLog.meta['tags'] == 'article')
+    )
+
+
+Using lazy values in transaction context meta
+---------------------------------------------
+
+::
+
+    from sqlalchemy_continuum import versioning_manager
+
+    article = Article()
+    session.add(article)
+
+    with versioning_manager.tx_context(meta={'article_id': lambda: article.id})
+        session.commit()
+
+
+    # find all transactions where meta parameter article_id is given article id
+    query = (
+        session.query(TransactionLog)
+        .filter(TransactionLog.meta['article_id'] == article.id)
+    )
 
 
 TransactionChanges

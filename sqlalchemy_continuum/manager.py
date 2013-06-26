@@ -302,6 +302,11 @@ class VersioningManager(object):
             transaction_log_cls = obj.__versioned__['transaction_log']
             break
         if transaction_log_cls:
+            if 'meta' in self._tx_context and self._tx_context['meta']:
+                for key, value in self._tx_context['meta'].items():
+                    if callable(value):
+                        self._tx_context['meta'][key] = str(value())
+
             session.add(
                 transaction_log_cls(
                     id=sa.func.txid_current(),

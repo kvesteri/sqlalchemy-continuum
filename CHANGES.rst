@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.5 (2013-06-26)
+^^^^^^^^^^^^^^^^^^
+
+- Added possibility to add lazy values in transaction context meta
+
+
 0.6.4 (2013-06-25)
 ^^^^^^^^^^^^^^^^^^
 

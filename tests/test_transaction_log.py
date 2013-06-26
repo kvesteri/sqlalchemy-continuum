@@ -40,9 +40,22 @@ class TestTransactionLog(TestCase):
         self.session.refresh(tx)
         assert tx.meta == {'some key': 'some value'}
 
-    def test_tx_meta_context_manager(self):
+    def test_tx_context_manager(self):
         self.article.name = u'Some update article'
         meta = {'some_key': u'some_value'}
         with versioning_manager.tx_context(meta=meta):
             self.session.commit()
-        self.article.versions[-1].transaction.meta['some_key'] == u'some_value'
+        assert (
+            self.article.versions[-1].transaction.meta['some_key']
+            == u'some_value'
+        )
+
+    def test_passing_callables_for_tx_contenxt_meta(self):
+        self.article.name = u'Some update article'
+        meta = {'some_key': lambda: self.article.id}
+        with versioning_manager.tx_context(meta=meta):
+            self.session.commit()
+        assert (
+            self.article.versions[-1].transaction.meta['some_key']
+            == str(self.article.id)
+        )
