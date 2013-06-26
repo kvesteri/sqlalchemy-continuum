@@ -41,6 +41,12 @@ class VersionedTableBuilder(VersionedBuilder):
             if self.remove_primary_keys:
                 column_copy.primary_key = False
             columns.append(column_copy)
+
+        # When using join table inheritance each table should have revision
+        # column.
+        if 'revision' not in [c.name for c in columns]:
+            columns.append(sa.Column('revision', sa.Integer, primary_key=True))
+
         return columns
 
     def build_operation_type_column(self):

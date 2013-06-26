@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.8 (2013-06-26)
+^^^^^^^^^^^^^^^^^^
+
+- Make versioned join table inherited classes support multiple consecutive flushes per transaction
+
+
 0.6.7 (2013-06-26)
 ^^^^^^^^^^^^^^^^^^
 

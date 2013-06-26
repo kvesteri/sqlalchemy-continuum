@@ -281,6 +281,7 @@ class VersioningManager(object):
     def configure_versioned_classes(self):
         if not self.options['versioning']:
             return
+
         self.build_tables()
         self.build_models()
         #self.build_triggers()

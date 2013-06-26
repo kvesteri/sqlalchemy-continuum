@@ -51,3 +51,10 @@ class TestJoinTableInheritance(TestCase):
         assert BlogPostHistory.__table__.name == 'blog_post_history'
         assert issubclass(ArticleHistory, TextItemHistory)
         assert issubclass(BlogPostHistory, TextItemHistory)
+
+    def test_consecutive_insert_and_delete(self):
+        article = self.Article()
+        self.session.add(article)
+        self.session.flush()
+        self.session.delete(article)
+        self.session.commit()
