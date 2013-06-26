@@ -67,7 +67,18 @@ class TestManyToManyRelationships(TestCase):
         self.session.commit()
         assert article.versions[0].tags.count() == 1
 
-    def test_delete_association(self):
+    def test_multi_insert(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        article.tags.append(self.Tag(name=u'another tag'))
+        self.session.add(article)
+        self.session.commit()
+        assert article.versions[0].tags.count() == 2
+
+    def test_delete_single_association(self):
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
@@ -80,4 +91,20 @@ class TestManyToManyRelationships(TestCase):
         self.session.commit()
 
         assert article.versions[0].tags.count() == 1
+        assert article.versions[1].tags.count() == 0
+
+    def test_multi_delete_association(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        tag = self.Tag(name=u'some tag')
+        tag2 = self.Tag(name=u'another tag')
+        article.tags.append(tag)
+        article.tags.append(tag2)
+        self.session.add(article)
+        self.session.commit()
+        article.tags.remove(tag)
+        article.tags.remove(tag2)
+        article.name = u'Updated name'
+        self.session.commit()
         assert article.versions[1].tags.count() == 0

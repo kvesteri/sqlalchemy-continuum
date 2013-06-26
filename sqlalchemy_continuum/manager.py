@@ -356,23 +356,53 @@ class VersioningManager(object):
             table_name = statement.split(' ')[2]
             table_names = [table.name for table in self.association_tables]
             if table_name in table_names:
-                parameters['operation_type'] = 0
-                parameters['transaction_id'] = sa.func.txid_current()
-                stmt = (
-                    self.metadata.tables[table_name + '_history']
-                    .insert()
-                    .values(**parameters)
-                )
-                conn.execute(stmt)
+                if executemany:
+                    # SQLAlchemy does not support function based values for
+                    # multi-inserts, hence we need to convert the orignal
+                    # multi-insert into batch of normal inserts
+                    for params in parameters:
+                        params['operation_type'] = 0
+                        params['transaction_id'] = sa.func.txid_current()
+                        stmt = (
+                            self.metadata.tables[table_name + '_history']
+                            .insert()
+                            .values(**params)
+                        )
+                        conn.execute(stmt)
+                else:
+                    params = parameters
+                    params['operation_type'] = 0
+                    params['transaction_id'] = sa.func.txid_current()
+                    stmt = (
+                        self.metadata.tables[table_name + '_history']
+                        .insert()
+                        .values(**params)
+                    )
+                    conn.execute(stmt)
         elif 'DELETE FROM ' == statement[0:12]:
             table_name = statement.split(' ')[2]
             table_names = [table.name for table in self.association_tables]
             if table_name in table_names:
-                parameters['operation_type'] = 2
-                parameters['transaction_id'] = sa.func.txid_current()
-                stmt = (
-                    self.metadata.tables[table_name + '_history']
-                    .insert()
-                    .values(**parameters)
-                )
-                conn.execute(stmt)
+                if executemany:
+                    # SQLAlchemy does not support function based values for
+                    # multi-inserts, hence we need to convert the orignal
+                    # multi-insert into batch of normal inserts
+                    for params in parameters:
+                        params['operation_type'] = 2
+                        params['transaction_id'] = sa.func.txid_current()
+                        stmt = (
+                            self.metadata.tables[table_name + '_history']
+                            .insert()
+                            .values(**params)
+                        )
+                        conn.execute(stmt)
+                else:
+
+                    parameters['operation_type'] = 2
+                    parameters['transaction_id'] = sa.func.txid_current()
+                    stmt = (
+                        self.metadata.tables[table_name + '_history']
+                        .insert()
+                        .values(**parameters)
+                    )
+                    conn.execute(stmt)

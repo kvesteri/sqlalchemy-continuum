@@ -4,6 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.6.7 (2013-06-26)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed association versioning when using executemany
+
 
 0.6.6 (2013-06-26)
 ^^^^^^^^^^^^^^^^^^
