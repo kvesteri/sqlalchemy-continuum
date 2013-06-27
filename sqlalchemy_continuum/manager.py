@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from contextlib import contextmanager
 import itertools
 from inflection import underscore, pluralize
@@ -28,35 +29,28 @@ def versioned_objects(session):
     ]
 
 
+class GeneratedIdentity():
+    pass
+
+
+def identity(obj):
+    id_ = []
+    for attr in obj._sa_class_manager.values():
+        prop = attr.property
+        if isinstance(prop, sa.orm.ColumnProperty):
+            column = prop.columns[0]
+            if column.primary_key:
+                value = getattr(obj, column.name)
+                if value is None and column.autoincrement:
+                    id_.append(GeneratedIdentity())
+                else:
+                    id_.append(getattr(obj, column.name))
+    return tuple(id_)
+
+
 class VersionCreator(object):
     def __init__(self, manager):
         self.manager = manager
-
-    def get_or_create_version_object(self, session, parent_obj):
-        history_cls = parent_obj.__versioned__['class']
-        for obj in session.new:
-            if isinstance(obj, history_cls):
-                conditions = [obj.revision == parent_obj.revision]
-                for attr in parent_obj._sa_class_manager.values():
-                    prop = attr.property
-                    if isinstance(prop, sa.orm.ColumnProperty):
-                        column = prop.columns[0]
-                        if column.primary_key:
-                            conditions.append(
-                                getattr(obj, column.name) ==
-                                getattr(parent_obj, column.name)
-                            )
-                if all(conditions):
-                    return obj
-        return history_cls()
-
-    def assign_operation_type(self, parent_obj, version_obj, session):
-        if parent_obj in session.new:
-            version_obj.operation_type = Operation.INSERT
-        elif parent_obj in session.dirty:
-            version_obj.operation_type = Operation.UPDATE
-        elif parent_obj in session.deleted:
-            version_obj.operation_type = Operation.DELETE
 
     def assign_attributes(self, parent_obj, version_obj):
         excluded_attributes = self.manager.option(parent_obj, 'exclude')
@@ -72,18 +66,33 @@ class VersionCreator(object):
                     value = getattr(parent_obj, key)
                 setattr(version_obj, key, value)
 
+    def preprocess_unit_of_work(self):
+        uow = self.manager.unit_of_work.items()
+        uow_copy = OrderedDict()
+        for id_, operation in uow:
+            processed_id = tuple([
+                id_[0],
+                identity(operation['target'])
+            ])
+            uow_copy[processed_id] = operation
+        return uow_copy
+
     def create_version_objects(self, session):
-        for obj in versioned_objects(session):
-
-            if not session.is_modified(obj, include_collections=False):
+        uow = self.preprocess_unit_of_work()
+        for key, value in uow.items():
+            if not session.is_modified(
+                value['target'], include_collections=False
+            ) and value['target'] not in session.deleted:
                 continue
-
-            version_obj = self.get_or_create_version_object(session, obj)
-            self.assign_operation_type(obj, version_obj, session)
-            self.assign_attributes(obj, version_obj)
-
-            version_obj.transaction_id = sa.func.txid_current()
+            version_obj = value['target'].__versioned__['class']()
             session.add(version_obj)
+
+            version_obj.operation_type = value['operation_type']
+            self.assign_attributes(value['target'], version_obj)
+
+            version_obj.transaction_id = (
+                self.manager._current_transaction_obj.id
+            )
 
 
 class VersioningManager(object):
@@ -105,6 +114,11 @@ class VersioningManager(object):
         self.association_history_tables = set([])
         self.history_class_map = {}
         self._tx_context = {}
+        self._current_transaction_obj = None
+        self._committing = False
+        self.unit_of_work = OrderedDict()
+        self.added_entities = []
+
         self.metadata = None
         self.version_creator = version_creator_cls(self)
         self.options = {
@@ -191,7 +205,11 @@ class VersioningManager(object):
         if 'TransactionChanges' not in cls._decl_class_registry:
             class TransactionChanges(base):
                 __tablename__ = 'transaction_changes'
-                transaction_id = sa.Column(sa.BigInteger, primary_key=True)
+                transaction_id = sa.Column(
+                    sa.BigInteger,
+                    autoincrement=True,
+                    primary_key=True
+                )
                 entity_name = sa.Column(sa.Unicode(255), primary_key=True)
 
                 transaction_log = sa.orm.relationship(
@@ -297,7 +315,7 @@ class VersioningManager(object):
             for prop in cls.__mapper__.iterate_properties:
                 getattr(cls, prop.key).impl.active_history = True
 
-    def assign_revisions(self, session, flush_context, instances):
+    def assign_revisions(self, session):
         if not self.options['versioning']:
             return
         for obj in versioned_objects(session):
@@ -308,10 +326,50 @@ class VersioningManager(object):
                 else:
                     obj.revision += 1
 
+    def track_inserts(self, mapper, connection, target):
+        if not self.options['versioning']:
+            return
+        if not hasattr(target, '__versioned__'):
+            return
+        key = (target.__class__, identity(target))
+        if key in self.unit_of_work:
+            self.unit_of_work[key]['target'] = target
+            self.unit_of_work[key]['operation_type'] = Operation.UPDATE
+        else:
+            self.unit_of_work[key] = {
+                'target': target,
+                'operation_type': Operation.INSERT
+            }
+
+    def track_updates(self, mapper, connection, target):
+        if not self.options['versioning']:
+            return
+        if not hasattr(target, '__versioned__'):
+            return
+        key = (target.__class__, identity(target))
+        self.unit_of_work[key] = {
+            'target': target,
+            'operation_type': Operation.UPDATE
+        }
+
+    def track_deletes(self, mapper, connection, target):
+        if not self.options['versioning']:
+            return
+        if not hasattr(target, '__versioned__'):
+            return
+
+        key = (target.__class__, identity(target))
+        self.unit_of_work[key] = {
+            'target': target,
+            'operation_type': Operation.DELETE
+        }
+
     def create_version_objects(self, session, flush_context):
         if not self.options['versioning']:
             return
-        self.version_creator.create_version_objects(session)
+
+        if self._committing:
+            self.version_creator.create_version_objects(session)
 
     def create_transaction_log_entry(self, session):
         if not self.options['versioning']:
@@ -320,90 +378,92 @@ class VersioningManager(object):
         for obj in versioned_objects(session):
             transaction_log_cls = obj.__versioned__['transaction_log']
             break
+
+        if self._current_transaction_obj:
+            return self._current_transaction_obj
+
         if transaction_log_cls:
             if 'meta' in self._tx_context and self._tx_context['meta']:
                 for key, value in self._tx_context['meta'].items():
                     if callable(value):
                         self._tx_context['meta'][key] = str(value())
 
-            session.add(
-                transaction_log_cls(
-                    id=sa.func.txid_current(),
-                    issued_at=sa.func.now(),
-                    **self._tx_context
-                )
+            self._current_transaction_obj = transaction_log_cls(
+                issued_at=sa.func.now(),
+                **self._tx_context
             )
+            session.add(self._current_transaction_obj)
+            return self._current_transaction_obj
 
-    def create_transaction_changes_entries(self, session):
+    def create_transaction_changes_entries(self, session, flush_context):
         if not self.options['versioning']:
             return
+
+        if not self._committing:
+            return
+
         changed_entities = set([])
-        for obj in versioned_objects(session):
-            changed_entities.add(obj.__class__)
+        for key in self.unit_of_work:
+            changed_entities.add(key[0])
         for entity in changed_entities:
             session.execute(
                 '''INSERT INTO transaction_changes
                 (transaction_id, entity_name)
-                VALUES (txid_current(), :entity_name)''',
-                {'entity_name': entity.__name__}
+                VALUES (:transaction_id, :entity_name)''',
+                {
+                    'transaction_id': self._current_transaction_obj.id,
+                    'entity_name': entity.__name__
+                }
             )
+
+        self.unit_of_work = OrderedDict()
+        self._committing = False
+
+    def before_commit(self, session):
+        self._committing = True
+
+    def clear_transaction(self, session):
+        self._current_transaction_obj = None
+        self.added_entities = []
+        self.unit_of_work = OrderedDict()
+        self._committing = False
+
+    def version_association_table_record(self, conn, table_name, params, op):
+        params['operation_type'] = op
+        params['transaction_id'] = self._current_transaction_obj.id
+        stmt = (
+            self.metadata.tables[table_name + '_history']
+            .insert()
+            .values(**params)
+        )
+        conn.execute(stmt)
 
     def version_association_table_records(
         self, conn, cursor, statement, parameters, context, executemany
     ):
         if not self.options['versioning']:
             return
-        if 'INSERT INTO ' == statement[0:12]:
-            table_name = statement.split(' ')[2]
-            table_names = [table.name for table in self.association_tables]
-            if table_name in table_names:
-                if executemany:
-                    # SQLAlchemy does not support function based values for
-                    # multi-inserts, hence we need to convert the orignal
-                    # multi-insert into batch of normal inserts
-                    for params in parameters:
-                        params['operation_type'] = 0
-                        params['transaction_id'] = sa.func.txid_current()
-                        stmt = (
-                            self.metadata.tables[table_name + '_history']
-                            .insert()
-                            .values(**params)
-                        )
-                        conn.execute(stmt)
-                else:
-                    params = parameters
-                    params['operation_type'] = 0
-                    params['transaction_id'] = sa.func.txid_current()
-                    stmt = (
-                        self.metadata.tables[table_name + '_history']
-                        .insert()
-                        .values(**params)
-                    )
-                    conn.execute(stmt)
-        elif 'DELETE FROM ' == statement[0:12]:
-            table_name = statement.split(' ')[2]
-            table_names = [table.name for table in self.association_tables]
-            if table_name in table_names:
-                if executemany:
-                    # SQLAlchemy does not support function based values for
-                    # multi-inserts, hence we need to convert the orignal
-                    # multi-insert into batch of normal inserts
-                    for params in parameters:
-                        params['operation_type'] = 2
-                        params['transaction_id'] = sa.func.txid_current()
-                        stmt = (
-                            self.metadata.tables[table_name + '_history']
-                            .insert()
-                            .values(**params)
-                        )
-                        conn.execute(stmt)
-                else:
 
-                    parameters['operation_type'] = 2
-                    parameters['transaction_id'] = sa.func.txid_current()
-                    stmt = (
-                        self.metadata.tables[table_name + '_history']
-                        .insert()
-                        .values(**parameters)
+        op = None
+
+        if 'INSERT INTO ' == statement[0:12]:
+            op = Operation.INSERT
+        elif 'DELETE FROM ' == statement[0:12]:
+            op = Operation.DELETE
+
+        if op is not None:
+            table_name = statement.split(' ')[2]
+            table_names = [table.name for table in self.association_tables]
+            if table_name in table_names:
+                if executemany:
+                    # SQLAlchemy does not support function based values for
+                    # multi-inserts, hence we need to convert the orignal
+                    # multi-insert into batch of normal inserts
+                    for params in parameters:
+                        self.version_association_table_record(
+                            conn, table_name, params, op
+                        )
+                else:
+                    self.version_association_table_record(
+                        conn, table_name, parameters, op
                     )
-                    conn.execute(stmt)

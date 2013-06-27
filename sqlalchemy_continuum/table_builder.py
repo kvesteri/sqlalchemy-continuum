@@ -33,19 +33,17 @@ class VersionedTableBuilder(VersionedBuilder):
             column_copy.unique = False
             column_copy.autoincrement = False
             if column_copy.name == 'revision':
-                column_copy.primary_key = True
                 column_copy.nullable = False
 
             if not column_copy.primary_key:
                 column_copy.nullable = True
-            if self.remove_primary_keys:
-                column_copy.primary_key = False
+
             columns.append(column_copy)
 
         # When using join table inheritance each table should have revision
         # column.
         if 'revision' not in [c.name for c in columns]:
-            columns.append(sa.Column('revision', sa.Integer, primary_key=True))
+            columns.append(sa.Column('revision', sa.Integer))
 
         return columns
 
@@ -60,6 +58,7 @@ class VersionedTableBuilder(VersionedBuilder):
         return sa.Column(
             self.option('transaction_column_name'),
             sa.BigInteger,
+            primary_key=True
         )
 
     def build_table(self, extends=None):

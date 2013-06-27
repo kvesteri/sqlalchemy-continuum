@@ -17,7 +17,7 @@ class VersionedRelationshipBuilder(VersionedBuilder):
             session = sa.orm.object_session(obj)
             primary_keys = []
             for column in remote_cls.__table__.c:
-                if column.primary_key and column.name != 'revision':
+                if column.primary_key and column.name != 'transaction_id':
                     primary_keys.append(column)
 
             condition = remote_cls.transaction_id.in_(
