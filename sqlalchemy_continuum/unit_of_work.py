@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from functools import wraps
 import itertools
 import sqlalchemy as sa
 from .operation import Operation
@@ -39,6 +40,20 @@ def identity(obj):
     return tuple(id_)
 
 
+def tracked_operation(func):
+    @wraps(func)
+    def wrapper(self, mapper, connection, target):
+        if not self.manager.options['versioning']:
+            return
+        if not hasattr(target, '__versioned__'):
+            return
+
+        key = (target.__class__, identity(target))
+
+        return func(self, key, target)
+    return wrapper
+
+
 class UnitOfWork(object):
     def __init__(self, manager):
         self.manager = manager
@@ -50,24 +65,8 @@ class UnitOfWork(object):
         self._committing = False
         self.tx_context = {}
 
-    def assign_revisions(self, session):
-        if not self.manager.options['versioning']:
-            return
-        for obj in versioned_objects(session):
-            if (session.is_modified(obj, include_collections=False) or
-                    obj in session.deleted):
-                if not obj.revision:
-                    obj.revision = 1
-                else:
-                    obj.revision += 1
-
-    def track_inserts(self, mapper, connection, target):
-        if not self.manager.options['versioning']:
-            return
-        if not hasattr(target, '__versioned__'):
-            return
-
-        key = (target.__class__, identity(target))
+    @tracked_operation
+    def track_inserts(self, key, target):
         if key in self.operations:
             self.operations[key]['target'] = target
             self.operations[key]['operation_type'] = Operation.UPDATE
@@ -77,24 +76,15 @@ class UnitOfWork(object):
                 'operation_type': Operation.INSERT
             }
 
-    def track_updates(self, mapper, connection, target):
-        if not self.manager.options['versioning']:
-            return
-        if not hasattr(target, '__versioned__'):
-            return
-        key = (target.__class__, identity(target))
+    @tracked_operation
+    def track_updates(self, key, target):
         self.operations[key] = {
             'target': target,
             'operation_type': Operation.UPDATE
         }
 
-    def track_deletes(self, mapper, connection, target):
-        if not self.manager.options['versioning']:
-            return
-        if not hasattr(target, '__versioned__'):
-            return
-
-        key = (target.__class__, identity(target))
+    @tracked_operation
+    def track_deletes(self, key, target):
         self.operations[key] = {
             'target': target,
             'operation_type': Operation.DELETE

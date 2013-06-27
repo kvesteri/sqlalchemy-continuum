@@ -4,6 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.0 (2013-06-27)
+^^^^^^^^^^^^^^^^^^
+
+- Version tables no longer have revision column
+- Parent tables no longer need revision column
+- Version tables primary key is now (parent table pks + transaction_id)
+
+
 0.6.8 (2013-06-26)
 ^^^^^^^^^^^^^^^^^^
 

@@ -15,8 +15,6 @@ versioning_manager = VersioningManager()
 class Versioned(object):
     __versioned__ = {}
 
-    revision = sa.Column(sa.Integer)
-
 
 def make_versioned(
     mapper=sa.orm.mapper,
