@@ -25,6 +25,7 @@ class TestReify(TestCase):
         article.name = u'Some article'
         article.content = u'Some content'
         self.session.add(article)
+
         self.session.commit()
         old_article_id = article.id
         version = article.versions[0]
