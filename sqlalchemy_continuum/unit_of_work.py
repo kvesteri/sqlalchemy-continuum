@@ -10,7 +10,13 @@ def versioned_objects(session):
 
     return [
         obj for obj in iterator
-        if hasattr(obj, '__versioned__') and
+        if is_versioned(obj)
+    ]
+
+
+def is_versioned(obj):
+    return (
+        hasattr(obj, '__versioned__') and
         (
             (
                 'versioning' in obj.__versioned__ and
@@ -18,7 +24,7 @@ def versioned_objects(session):
             ) or
             'versioning' not in obj.__versioned__
         )
-    ]
+    )
 
 
 class GeneratedIdentity():
@@ -45,7 +51,7 @@ def tracked_operation(func):
     def wrapper(self, mapper, connection, target):
         if not self.manager.options['versioning']:
             return
-        if not hasattr(target, '__versioned__'):
+        if not is_versioned(target):
             return
 
         key = (target.__class__, identity(target))

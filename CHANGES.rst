@@ -4,6 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+
+0.7.1 (2013-06-27)
+^^^^^^^^^^^^^^^^^^
+
+- Added is_versioned utility function
+- Fixed before operation listeners
+
+
 0.7.0 (2013-06-27)
 ^^^^^^^^^^^^^^^^^^
 

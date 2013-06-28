@@ -21,6 +21,10 @@ class TestVersionedModelWithoutVersioning(TestCase):
     def test_does_not_create_history_table(self):
         assert 'text_item_history' not in self.Model.metadata.tables
 
+    def test_does_add_objects_to_unit_of_work(self):
+        self.session.add(self.TextItem())
+        self.session.commit()
+
 
 class TestExclude(TestCase):
     def create_models(self):

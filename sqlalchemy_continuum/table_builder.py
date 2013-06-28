@@ -40,9 +40,9 @@ class VersionedTableBuilder(VersionedBuilder):
 
             columns.append(column_copy)
 
-        # When using join table inheritance each table should have revision
-        # column.
-        if 'revision' not in [c.name for c in columns]:
+        # When using join table inheritance each table should have
+        # transaction_id column.
+        if 'transaction_id' not in [c.name for c in columns]:
             columns.append(sa.Column('revision', sa.Integer))
 
         return columns
