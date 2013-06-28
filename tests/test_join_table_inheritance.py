@@ -42,23 +42,23 @@ class TestJoinTableInheritance(TestCase):
         self.Article = Article
         self.BlogPost = BlogPost
 
+    def setup_method(self, method):
+        TestCase.setup_method(self, method)
+        self.TextItemHistory = self.TextItem.__versioned__['class']
+        self.ArticleHistory = self.Article.__versioned__['class']
+        self.BlogPostHistory = self.BlogPost.__versioned__['class']
+
     def test_each_class_has_distinct_history_class(self):
-        TextItemHistory = self.TextItem.__versioned__['class']
-        ArticleHistory = self.Article.__versioned__['class']
-        BlogPostHistory = self.BlogPost.__versioned__['class']
-        assert TextItemHistory.__table__.name == 'text_item_history'
-        assert ArticleHistory.__table__.name == 'article_history'
-        assert BlogPostHistory.__table__.name == 'blog_post_history'
-        assert issubclass(ArticleHistory, TextItemHistory)
-        assert issubclass(BlogPostHistory, TextItemHistory)
+        assert self.TextItemHistory.__table__.name == 'text_item_history'
+        assert self.ArticleHistory.__table__.name == 'article_history'
+        assert self.BlogPostHistory.__table__.name == 'blog_post_history'
+        assert issubclass(self.ArticleHistory, self.TextItemHistory)
+        assert issubclass(self.BlogPostHistory, self.TextItemHistory)
 
     def test_all_tables_contain_transaction_id_column(self):
-        TextItemHistory = self.TextItem.__versioned__['class']
-        ArticleHistory = self.Article.__versioned__['class']
-        BlogPostHistory = self.BlogPost.__versioned__['class']
-        assert 'transaction_id' in TextItemHistory.__table__.c
-        assert 'transaction_id' in ArticleHistory.__table__.c
-        assert 'transaction_id' in BlogPostHistory.__table__.c
+        assert 'transaction_id' in self.TextItemHistory.__table__.c
+        assert 'transaction_id' in self.ArticleHistory.__table__.c
+        assert 'transaction_id' in self.BlogPostHistory.__table__.c
 
     def test_consecutive_insert_and_delete(self):
         article = self.Article()
@@ -77,3 +77,13 @@ class TestJoinTableInheritance(TestCase):
         assert self.session.execute(
             'SELECT transaction_id FROM text_item_history'
         ).fetchone()[0] == 1
+
+    def test_primary_keys(self):
+        table = self.TextItemHistory.__table__
+        assert len(table.primary_key.columns)
+        assert 'id' in table.primary_key.columns
+        assert 'transaction_id' in table.primary_key.columns
+        table = self.ArticleHistory.__table__
+        assert len(table.primary_key.columns)
+        assert 'id' in table.primary_key.columns
+        assert 'transaction_id' in table.primary_key.columns
