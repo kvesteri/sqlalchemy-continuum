@@ -52,9 +52,28 @@ class TestJoinTableInheritance(TestCase):
         assert issubclass(ArticleHistory, TextItemHistory)
         assert issubclass(BlogPostHistory, TextItemHistory)
 
+    def test_all_tables_contain_transaction_id_column(self):
+        TextItemHistory = self.TextItem.__versioned__['class']
+        ArticleHistory = self.Article.__versioned__['class']
+        BlogPostHistory = self.BlogPost.__versioned__['class']
+        assert 'transaction_id' in TextItemHistory.__table__.c
+        assert 'transaction_id' in ArticleHistory.__table__.c
+        assert 'transaction_id' in BlogPostHistory.__table__.c
+
     def test_consecutive_insert_and_delete(self):
         article = self.Article()
         self.session.add(article)
         self.session.flush()
         self.session.delete(article)
         self.session.commit()
+
+    def test_assign_transaction_id_to_both_parent_and_child_tables(self):
+        article = self.Article()
+        self.session.add(article)
+        self.session.commit()
+        assert self.session.execute(
+            'SELECT transaction_id FROM article_history'
+        ).fetchone()[0] == 1
+        assert self.session.execute(
+            'SELECT transaction_id FROM text_item_history'
+        ).fetchone()[0] == 1
