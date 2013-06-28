@@ -37,7 +37,6 @@ class VersioningManager(object):
             'base_classes': None,
             'table_name': '%s_history',
             'exclude': [],
-            'revision_column_name': 'revision',
             'transaction_column_name': 'transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a))

@@ -225,7 +225,7 @@ class UnitOfWork(object):
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if (version_obj.operation_type == Operation.DELETE and
                         attr.property.columns[0].primary_key is not True
-                        and key != 'revision'):
+                        and key != 'transaction_id'):
                     value = None
                 else:
                     value = getattr(parent_obj, key)

@@ -130,7 +130,7 @@ class VersionClassBase(object):
         data = {}
         class_manager = self.__parent_class__.__mapper__.class_manager
         for key, attr in class_manager.items():
-            if key == 'revision':
+            if key == 'transaction_id':
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if not self.previous:
@@ -161,16 +161,6 @@ class VersionClassBase(object):
         # Check if parent object has been deleted
         if self.parent is None:
             self.parent = self.__parent_class__()
-            table = self.__class__.__table__
-            self.parent.revision = (
-                session.execute(
-                    sa.select(
-                        [sa.func.max(self.__class__.revision)],
-                        from_obj=table
-                    )
-                    .where(table.c.id == self.id)
-                ).fetchone()[0]
-            )
             session.add(self.parent)
 
         # Before reifying relations we need to reify object properties. This
@@ -179,12 +169,12 @@ class VersionClassBase(object):
         # into parent object (if parent object has not null constraints).
         for key, attr in parent_mapper.class_manager.items():
             if isinstance(attr.property, sa.orm.ColumnProperty):
-                if key not in ['revision', 'transaction_id']:
+                if key != 'transaction_id':
                     setattr(self.parent, key, getattr(self, key))
 
         for key, attr in parent_mapper.class_manager.items():
             if isinstance(attr.property, sa.orm.RelationshipProperty):
-                if key not in ['revision', 'versions', 'transaction']:
+                if key not in ['versions', 'transaction']:
                     if attr.property.secondary is not None:
                         setattr(self.parent, key, [])
                         for value in getattr(self, key):

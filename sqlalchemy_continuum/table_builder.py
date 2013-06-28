@@ -32,7 +32,7 @@ class VersionedTableBuilder(VersionedBuilder):
             # Remove unique constraints
             column_copy.unique = False
             column_copy.autoincrement = False
-            if column_copy.name == 'revision':
+            if column_copy.name == 'transaction_id':
                 column_copy.nullable = False
 
             if not column_copy.primary_key:
@@ -43,7 +43,7 @@ class VersionedTableBuilder(VersionedBuilder):
         # When using join table inheritance each table should have
         # transaction_id column.
         if 'transaction_id' not in [c.name for c in columns]:
-            columns.append(sa.Column('revision', sa.Integer))
+            columns.append(sa.Column('transaction_id', sa.Integer))
 
         return columns
 

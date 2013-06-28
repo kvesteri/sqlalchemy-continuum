@@ -4,6 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.2 (2013-06-27)
+^^^^^^^^^^^^^^^^^^
+
+- Removed last references for old revision versioning
+
 
 0.7.1 (2013-06-27)
 ^^^^^^^^^^^^^^^^^^
