@@ -27,10 +27,6 @@ def is_versioned(obj):
     )
 
 
-class GeneratedIdentity():
-    pass
-
-
 def identity(obj):
     id_ = []
     for attr in obj._sa_class_manager.values():
@@ -38,11 +34,7 @@ def identity(obj):
         if isinstance(prop, sa.orm.ColumnProperty):
             column = prop.columns[0]
             if column.primary_key:
-                value = getattr(obj, column.name)
-                if value is None and column.autoincrement:
-                    id_.append(GeneratedIdentity())
-                else:
-                    id_.append(getattr(obj, column.name))
+                id_.append(getattr(obj, column.name))
     return tuple(id_)
 
 
@@ -53,7 +45,8 @@ def tracked_operation(func):
             return
         if not is_versioned(target):
             return
-
+        # we cannot use target._sa_instance_state.identity here since object's
+        # is not yet updated at this phase
         key = (target.__class__, identity(target))
 
         return func(self, key, target)
@@ -66,10 +59,36 @@ class UnitOfWork(object):
         self.reset()
 
     def reset(self):
-        self.current_transaction = None
+        self.current_transaction_id = None
         self.operations = OrderedDict()
         self._committing = False
         self.tx_context = {}
+        self.pending_statements = []
+
+    def track_operations(self, mapper):
+        sa.event.listen(
+            mapper, 'after_delete', self.track_deletes
+        )
+        sa.event.listen(
+            mapper, 'after_update', self.track_updates
+        )
+        sa.event.listen(
+            mapper, 'after_insert', self.track_inserts
+        )
+
+    def track_session(self, session):
+        sa.event.listen(
+            session, 'after_flush', self.after_flush
+        )
+        sa.event.listen(
+            session, 'before_commit', self.before_commit
+        )
+        sa.event.listen(
+            session, 'after_commit', self.clear_transaction
+        )
+        sa.event.listen(
+            session, 'after_rollback', self.clear_transaction
+        )
 
     @tracked_operation
     def track_inserts(self, key, target):
@@ -96,13 +115,12 @@ class UnitOfWork(object):
             'operation_type': Operation.DELETE
         }
 
-    def create_version_objects(self, session, flush_context):
+    def create_version_objects(self, session):
         if not self.manager.options['versioning']:
             return
 
         if self._committing:
-            uow = self.preprocess_operations()
-            for key, value in uow.items():
+            for key, value in self.operations.items():
                 if not session.is_modified(
                     value['target'], include_collections=False
                 ) and value['target'] not in session.deleted:
@@ -114,76 +132,93 @@ class UnitOfWork(object):
                 self.assign_attributes(value['target'], version_obj)
 
                 version_obj.transaction_id = (
-                    self.current_transaction.id
+                    self.current_transaction_id
                 )
 
-    def create_transaction_log_entry(self, session):
+    def create_association_versions(self, session):
+        for stmt in self.pending_statements:
+            stmt = stmt.values(transaction_id=self.current_transaction_id)
+            session.execute(stmt)
+
+    def after_flush(self, session, flush_context):
         if not self.manager.options['versioning']:
             return
-        transaction_log_cls = None
-        for obj in versioned_objects(session):
-            transaction_log_cls = obj.__versioned__['transaction_log']
-            break
 
-        if self.current_transaction:
-            return self.current_transaction
+        if self._committing:
+            self.create_transaction_log_entry(session)
+            self.create_version_objects(session)
+            self.create_association_versions(session)
+            self.create_transaction_changes_entries(session)
 
-        if transaction_log_cls:
+            self.operations = OrderedDict()
+            self._committing = False
+
+    def create_transaction_log_entry(self, session):
+        if self.current_transaction_id:
+            return self.current_transaction_id
+
+        if (
+            self.manager.transaction_log_cls and
+            (
+                self.changed_entities(session) or
+                self.pending_statements
+            )
+        ):
             if 'meta' in self.tx_context and self.tx_context['meta']:
                 for key, value in self.tx_context['meta'].items():
                     if callable(value):
                         self.tx_context['meta'][key] = str(value())
 
-            self.current_transaction = transaction_log_cls(
-                issued_at=sa.func.now(),
-                **self.tx_context
+            table = self.manager.transaction_log_cls.__table__
+
+            stmt = (
+                table
+                .insert()
+                .returning(table.c.id)
+                .values(
+                    issued_at=sa.func.now(),
+                    **self.tx_context
+                )
             )
-            session.add(self.current_transaction)
-            return self.current_transaction
+            self.current_transaction_id = session.execute(stmt).fetchone()[0]
+            return self.current_transaction_id
 
-    def create_transaction_changes_entries(self, session, flush_context):
-        if not self.manager.options['versioning']:
-            return
-
-        if not self._committing:
-            return
-
+    def changed_entities(self, session):
         changed_entities = set()
 
-        for key in self.operations:
+        for key, value in self.operations.items():
+            if not session.is_modified(
+                value['target'], include_collections=False
+            ) and value['target'] not in session.deleted:
+                continue
             changed_entities.add(key[0])
+        return changed_entities
 
-        for entity in changed_entities:
-            session.execute(
-                '''INSERT INTO transaction_changes
-                (transaction_id, entity_name)
-                VALUES (:transaction_id, :entity_name)''',
-                {
-                    'transaction_id': self.current_transaction.id,
-                    'entity_name': entity.__name__
-                }
+    def create_transaction_changes_entries(self, session):
+        for entity in self.changed_entities(session):
+            changes = self.manager.transaction_changes_cls(
+                transaction_id=self.current_transaction_id,
+                entity_name=unicode(entity.__name__)
             )
-
-        self.operations = OrderedDict()
-        self._committing = False
+            session.add(changes)
 
     def before_commit(self, session):
         self._committing = True
 
     def clear_transaction(self, session):
-        self.current_transaction = None
+        self.current_transaction_id = None
         self.operations = OrderedDict()
         self._committing = False
+        self.pending_statements = []
 
     def version_association_table_record(self, conn, table_name, params, op):
         params['operation_type'] = op
-        params['transaction_id'] = self.current_transaction.id
         stmt = (
             self.manager.metadata.tables[table_name + '_history']
             .insert()
-            .values(**params)
+            .values(params)
         )
-        conn.execute(stmt)
+        self.pending_statements.append(stmt)
 
     def version_association_table_records(
         self, conn, cursor, statement, parameters, context, executemany
@@ -230,14 +265,3 @@ class UnitOfWork(object):
                 else:
                     value = getattr(parent_obj, key)
                 setattr(version_obj, key, value)
-
-    def preprocess_operations(self):
-        uow = self.operations.items()
-        uow_copy = OrderedDict()
-        for id_, operation in uow:
-            processed_id = tuple([
-                id_[0],
-                identity(operation['target'])
-            ])
-            uow_copy[processed_id] = operation
-        return uow_copy

@@ -165,9 +165,9 @@ class VersioningManager(object):
     def build_models(self):
         if self.pending_classes:
             cls = self.pending_classes[0]
-            TransactionLog = self.create_transaction_log(cls)
-            TransactionChanges = self.create_transaction_changes(
-                cls, TransactionLog
+            self.transaction_log_cls = self.create_transaction_log(cls)
+            self.transaction_changes_cls = self.create_transaction_changes(
+                cls, self.transaction_log_cls
             )
 
             for cls in self.pending_classes:
@@ -178,8 +178,8 @@ class VersioningManager(object):
                     builder = VersionedModelBuilder(self, cls)
                     builder(
                         self.tables[cls],
-                        TransactionLog,
-                        TransactionChanges
+                        self.transaction_log_cls,
+                        self.transaction_changes_cls
                     )
 
     def build_relationships(self, history_classes):

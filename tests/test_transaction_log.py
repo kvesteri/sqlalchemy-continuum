@@ -50,6 +50,13 @@ class TestTransactionLog(TestCase):
             == str(self.article.id)
         )
 
+    def test_only_saves_transaction_if_actual_modifications(self):
+        self.article.name = u'Some article'
+        self.session.commit()
+        assert self.session.query(
+            versioning_manager.transaction_log_cls
+        ).count() == 1
+
 
 class TestTransactionLogChangedEntities(TestCase):
     def test_change_single_entity(self):
