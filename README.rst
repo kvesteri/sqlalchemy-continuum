@@ -7,10 +7,10 @@ Versioning and auditing extension for SQLAlchemy.
 Features
 --------
 
+- Creates versions for inserts, deletes and updates
 - Does not store updates which don't change anything
-- Uses database triggers for extremely fast versioning
 - Supports alembic migrations
-- Can restore objects data as well as all object relations at given transaction even if the object was deleted
+- Can revert objects data as well as all object relations at given transaction even if the object was deleted
 - Transactions can be queried afterwards using SQLAlchemy query syntax
 - Query for changed records at given transaction
 
