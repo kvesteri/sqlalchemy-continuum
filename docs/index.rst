@@ -89,7 +89,6 @@ Revisions, versions and transactions
     article.versions[1].name == u'Some updated article'
 
 
-
 Version objects
 ===============
 
@@ -168,6 +167,20 @@ Changelog
     #   'name': [u'Updated article', None],
     #   'content': [u'Some content', None]
     # }
+
+
+SQLAlchemy-Continuum also provides a utility function called changelog. With this function
+you can easily check the changelog of given object in current transaction.
+
+
+    from sqlalchemy_continuum import changelog
+
+
+    article = Article(name=u'Some article')
+    changelog(article)
+    # {'name': [u'Some article', None]}
+
+
 
 
 Reverting changes

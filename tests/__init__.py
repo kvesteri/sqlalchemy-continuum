@@ -39,7 +39,6 @@ class TestCase(object):
             'postgres://postgres@localhost/sqlalchemy_continuum_test'
         )
         self.connection = self.engine.connect()
-        #self.engine.echo = True
         self.Model = declarative_base()
 
         self.create_models()
