@@ -4,7 +4,7 @@ from .operation import Operation
 from sqlalchemy.orm.attributes import get_history
 
 
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 
 __all__ = (

@@ -2,6 +2,18 @@ import sqlalchemy as sa
 from .builder import VersionedBuilder
 
 
+def is_auto_assigned_date_column(column):
+    return (
+        (
+            isinstance(column.type, sa.DateTime) or
+            isinstance(column.type, sa.Date)
+        )
+        and
+        column.default or column.server_default or
+        column.onupdate or column.server_onupdate
+    )
+
+
 class VersionedTableBuilder(VersionedBuilder):
     def __init__(
         self,
@@ -22,10 +34,18 @@ class VersionedTableBuilder(VersionedBuilder):
     def build_reflected_columns(self):
         columns = []
         excluded_column_names = self.option('exclude')
+        included_column_names = self.option('include')
 
         for column in self.parent_table.c:
             if self.model and column.name in excluded_column_names:
                 continue
+
+            if (
+                is_auto_assigned_date_column(column) and
+                column.name not in included_column_names
+            ):
+                continue
+
             # Make a copy of the column so that it does not point to wrong
             # table.
             column_copy = column.copy()

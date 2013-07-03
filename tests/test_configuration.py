@@ -24,30 +24,3 @@ class TestVersionedModelWithoutVersioning(TestCase):
     def test_does_add_objects_to_unit_of_work(self):
         self.session.add(self.TextItem())
         self.session.commit()
-
-
-class TestExclude(TestCase):
-    def create_models(self):
-        class TextItem(self.Model, Versioned):
-            __tablename__ = 'text_item'
-            __versioned__ = {
-                'exclude': ['content']
-            }
-
-            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
-            name = sa.Column(sa.Unicode(255))
-            content = sa.Column(sa.UnicodeText)
-
-        self.TextItem = TextItem
-
-    def test_excluded_columns_not_included_in_history_class(self):
-        cls = self.TextItem.__versioned__['class']
-        manager = cls._sa_class_manager
-        assert 'content' not in manager.keys()
-
-    def test_versioning_with_column_exclusion(self):
-        item = self.TextItem(name=u'Some textitem', content=u'Some content')
-        self.session.add(item)
-        self.session.commit()
-
-        assert item.versions[0].name == u'Some textitem'

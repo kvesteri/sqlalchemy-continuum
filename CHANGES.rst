@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.7 (2013-07-03)
+^^^^^^^^^^^^^^^^^^
+
+- DateTime columns with defaults excluded by default from history classes
+- Column inclusion added as option
+
+
 0.7.6 (2013-07-03)
 ^^^^^^^^^^^^^^^^^^
 
