@@ -128,9 +128,9 @@ class VersionClassBase(object):
     @property
     def changeset(self):
         data = {}
-        class_manager = self.__parent_class__.__mapper__.class_manager
+        class_manager = self.__mapper__.class_manager
         for key, attr in class_manager.items():
-            if key == 'transaction_id':
+            if key in ['transaction_id', 'operation_type']:
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if not self.previous:

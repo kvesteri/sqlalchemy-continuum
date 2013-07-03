@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.4 (2013-07-03)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed changeset when parent contains more columns than version class.
+
+
 0.7.3 (2013-06-27)
 ^^^^^^^^^^^^^^^^^^
 
