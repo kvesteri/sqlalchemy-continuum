@@ -31,6 +31,24 @@ class TestChangeSet(TestCase):
             'name': [u'Some article', u'Updated name']
         }
 
+    def test_changeset_for_history_that_does_not_have_first_insert(self):
+        tx_id = self.session.execute(
+            '''
+            INSERT INTO transaction_log (issued_at) VALUES (NOW())
+            RETURNING id
+            '''
+        ).fetchone()[0]
+
+        self.session.execute(
+            '''INSERT INTO article_history
+            (id, transaction_id, name, content, operation_type)
+            VALUES
+            (1, %d, 'something', 'some content', 1)
+            ''' % tx_id
+        )
+
+        assert self.session.query(self.ArticleHistory).first().changeset == {}
+
 
 class TestChangeSetWhenParentContainsAdditionalColumns(TestCase):
     def create_models(self):

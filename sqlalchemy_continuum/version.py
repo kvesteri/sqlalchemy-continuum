@@ -130,6 +130,9 @@ class VersionClassBase(object):
         data = {}
         class_manager = self.__mapper__.class_manager
         previous_version = self.previous
+        if not previous_version and self.operation_type != 0:
+            return {}
+
         for key, attr in class_manager.items():
             if key in ['transaction_id', 'operation_type']:
                 continue
