@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.5 (2013-07-03)
+^^^^^^^^^^^^^^^^^^
+
+- Improved reify() speed
+
+
 0.7.4 (2013-07-03)
 ^^^^^^^^^^^^^^^^^^
 
