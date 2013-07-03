@@ -43,6 +43,7 @@ In order to make your models versioned you need two things:
 
 ::
 
+    import sqlalchemy as sa
     from sqlalchemy_continuum import make_versioned
 
 
@@ -58,7 +59,8 @@ In order to make your models versioned you need two things:
         content = sa.Column(sa.UnicodeText)
 
 
-
+    # after you have defined all your models, call configure_mappers:
+    sa.orm.configure_mappers()
 ::
 
     Article.__versioned__['class']
