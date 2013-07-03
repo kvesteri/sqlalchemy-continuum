@@ -129,14 +129,15 @@ class VersionClassBase(object):
     def changeset(self):
         data = {}
         class_manager = self.__mapper__.class_manager
+        previous_version = self.previous
         for key, attr in class_manager.items():
             if key in ['transaction_id', 'operation_type']:
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
-                if not self.previous:
+                if not previous_version:
                     old = None
                 else:
-                    old = getattr(self.previous, key)
+                    old = getattr(previous_version, key)
                 new = getattr(self, key)
                 if old != new:
                     data[key] = [
