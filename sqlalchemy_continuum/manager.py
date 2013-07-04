@@ -7,7 +7,6 @@ from sqlalchemy.dialects.postgresql import HSTORE
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
-from .drivers.postgresql import PostgreSQLAdapter
 from .unit_of_work import UnitOfWork
 
 
@@ -157,11 +156,6 @@ class VersioningManager(object):
             else:
                 table = builder.build_table()
                 self.tables[cls] = table
-
-    def build_triggers(self):
-        if self.pending_classes:
-            adapter = PostgreSQLAdapter()
-            adapter.build_triggers(self.pending_classes)
 
     def build_models(self):
         if self.pending_classes:
