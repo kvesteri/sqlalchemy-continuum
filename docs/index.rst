@@ -108,10 +108,19 @@ TransactionLog and TransactionChanges entities are created for transaction track
 Version objects
 ===============
 
+
+
 Operation types
 ---------------
 
+When changing entities and committing results into database Continuum saves the used
+operations (INSERT, UPDATE or DELETE) into version entities. The operation types are stored
+by default to a small integer field named 'operation_type'. Class called 'Operation' holds
+convenient constants for these values as shown below:
+
 ::
+
+
     from sqlalchemy_continuum import Operation
 
     article = Article(name=u'Some article')
