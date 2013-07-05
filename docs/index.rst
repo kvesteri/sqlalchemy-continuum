@@ -67,6 +67,9 @@ In order to make your models versioned you need two things:
 
 
 
+When the models have been configured either by calling configure_mappers() or by accessing some of them the first time, the following __versioned__ attributes become available:
+
+
 ::
 
 
@@ -167,6 +170,7 @@ property which holds a dict of changed fields in that version.
 
 ::
 
+
     article = Article(name=u'New article', content=u'Some content')
     session.add(article)
     session.commit(article)
@@ -199,6 +203,10 @@ property which holds a dict of changed fields in that version.
 
 SQLAlchemy-Continuum also provides a utility function called changelog. With this function
 you can easily check the changelog of given object in current transaction.
+
+
+
+::
 
 
     from sqlalchemy_continuum import changelog
@@ -290,6 +298,8 @@ For each committed transaction SQLAlchemy-Continuum creates a new TransactionLog
 TransactionLog can be queried just like any other sqlalchemy declarative model.
 
 ::
+
+
     TransactionLog = Article.__versioned__['transaction_class']
 
     # find all transactions
@@ -300,6 +310,7 @@ Transaction contexts
 --------------------
 
 ::
+
 
     from sqlalchemy_continuum import versioning_manager
 
@@ -321,6 +332,7 @@ Using lazy values in transaction context meta
 ---------------------------------------------
 
 ::
+
 
     from sqlalchemy_continuum import versioning_manager
 
@@ -356,6 +368,13 @@ transaction_id          entity_name
 
 Find entities that changed in given transaction
 -----------------------------------------------
+
+You can easily get a dictionary of all changed entities by accessing the changed_entities property of
+given transaction. This dictionary contains class objects as keys and entities as values.
+
+
+::
+
 
     tx_log = self.session.query(TransactionLog).first()
 
