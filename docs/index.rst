@@ -80,8 +80,17 @@ In order to make your models versioned you need two things:
     # TransactionLog class
 
 
-Revisions, versions and transactions
-------------------------------------
+Versions and transactions
+-------------------------
+
+At the end of each transaction SQLAlchemy-Continuum gathers all changes together and creates
+version objects for each changed versioned entity. Continuum also creates one TransactionLog entity and
+N number of TransactionChanges entities per transaction (here N is the number of affected classes per transaction).
+TransactionLog and TransactionChanges entities are created for transaction tracking.
+
+
+::
+
 
     article = Article(name=u'Some article')
     session.add(article)
@@ -93,7 +102,6 @@ Revisions, versions and transactions
 
     session.commit()
 
-    article.revision == 2
     article.versions[1].name == u'Some updated article'
 
 
