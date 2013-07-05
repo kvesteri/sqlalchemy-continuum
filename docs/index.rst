@@ -30,6 +30,7 @@ Installation
 
 ::
 
+
     pip install SQLAlchemy-Continuum
 
 
@@ -41,7 +42,9 @@ In order to make your models versioned you need two things:
 1. Call make_versioned() before your models are defined.
 2. Add __versioned__ to all models you wish to add versioning to
 
+
 ::
+
 
     import sqlalchemy as sa
     from sqlalchemy_continuum import make_versioned
@@ -61,7 +64,11 @@ In order to make your models versioned you need two things:
 
     # after you have defined all your models, call configure_mappers:
     sa.orm.configure_mappers()
+
+
+
 ::
+
 
     Article.__versioned__['class']
     # ArticleHistory class
@@ -79,7 +86,6 @@ Revisions, versions and transactions
     article = Article(name=u'Some article')
     session.add(article)
     session.commit()
-    article.revision == 1
 
     article.versions[0].name == u'Some article'
 
@@ -138,6 +144,9 @@ Version traversal
 
 Changelog
 ---------
+
+Continuum provides easy way for getting the changelog of given version object. Each version contains a changelog
+property which holds a dict of changed fields in that version.
 
 ::
 
@@ -393,11 +402,6 @@ By default SQLAlchemy-Continuum versions all sessions. You can override this beh
 ::
 
     make_versioned(session=my_session)
-
-
-
-Alembic migrations
-==================
 
 
 Internals

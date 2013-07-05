@@ -127,6 +127,11 @@ class VersionClassBase(object):
 
     @property
     def changeset(self):
+        """
+        Return a dictionary of changed fields in this version with keys as
+        field names and values as lists with first value as the old field value
+        and second list value as the new value.
+        """
         data = {}
         class_manager = self.__mapper__.class_manager
         previous_version = self.previous
