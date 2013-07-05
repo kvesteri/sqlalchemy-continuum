@@ -77,7 +77,7 @@ When the models have been configured either by calling configure_mappers() or by
     # ArticleHistory class
 
     Article.__versioned__['transaction_changes']
-    # TransactionChanged class
+    # TransactionChanges class
 
     Article.__versioned__['transaction_log']
     # TransactionLog class
@@ -242,9 +242,13 @@ Reverting changes
 Version relationships
 ---------------------
 
-Each version object reflects all parent object relationships. Lets say you have two models: Article and Category. Each Article has one Category.
+Each version object reflects all parent object relationships. You can think version object relations as 'relations of parent object in given point in time'.
 
-As you already know when making these models versioned, SQLAlchemy-Continuum creates two new declarative classes ArticleHistory and CategoryHistory.
+Lets say you have two models: Article and Category. Each Article has one Category. In the following example we first add article and category objects into database.
+
+Continuum saves new ArticleHistory and CategoryHistory records in the background. After that we update the created article entity to use another category. Continuum creates new version objects accordingly.
+
+Lastly we check the category relations of different article versions.
 
 
 ::
@@ -258,17 +262,12 @@ As you already know when making these models versioned, SQLAlchemy-Continuum cre
     session.add(article)
     session.commit()
 
-
-    session.delete(category)
+    article.category = Category(name=u'Some other category')
     session.commit()
 
-    # article no longer has category
 
-    article.versions[0].reify()
-    session.commit()
-
-    article.category  # Category object
-
+    article.versions[0].category.name = u'Some category'
+    article.versions[1].category.name = u'Some other category'
 
 
 
@@ -448,6 +447,7 @@ Continuum schema
 
 By default SQLAlchemy-Continuum creates history tables for all versioned tables. So for example if you have two models Article and Category, SQLAlchemy-Continuum would create two history models ArticleHistory and CategoryHistory.
 
+Continuum also creates transaction_log table and transaction_changes table. By default transaction_log contains columns id (autoincremented primary key column) and issued_at (auto-assigned datetime column) whereas transaction_changes contains columns transaction_id and entity_name.
 
 
 Extensions
