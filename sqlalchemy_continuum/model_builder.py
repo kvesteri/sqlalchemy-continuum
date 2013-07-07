@@ -35,9 +35,9 @@ class VersionedModelBuilder(VersionedBuilder):
             )
 
     def build_transaction_relationship(self, tx_log_class):
+        naming_func = self.manager.options['relation_naming_function']
         # Only define transaction relation if it doesn't already exist in
         # parent class.
-        naming_func = self.manager.options['relation_naming_function']
         if not hasattr(self.extension_class, 'transaction'):
             self.extension_class.transaction = sa.orm.relationship(
                 tx_log_class,
@@ -50,9 +50,9 @@ class VersionedModelBuilder(VersionedBuilder):
             )
 
     def build_changes_relationship(self, tx_changes_class):
+        naming_func = self.manager.options['relation_naming_function']
         # Only define changes relation if it doesn't already exist in
         # parent class.
-        naming_func = self.manager.options['relation_naming_function']
         if not hasattr(self.extension_class, 'changes'):
             self.extension_class.changes = sa.orm.relationship(
                 tx_changes_class,

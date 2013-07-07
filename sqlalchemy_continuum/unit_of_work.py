@@ -28,6 +28,12 @@ def is_versioned(obj):
 
 
 def identity(obj):
+    """
+    Return the identity of given sqlalchemy declarative model instance as a
+    tuple.
+
+    :param obj: sqlalchemy declarative model instance
+    """
     id_ = []
     for attr in obj._sa_class_manager.values():
         prop = attr.property
@@ -59,6 +65,10 @@ class UnitOfWork(object):
         self.reset()
 
     def reset(self):
+        """
+        Reset the internal state of this UnitOfWork object. Normally this is
+        called after transaction has been committed or rolled back.
+        """
         self.current_transaction_id = None
         self.operations = OrderedDict()
         self._committing = False
@@ -66,6 +76,12 @@ class UnitOfWork(object):
         self.pending_statements = []
 
     def track_operations(self, mapper):
+        """
+        Attach listeners for specified mapper that track SQL inserts, updates
+        and deletes.
+
+        :param mapper: mapper to track the SQL operations from
+        """
         sa.event.listen(
             mapper, 'after_delete', self.track_deletes
         )
@@ -77,6 +93,13 @@ class UnitOfWork(object):
         )
 
     def track_session(self, session):
+        """
+        Attach listeners that track the operations (flushing, committing and
+        rolling back) of given session. This method should be used in
+        conjuction with `track_operations`.
+
+        :param session: session to track the operations from
+        """
         sa.event.listen(
             session, 'after_flush', self.after_flush
         )
@@ -203,6 +226,12 @@ class UnitOfWork(object):
             session.add(changes)
 
     def before_commit(self, session):
+        """
+        Before commit listener that marks the internal state of this
+        UnitOfWork as committing.
+
+        :param session: SQLAlchemy session object
+        """
         self._committing = True
 
     def clear_transaction(self, session):

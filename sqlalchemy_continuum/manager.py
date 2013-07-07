@@ -19,6 +19,8 @@ class VersioningManager(object):
 
     def reset(self):
         """
+        Resets this manager's internal state.
+
         This method should be used in test cases that create models on the fly.
         Otherwise history_class_map and some other variables would be polluted
         by no more used model classes.
@@ -44,6 +46,13 @@ class VersioningManager(object):
 
     @contextmanager
     def tx_context(self, **tx_context):
+        """
+        Assigns values for current transaction context. When committing
+        transaction these values are assigned to transaction object attributes.
+
+        :param tx_context: dictionary containing TransactionLog object
+                           attribute names and values
+        """
         old_tx_context = self.uow.tx_context
         self.uow.tx_context = tx_context
         yield
@@ -135,6 +144,10 @@ class VersioningManager(object):
         return cls._decl_class_registry['TransactionChanges']
 
     def build_tables(self):
+        """
+        Build tables for history models based on classes that were collected
+        during class instrumentation process.
+        """
         for cls in self.pending_classes:
             if not self.option(cls, 'versioning'):
                 continue
@@ -158,6 +171,10 @@ class VersioningManager(object):
                 self.tables[cls] = table
 
     def build_models(self):
+        """
+        Build declarative history models based on classes that were collected
+        during class instrumentation process.
+        """
         if self.pending_classes:
             cls = self.pending_classes[0]
             self.transaction_log_cls = self.create_transaction_log(cls)
@@ -186,12 +203,24 @@ class VersioningManager(object):
             builder.build_reflected_relationships()
 
     def option(self, model, name):
+        """
+        Returns the option value for given model. If the option is not found
+        from given model falls back to default values of this manager object.
+        If the option is not found from this manager object either this method
+        throws a KeyError.
+
+        :param model: SQLAlchemy declarative object
+        :param name: name of the versioning option
+        """
         try:
             return model.__versioned__[name]
         except (AttributeError, KeyError):
             return self.options[name]
 
     def instrument_versioned_classes(self, mapper, cls):
+        """
+        Collects all versioned classes and adds them into pending_classes list.
+        """
         if not self.options['versioning']:
             return
 
@@ -202,6 +231,15 @@ class VersioningManager(object):
                 self.metadata = cls.metadata
 
     def configure_versioned_classes(self):
+        """
+        Configures all versioned classes that were collected during
+        instrumentation process. The configuration has 4 steps:
+
+        1. Build tables for history models.
+        2. Build the actual history model declarative classes.
+        3. Build relationships between these models.
+        4. Assign all versioned attributes to use active history.
+        """
         if not self.options['versioning']:
             return
 
