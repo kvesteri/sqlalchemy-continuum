@@ -61,5 +61,5 @@ def make_versioned(
     sa.event.listen(
         sa.engine.Engine,
         'before_cursor_execute',
-        uow.version_association_table_records
+        uow.track_association_operations
     )

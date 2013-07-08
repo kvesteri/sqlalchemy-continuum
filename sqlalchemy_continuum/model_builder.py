@@ -3,11 +3,17 @@ import sqlalchemy as sa
 from sqlalchemy_utils.functions import primary_keys
 from .builder import VersionedBuilder
 from .expression_reflector import ClassExpressionReflector
+from .utils import declarative_base
 from .version import VersionClassBase
 
 
 class VersionedModelBuilder(VersionedBuilder):
     def build_parent_relationship(self):
+        """
+        Builds a relationship between currently built history class and
+        parent class (the model whose history the currently build history
+        class represents).
+        """
         conditions = []
         foreign_keys = []
         for primary_key in primary_keys(self.model):
@@ -35,6 +41,12 @@ class VersionedModelBuilder(VersionedBuilder):
             )
 
     def build_transaction_relationship(self, tx_log_class):
+        """
+        Builds a relationship between currently built history class and
+        TransactionLog class.
+
+        :param tx_log_class: TransactionLog class
+        """
         naming_func = self.manager.options['relation_naming_function']
         # Only define transaction relation if it doesn't already exist in
         # parent class.
@@ -50,7 +62,12 @@ class VersionedModelBuilder(VersionedBuilder):
             )
 
     def build_changes_relationship(self, tx_changes_class):
-        naming_func = self.manager.options['relation_naming_function']
+        """
+        Builds a relationship between currently built history class and
+        TransactionChanges class.
+
+        :param tx_changes_class: TransactionChanges class
+        """
         # Only define changes relation if it doesn't already exist in
         # parent class.
         if not hasattr(self.extension_class, 'changes'):
@@ -61,7 +78,9 @@ class VersionedModelBuilder(VersionedBuilder):
                     self.extension_class.transaction_id
                 ),
                 foreign_keys=[tx_changes_class.transaction_id],
-                backref=naming_func(self.model.__name__)
+                backref=self.manager.options['relation_naming_function'](
+                    self.model.__name__
+                )
             )
 
     def find_closest_versioned_parent(self):
@@ -73,7 +92,7 @@ class VersionedModelBuilder(VersionedBuilder):
         parents = (
             self.find_closest_versioned_parent()
             or self.option('base_classes')
-            or (self.manager.declarative_base(self.model), )
+            or (declarative_base(self.model), )
         )
         return parents + (VersionClassBase, )
 
@@ -102,6 +121,11 @@ class VersionedModelBuilder(VersionedBuilder):
         )
 
     def __call__(self, table, tx_log_class, tx_changes_class):
+        """
+        Build version model and build relationships between newly created
+        version model, parent model, transaction log model and transaction
+        changes model.
+        """
         # versioned attributes need to be copied for each child class,
         # otherwise each child class would share the same __versioned__
         # option dict

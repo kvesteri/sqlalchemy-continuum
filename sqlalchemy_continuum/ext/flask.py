@@ -4,6 +4,7 @@ from flask import request
 from flask.ext.login import current_user
 import sqlalchemy as sa
 
+from ..transaction_log import TransactionLogBase as _TransactionLogBase
 from ..manager import VersioningManager
 
 
@@ -17,11 +18,8 @@ class FlaskVersioningManager(VersioningManager):
     def remote_addr(self):
         return request.remote_addr
 
-    def transaction_log_base_factory(self, cls):
-        tx_log_cls = VersioningManager.transaction_log_base_factory(self, cls)
-
-        class TransactionLogBase(tx_log_cls):
-            __abstract__ = True
+    def transaction_log_factory(self):
+        class TransactionLogBase(_TransactionLogBase):
             remote_addr = sa.Column(sa.String(50))
 
             @sa.ext.declarative.declared_attr
@@ -37,7 +35,9 @@ class FlaskVersioningManager(VersioningManager):
             def user(obj):
                 return sa.orm.relationship('User')
 
-        return TransactionLogBase
+        self.options['transaction_log_base'] = TransactionLogBase
+
+        return VersioningManager.transaction_log_factory(self)
 
 
 versioning_manager = FlaskVersioningManager()

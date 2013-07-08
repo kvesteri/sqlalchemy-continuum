@@ -7,7 +7,9 @@ from sqlalchemy.dialects.postgresql import HSTORE
 from .model_builder import VersionedModelBuilder
 from .table_builder import VersionedTableBuilder
 from .relationship_builder import VersionedRelationshipBuilder
+from .transaction_log import TransactionLogBase, TransactionChangesBase
 from .unit_of_work import UnitOfWork
+from .utils import declarative_base
 
 
 class VersioningManager(object):
@@ -39,6 +41,7 @@ class VersioningManager(object):
             'table_name': '%s_history',
             'exclude': [],
             'include': [],
+            'transaction_log_base': TransactionLogBase,
             'transaction_column_name': 'transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a))
@@ -58,90 +61,67 @@ class VersioningManager(object):
         yield
         self.uow.tx_context = old_tx_context
 
-    def declarative_base(self, model):
-        for parent in model.__bases__:
-            try:
-                parent.metadata
-                return self.declarative_base(parent)
-            except AttributeError:
-                pass
-        return model
-
-    def transaction_log_base_factory(self, cls):
-        base = self.declarative_base(cls)
-        naming_func = self.options['relation_naming_function']
-
-        class TransactionLogBase(base):
-            __abstract__ = True
-            id = sa.Column(sa.BigInteger, primary_key=True)
-            issued_at = sa.Column(sa.DateTime)
-            meta = sa.Column(MutableDict.as_mutable(HSTORE))
-
-            @property
-            def entity_names(obj_self):
-                return [changes.entity_name for changes in obj_self.changes]
-
-            @property
-            def changed_entities(obj_self):
-                tuples = set(self.history_class_map.items())
-                entities = []
-
-                for class_, history_class in tuples:
-                    if class_.__name__ not in obj_self.entity_names:
-                        continue
-
-                    try:
-                        value = getattr(
-                            obj_self,
-                            naming_func(class_.__name__)
-                        )
-                    except AttributeError:
-                        continue
-
-                    if value:
-                        entities.append((
-                            history_class,
-                            value
-                        ))
-                return dict(entities)
-
-        return TransactionLogBase
-
-    def transaction_log_factory(self, cls):
-        class TransactionLog(self.transaction_log_base_factory(cls)):
+    def transaction_log_factory(self):
+        """
+        Creates TransactionLog class.
+        """
+        class TransactionLog(
+            self.declarative_base,
+            self.options['transaction_log_base']
+        ):
             __tablename__ = 'transaction_log'
+            meta = sa.Column(MutableDict.as_mutable(HSTORE))
+            manager = self
 
         return TransactionLog
 
-    def create_transaction_log(self, cls):
-        if 'TransactionLog' not in cls._decl_class_registry:
-            return self.transaction_log_factory(cls)
-        return cls._decl_class_registry['TransactionLog']
+    def create_transaction_log(self):
+        """
+        Creates TransactionLog class but only if it doesn't already exist in
+        declarative model registry.
+        """
+        if 'TransactionLog' not in self.declarative_base._decl_class_registry:
+            return self.transaction_log_factory()
+        return self.declarative_base._decl_class_registry['TransactionLog']
 
-    def create_transaction_changes(self, cls, transaction_log_class):
-        base = self.declarative_base(cls)
+    def transaction_changes_factory(self):
+        """
+        Creates TransactionChanges class.
 
-        if 'TransactionChanges' not in cls._decl_class_registry:
-            class TransactionChanges(base):
-                __tablename__ = 'transaction_changes'
-                transaction_id = sa.Column(
-                    sa.BigInteger,
-                    autoincrement=True,
-                    primary_key=True
-                )
-                entity_name = sa.Column(sa.Unicode(255), primary_key=True)
+        :param transaction_log_class: TransactionLog class
+        """
+        class TransactionChanges(
+            self.declarative_base,
+            TransactionChangesBase
+        ):
+            __tablename__ = 'transaction_changes'
 
-                transaction_log = sa.orm.relationship(
-                    transaction_log_class,
-                    backref=sa.orm.backref(
-                        'changes'
-                    ),
-                    primaryjoin=transaction_log_class.id == transaction_id,
-                    foreign_keys=[transaction_id]
-                )
+        TransactionChanges.transaction_log = sa.orm.relationship(
+            self.transaction_log_cls,
+            backref=sa.orm.backref(
+                'changes'
+            ),
+            primaryjoin=(
+                '%s.id == TransactionChanges.transaction_id' %
+                self.transaction_log_cls.__name__
+            ),
+            foreign_keys=[TransactionChanges.transaction_id]
+        )
+        return TransactionChanges
 
-            return TransactionChanges
-        return cls._decl_class_registry['TransactionChanges']
+    def create_transaction_changes(self):
+        """
+        Creates TransactionChanges class but only if it doesn't already exist
+        in declarative model registry.
+
+        :param transaction_log_class: TransactionLog class
+        """
+        if (
+            'TransactionChanges' not in
+            self.declarative_base._decl_class_registry
+        ):
+            return self.transaction_changes_factory()
+        return self.declarative_base._decl_class_registry['TransactionChanges']
 
     def build_tables(self):
         """
@@ -177,10 +157,9 @@ class VersioningManager(object):
         """
         if self.pending_classes:
             cls = self.pending_classes[0]
-            self.transaction_log_cls = self.create_transaction_log(cls)
-            self.transaction_changes_cls = self.create_transaction_changes(
-                cls, self.transaction_log_cls
-            )
+            self.declarative_base = declarative_base(cls)
+            self.transaction_log_cls = self.create_transaction_log()
+            self.transaction_changes_cls = self.create_transaction_changes()
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):
@@ -195,7 +174,11 @@ class VersioningManager(object):
                     )
 
     def build_relationships(self, history_classes):
-        # Build relationships for all history classes.
+        """
+        Builds relationships for all history classes.
+
+        :param history_classes: list of generated history classes
+        """
         for cls in history_classes:
             if not self.option(cls, 'versioning'):
                 continue
@@ -220,6 +203,9 @@ class VersioningManager(object):
     def instrument_versioned_classes(self, mapper, cls):
         """
         Collects all versioned classes and adds them into pending_classes list.
+
+        :mapper mapper: SQLAlchemy mapper object
+        :cls cls: SQLAlchemy declarative class
         """
         if not self.options['versioning']:
             return
@@ -238,7 +224,9 @@ class VersioningManager(object):
         1. Build tables for history models.
         2. Build the actual history model declarative classes.
         3. Build relationships between these models.
-        4. Assign all versioned attributes to use active history.
+        4. Empty pending_classes list so that consecutive mapper configuration
+           does not create multiple history classes
+        5. Assign all versioned attributes to use active history.
         """
         if not self.options['versioning']:
             return

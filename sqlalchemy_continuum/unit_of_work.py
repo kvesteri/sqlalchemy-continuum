@@ -1,47 +1,8 @@
 from collections import OrderedDict
 from functools import wraps
-import itertools
 import sqlalchemy as sa
 from .operation import Operation
-
-
-def versioned_objects(session):
-    iterator = itertools.chain(session.new, session.dirty, session.deleted)
-
-    return [
-        obj for obj in iterator
-        if is_versioned(obj)
-    ]
-
-
-def is_versioned(obj):
-    return (
-        hasattr(obj, '__versioned__') and
-        (
-            (
-                'versioning' in obj.__versioned__ and
-                obj.__versioned__['versioning']
-            ) or
-            'versioning' not in obj.__versioned__
-        )
-    )
-
-
-def identity(obj):
-    """
-    Return the identity of given sqlalchemy declarative model instance as a
-    tuple.
-
-    :param obj: sqlalchemy declarative model instance
-    """
-    id_ = []
-    for attr in obj._sa_class_manager.values():
-        prop = attr.property
-        if isinstance(prop, sa.orm.ColumnProperty):
-            column = prop.columns[0]
-            if column.primary_key:
-                id_.append(getattr(obj, column.name))
-    return tuple(id_)
+from .utils import is_versioned, identity
 
 
 def tracked_operation(func):
@@ -126,6 +87,10 @@ class UnitOfWork(object):
 
     @tracked_operation
     def track_updates(self, key, target):
+        """
+        Tracks object update operations. Whenever object is deleted it is
+        added to this UnitOfWork's internal operations dictionary.
+        """
         self.operations[key] = {
             'target': target,
             'operation_type': Operation.UPDATE
@@ -133,6 +98,10 @@ class UnitOfWork(object):
 
     @tracked_operation
     def track_deletes(self, key, target):
+        """
+        Tracks object deletion operations. Whenever object is deleted it is
+        added to this UnitOfWork's internal operations dictionary.
+        """
         self.operations[key] = {
             'target': target,
             'operation_type': Operation.DELETE
@@ -207,6 +176,9 @@ class UnitOfWork(object):
             return self.current_transaction_id
 
     def changed_entities(self, session):
+        """
+        Return a set of changed versioned entities for given session.
+        """
         changed_entities = set()
 
         for key, value in self.operations.items():
@@ -218,6 +190,14 @@ class UnitOfWork(object):
         return changed_entities
 
     def create_transaction_changes_entries(self, session):
+        """
+        Create transaction changes entries based on all operations that
+        occurred during this UnitOfWork. For each entity that has been affected
+        by an operation during this UnitOfWork this method creates a new
+        TransactionChanges object.
+
+        :param session: SQLAlchemy session object
+        """
         for entity in self.changed_entities(session):
             changes = self.manager.transaction_changes_cls(
                 transaction_id=self.current_transaction_id,
@@ -240,7 +220,7 @@ class UnitOfWork(object):
         self._committing = False
         self.pending_statements = []
 
-    def version_association_table_record(self, conn, table_name, params, op):
+    def track_association_operation(self, conn, table_name, params, op):
         params['operation_type'] = op
         stmt = (
             self.manager.metadata.tables[table_name + '_history']
@@ -249,7 +229,7 @@ class UnitOfWork(object):
         )
         self.pending_statements.append(stmt)
 
-    def version_association_table_records(
+    def track_association_operations(
         self, conn, cursor, statement, parameters, context, executemany
     ):
         if not self.manager.options['versioning']:
@@ -273,11 +253,11 @@ class UnitOfWork(object):
                     # multi-inserts, hence we need to convert the orignal
                     # multi-insert into batch of normal inserts
                     for params in parameters:
-                        self.version_association_table_record(
+                        self.track_association_operation(
                             conn, table_name, params, op
                         )
                 else:
-                    self.version_association_table_record(
+                    self.track_association_operation(
                         conn, table_name, parameters, op
                     )
 

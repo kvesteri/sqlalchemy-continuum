@@ -1,17 +1,6 @@
 import sqlalchemy as sa
 from .builder import VersionedBuilder
-
-
-def is_auto_assigned_date_column(column):
-    return (
-        (
-            isinstance(column.type, sa.DateTime) or
-            isinstance(column.type, sa.Date)
-        )
-        and
-        column.default or column.server_default or
-        column.onupdate or column.server_onupdate
-    )
+from .utils import is_auto_assigned_date_column
 
 
 class VersionedTableBuilder(VersionedBuilder):
@@ -29,9 +18,21 @@ class VersionedTableBuilder(VersionedBuilder):
 
     @property
     def table_name(self):
+        """
+        Returns the history table name for current parent table.
+        """
         return self.option('table_name') % self.parent_table.name
 
-    def build_reflected_columns(self):
+    @property
+    def reflected_columns(self):
+        """
+        Returns reflected parent table columns.
+
+        All columns from parent table are reflected except those that:
+        1. Are auto assigned date or datetime columns. Use include option
+        parameter if you wish to have these included.
+        2. Columns that are part of exclude option parameter.
+        """
         columns = []
         excluded_column_names = self.option('exclude')
         included_column_names = self.option('include')
@@ -67,14 +68,24 @@ class VersionedTableBuilder(VersionedBuilder):
 
         return columns
 
-    def build_operation_type_column(self):
+    @property
+    def operation_type_column(self):
+        """
+        Return the operation type column. By default the name of this column
+        is 'operation_type'.
+        """
         return sa.Column(
             self.option('operation_type_column_name'),
             sa.SmallInteger,
             nullable=False
         )
 
-    def build_transaction_column(self):
+    @property
+    def transaction_column(self):
+        """
+        Returns transaction column. By default the name of this column is
+        'transaction_id'.
+        """
         return sa.Column(
             self.option('transaction_column_name'),
             sa.BigInteger,
@@ -84,9 +95,9 @@ class VersionedTableBuilder(VersionedBuilder):
     def build_table(self, extends=None):
         items = []
         if extends is None:
-            items.extend(self.build_reflected_columns())
-            items.append(self.build_transaction_column())
-            items.append(self.build_operation_type_column())
+            items.extend(self.reflected_columns)
+            items.append(self.transaction_column)
+            items.append(self.operation_type_column)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
