@@ -68,10 +68,10 @@ class UnitOfWork(object):
             session, 'before_commit', self.before_commit
         )
         sa.event.listen(
-            session, 'after_commit', self.clear_transaction
+            session, 'after_commit', self.clear
         )
         sa.event.listen(
-            session, 'after_rollback', self.clear_transaction
+            session, 'after_rollback', self.clear
         )
 
     @tracked_operation
@@ -133,6 +133,14 @@ class UnitOfWork(object):
             session.execute(stmt)
 
     def after_flush(self, session, flush_context):
+        """
+        SQLAlchemy after_flush event listener that handles all the logic for
+        creating necessary TransactionLog, TransactionChanges and History
+        objects.
+
+        :param session: SQLAlchemy session object
+        :param flush_context: flush_context dictionary
+        """
         if not self.manager.options['versioning']:
             return
 
@@ -207,18 +215,25 @@ class UnitOfWork(object):
 
     def before_commit(self, session):
         """
-        Before commit listener that marks the internal state of this
-        UnitOfWork as committing.
+        SQLAlchemy before commit listener that marks the internal state of this
+        UnitOfWork as committing. This state is later on used by after_flush
+        listener which checks if the session is actually committing or if the
+        flush occurs before session commit.
 
         :param session: SQLAlchemy session object
         """
         self._committing = True
 
-    def clear_transaction(self, session):
-        self.current_transaction_id = None
-        self.operations = OrderedDict()
-        self._committing = False
-        self.pending_statements = []
+    def clear(self, session):
+        """
+        Simple SQLAlchemy listener that is being invoked after succesful
+        transaction commit or when transaction rollback occurs. The purpose of
+        this listener is to reset this UnitOfWork back to its initialization
+        state.
+
+        :param session: SQLAlchey session object
+        """
+        self.reset()
 
     def track_association_operation(self, conn, table_name, params, op):
         params['operation_type'] = op
