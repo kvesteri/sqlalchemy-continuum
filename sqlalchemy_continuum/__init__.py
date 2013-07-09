@@ -26,13 +26,21 @@ def make_versioned(
     session=sa.orm.session.Session,
     manager=versioning_manager
 ):
-    sa.event.listen(
-        mapper, 'instrument_class', manager.instrument_versioned_classes
-    )
-    sa.event.listen(
-        mapper, 'after_configured', manager.configure_versioned_classes
-    )
+    """
+    This is the public API function of SQLAlchemy-Continuum for making certain
+    mappers and session versioned. By default this applies to all mappers and
+    all sessions.
 
+    :param mapper:
+        SQLAlchemy mapper to apply the versioning to.
+    :param session:
+        SQLAlchemy session to apply the versioning to. By default this is
+        sa.orm.session.Session meaning it applies to all Session subclasses.
+    :param manager:
+        The versioning manager. Override this if you want to use one of
+        SQLAlchemy-Continuum's extensions (eg. Flask extension)
+    """
+    manager.apply_class_configuration_listeners(mapper)
     uow = manager.uow
     uow.track_operations(mapper)
     uow.track_session(session)

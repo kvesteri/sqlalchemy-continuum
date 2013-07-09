@@ -93,6 +93,9 @@ class VersionedTableBuilder(VersionedBuilder):
         )
 
     def build_table(self, extends=None):
+        """
+        Builds history table.
+        """
         items = []
         if extends is None:
             items.extend(self.reflected_columns)

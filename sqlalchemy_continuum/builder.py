@@ -5,7 +5,4 @@ class VersionedBuilder(object):
         self.attrs = self.model.__mapper__.class_manager.values()
 
     def option(self, name):
-        try:
-            return self.model.__versioned__[name]
-        except (AttributeError, KeyError):
-            return self.manager.options[name]
+        return self.manager.option(self.model, name)

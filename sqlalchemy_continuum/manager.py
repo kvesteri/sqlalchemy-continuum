@@ -216,6 +216,31 @@ class VersioningManager(object):
                 self.pending_classes.append(cls)
                 self.metadata = cls.metadata
 
+    def apply_class_configuration_listeners(self, mapper):
+        """
+        Applies class configuration listeners for given mapper.
+
+        The listener work in two phases:
+
+        1. Class instrumentation phase
+            The first listeners listens to class instrumentation event and
+            handles the collecting of versioned models and adds them to
+            the pending_classes list.
+        2. After class configuration phase
+            The second listener listens to after class configuration event and
+            handles the actual history model generation based on list that
+            was collected during class instrumenation phase.
+
+        :param mapper:
+            SQLAlchemy mapper to apply the class configuration listeners to
+        """
+        sa.event.listen(
+            mapper, 'instrument_class', self.instrument_versioned_classes
+        )
+        sa.event.listen(
+            mapper, 'after_configured', self.configure_versioned_classes
+        )
+
     def configure_versioned_classes(self):
         """
         Configures all versioned classes that were collected during

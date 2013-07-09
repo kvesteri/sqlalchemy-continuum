@@ -151,6 +151,10 @@ class VersionedRelationshipBuilder(VersionedBuilder):
             )
 
     def build_reflected_relationships(self):
+        """
+        Build reflected relationships for history model based on defined
+        relationships of parent model.
+        """
         for attr in self.attrs:
             if attr.key == 'versions':
                 continue

@@ -47,7 +47,6 @@ class VersionedModelBuilder(VersionedBuilder):
 
         :param tx_log_class: TransactionLog class
         """
-        naming_func = self.manager.options['relation_naming_function']
         # Only define transaction relation if it doesn't already exist in
         # parent class.
         if not hasattr(self.extension_class, 'transaction'):
@@ -58,7 +57,9 @@ class VersionedModelBuilder(VersionedBuilder):
                     self.extension_class.transaction_id
                 ),
                 foreign_keys=[self.extension_class.transaction_id],
-                backref=naming_func(self.model.__name__)
+                backref=self.manager.options['relation_naming_function'](
+                    self.model.__name__
+                )
             )
 
     def build_changes_relationship(self, tx_changes_class):
@@ -84,11 +85,17 @@ class VersionedModelBuilder(VersionedBuilder):
             )
 
     def find_closest_versioned_parent(self):
+        """
+        Finds the closest versioned parent for current parent model.
+        """
         for class_ in self.model.__bases__:
             if class_ in self.manager.history_class_map:
                 return (self.manager.history_class_map[class_], )
 
     def base_classes(self):
+        """
+        Returns all base classes for to history model.
+        """
         parents = (
             self.find_closest_versioned_parent()
             or self.option('base_classes')
@@ -108,6 +115,9 @@ class VersionedModelBuilder(VersionedBuilder):
         return {}
 
     def build_model(self, table):
+        """
+        Build history model class.
+        """
         mapper_args = {}
         mapper_args.update(self.inheritance_args())
 
@@ -122,9 +132,8 @@ class VersionedModelBuilder(VersionedBuilder):
 
     def __call__(self, table, tx_log_class, tx_changes_class):
         """
-        Build version model and build relationships between newly created
-        version model, parent model, transaction log model and transaction
-        changes model.
+        Build history model and relationships to parent model, transaction
+        log model and transaction changes model.
         """
         # versioned attributes need to be copied for each child class,
         # otherwise each child class would share the same __versioned__
