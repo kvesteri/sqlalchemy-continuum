@@ -21,6 +21,7 @@ Features
 * Can revert objects data as well as all object relations at given transaction even if the object was deleted
 * Transactions can be queried afterwards using SQLAlchemy query syntax
 * Query for changed records at given transaction
+* History models give access to parent objects relations at given point in time
 
 
 
@@ -114,7 +115,7 @@ TransactionLog and TransactionChanges entities are created for transaction track
     article.versions[1].name == u'Some updated article'
 
 
-Version objects
+History objects
 ===============
 
 

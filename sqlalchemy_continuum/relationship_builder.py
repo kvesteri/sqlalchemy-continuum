@@ -5,7 +5,7 @@ from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
 
 
-class VersionedRelationshipBuilder(VersionedBuilder):
+class RelationshipBuilder(VersionedBuilder):
     def reflected_relationship_factory(
         self,
         local_cls,
@@ -108,6 +108,13 @@ class VersionedRelationshipBuilder(VersionedBuilder):
         return relationship
 
     def build_association_version_tables(self, property_):
+        """
+        Builds many-to-many association history table for given property.
+        Association history tables are used for tracking change history of
+        many-to-many associations.
+
+        :param property_: RelationshipProperty instance
+        """
         column = list(property_.remote_side)[0]
 
         self.manager.association_tables.add(column.table)
@@ -124,6 +131,12 @@ class VersionedRelationshipBuilder(VersionedBuilder):
             )
 
     def build_reflected_relationship(self, property_):
+        """
+        Builds reflected relationship between history classes based on given
+        parent object's RelationshipProperty.
+
+        :param property_: RelationshipProperty instance
+        """
         local_cls = self.model.__versioned__['class']
         try:
             remote_cls = property_.mapper.class_.__versioned__['class']

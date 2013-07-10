@@ -7,7 +7,7 @@ from .utils import declarative_base
 from .version import VersionClassBase
 
 
-class VersionedModelBuilder(VersionedBuilder):
+class ModelBuilder(VersionedBuilder):
     """
     VersionedModelBuilder handles the building of History models based on
     parent table attributes and versioning configuration.

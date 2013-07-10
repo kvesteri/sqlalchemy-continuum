@@ -3,7 +3,11 @@ from .builder import VersionedBuilder
 from .utils import is_auto_assigned_date_column
 
 
-class VersionedTableBuilder(VersionedBuilder):
+class TableBuilder(VersionedBuilder):
+    """
+    TableBuilder handles the building of history tables based on parent
+    table's structure and versioning configuration options.
+    """
     def __init__(
         self,
         versioning_manager,

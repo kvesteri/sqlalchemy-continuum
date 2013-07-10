@@ -4,9 +4,9 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.dialects.postgresql import HSTORE
-from .model_builder import VersionedModelBuilder
-from .table_builder import VersionedTableBuilder
-from .relationship_builder import VersionedRelationshipBuilder
+from .model_builder import ModelBuilder
+from .table_builder import TableBuilder
+from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogBase, TransactionChangesBase
 from .unit_of_work import UnitOfWork
 from .utils import declarative_base
@@ -146,7 +146,7 @@ class VersioningManager(object):
                     inherited_table = self.tables[class_]
                     break
 
-            builder = VersionedTableBuilder(
+            builder = TableBuilder(
                 self,
                 cls.__table__,
                 model=cls
@@ -173,7 +173,7 @@ class VersioningManager(object):
                     continue
 
                 if cls in self.tables:
-                    builder = VersionedModelBuilder(self, cls)
+                    builder = ModelBuilder(self, cls)
                     builder(
                         self.tables[cls],
                         self.transaction_log_cls,
@@ -189,7 +189,7 @@ class VersioningManager(object):
         for cls in history_classes:
             if not self.option(cls, 'versioning'):
                 continue
-            builder = VersionedRelationshipBuilder(self, cls)
+            builder = RelationshipBuilder(self, cls)
             builder.build_reflected_relationships()
 
     def option(self, model, name):
