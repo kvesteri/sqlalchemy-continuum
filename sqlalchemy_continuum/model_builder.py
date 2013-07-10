@@ -1,17 +1,27 @@
 from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import primary_keys
-from .builder import VersionedBuilder
 from .expression_reflector import ClassExpressionReflector
 from .utils import declarative_base
 from .version import VersionClassBase
 
 
-class ModelBuilder(VersionedBuilder):
+class ModelBuilder(object):
     """
     VersionedModelBuilder handles the building of History models based on
     parent table attributes and versioning configuration.
     """
+    def __init__(self, versioning_manager, model):
+        """
+        :param versioning_manager:
+            VersioningManager object
+        :param model:
+            SQLAlchemy declarative model object that acts as a parent for the
+            built history model
+        """
+        self.manager = versioning_manager
+        self.model = model
+
     def build_parent_relationship(self):
         """
         Builds a relationship between currently built history class and
@@ -102,7 +112,7 @@ class ModelBuilder(VersionedBuilder):
         """
         parents = (
             self.find_closest_versioned_parent()
-            or self.option('base_classes')
+            or self.manager.option(self.model, 'base_classes')
             or (declarative_base(self.model), )
         )
         return parents + (VersionClassBase, )

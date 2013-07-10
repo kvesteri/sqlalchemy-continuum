@@ -152,9 +152,9 @@ class VersioningManager(object):
                 model=cls
             )
             if inherited_table is not None:
-                self.tables[class_] = builder.build_table(inherited_table)
+                self.tables[class_] = builder(inherited_table)
             else:
-                table = builder.build_table()
+                table = builder()
                 self.tables[cls] = table
 
     def build_models(self):
@@ -194,7 +194,7 @@ class VersioningManager(object):
                 if prop.key == 'versions':
                     continue
                 builder = RelationshipBuilder(self, cls, prop)
-                builder.build_reflected_relationship()
+                builder()
 
     def option(self, model, name):
         """

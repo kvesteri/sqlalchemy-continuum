@@ -1,9 +1,8 @@
 import sqlalchemy as sa
-from .builder import VersionedBuilder
 from .utils import is_auto_assigned_date_column
 
 
-class TableBuilder(VersionedBuilder):
+class TableBuilder(object):
     """
     TableBuilder handles the building of history tables based on parent
     table's structure and versioning configuration options.
@@ -19,6 +18,9 @@ class TableBuilder(VersionedBuilder):
         self.parent_table = parent_table
         self.model = model
         self.remove_primary_keys = remove_primary_keys
+
+    def option(self, name):
+        return self.manager.option(self.model, name)
 
     @property
     def table_name(self):
@@ -96,7 +98,7 @@ class TableBuilder(VersionedBuilder):
             primary_key=True
         )
 
-    def build_table(self, extends=None):
+    def __call__(self, extends=None):
         """
         Builds history table.
         """

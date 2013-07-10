@@ -120,13 +120,13 @@ class RelationshipBuilder(object):
             remove_primary_keys=True
         )
         if builder.table_name not in column.table.metadata.tables:
-            version_table = builder.build_table()
+            version_table = builder()
 
             self.manager.association_history_tables.add(
                 version_table
             )
 
-    def build_reflected_relationship(self):
+    def __call__(self):
         """
         Builds reflected relationship between history classes based on given
         parent object's RelationshipProperty.
