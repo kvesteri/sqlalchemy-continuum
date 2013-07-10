@@ -1,124 +1,120 @@
 import sqlalchemy as sa
-from .builder import VersionedBuilder
-from .table_builder import VersionedTableBuilder
+from .table_builder import TableBuilder
 from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
 
 
-class RelationshipBuilder(VersionedBuilder):
-    def reflected_relationship_factory(
-        self,
-        local_cls,
-        remote_cls,
-        primary_join
-    ):
+class RelationshipBuilder(object):
+    def __init__(self, versioning_manager, model, property_):
+        self.manager = versioning_manager
+        self.property = property_
+        self.model = model
+
+    def relationship_subquery(self, obj):
+        primary_keys = []
+        for column in self.remote_cls.__table__.c:
+            if column.primary_key and column.name != 'transaction_id':
+                primary_keys.append(column)
+
+        return self.remote_cls.transaction_id.in_(
+            sa.select(
+                [sa.func.max(self.remote_cls.transaction_id)]
+            ).where(
+                self.remote_cls.transaction_id <= obj.transaction_id
+            ).group_by(
+                *primary_keys
+            ).correlate(self.local_cls)
+        )
+
+    @property
+    def reflected_relationship(self):
+        """
+        Builds a reflected one-to-many, one-to-one and many-to-one
+        relationship between two history classes.
+        """
         @property
         def relationship(obj):
             session = sa.orm.object_session(obj)
-            primary_keys = []
-            for column in remote_cls.__table__.c:
-                if column.primary_key and column.name != 'transaction_id':
-                    primary_keys.append(column)
-
-            condition = remote_cls.transaction_id.in_(
-                sa.select(
-                    [sa.func.max(remote_cls.transaction_id)]
-                ).where(
-                    remote_cls.transaction_id <= obj.transaction_id
-                ).group_by(
-                    *primary_keys
-                ).correlate(local_cls)
-            )
             reflector = ObjectExpressionReflector(obj)
             return (
-                session.query(remote_cls)
+                session.query(self.remote_cls)
                 .filter(
                     sa.and_(
-                        reflector(primary_join),
-                        condition,
-                        remote_cls.operation_type != Operation.DELETE
+                        reflector(self.property.primaryjoin),
+                        self.relationship_subquery(obj),
+                        self.remote_cls.operation_type != Operation.DELETE
                     )
                 )
             )
         return relationship
 
-    def reflected_association_factory(
-        self,
-        local_cls,
-        remote_cls,
-        property_
-    ):
-        primary_join = property_.primaryjoin
-        table = None
-        column = None
-        for column_pair in property_.local_remote_pairs:
-            if column_pair[0] in property_.table.c.values():
-                column = column_pair[1]
-                break
+    def association_subquery(self, obj):
+        reflector = ObjectExpressionReflector(obj)
+        subquery = (
+            self.remote_table.c.transaction_id.in_(
+                sa.select(
+                    [sa.func.max(self.remote_table.c.transaction_id)],
+                ).where(
+                    sa.and_(
+                        self.remote_table.c.transaction_id <=
+                        obj.transaction_id,
+                        reflector(self.property.primaryjoin)
+                    )
+                ).group_by(
+                    self.remote_table.c[self.remote_column.name]
+                ).correlate(self.local_cls)
+            )
+        )
 
-        table = column.table.metadata.tables[column.table.name + '_history']
+        return (
+            sa.select(
+                [self.remote_table.c[self.remote_column.name]]
+            ).where(
+                sa.and_(
+                    subquery,
+                    self.remote_table.c.operation_type != Operation.DELETE
+                )
+            )
+        )
 
+    @property
+    def reflected_association(self):
+        """
+        Builds a reflected many-to-many relationship between two history
+        classes.
+        """
         @property
         def relationship(obj):
             session = sa.orm.object_session(obj)
-            reflector = ObjectExpressionReflector(obj)
-            condition = (
-                table.c.transaction_id.in_(
-                    sa.select(
-                        [sa.func.max(table.c.transaction_id)],
-                    ).where(
-                        sa.and_(
-                            table.c.transaction_id <= obj.transaction_id,
-                            reflector(primary_join)
-                        )
-                    ).group_by(
-                        table.c[column.name]
-                    ).correlate(local_cls)
-                )
-            )
 
-            sql = (
-                sa.select(
-                    [table.c[column.name]]
-                ).where(
-                    sa.and_(
-                        condition,
-                        table.c.operation_type != Operation.DELETE
-                    )
-                )
-            )
             condition = (
-                remote_cls.transaction_id == sa.select(
-                    [sa.func.max(remote_cls.transaction_id)]
+                self.remote_cls.transaction_id == sa.select(
+                    [sa.func.max(self.remote_cls.transaction_id)]
                 ).where(
-                    remote_cls.transaction_id <= obj.transaction_id
-                ).correlate(local_cls)
+                    self.remote_cls.transaction_id <= obj.transaction_id
+                ).correlate(self.local_cls)
             )
             return (
-                session.query(remote_cls)
+                session.query(self.remote_cls)
                 .filter(
                     sa.and_(
-                        remote_cls.id.in_(
-                            sql
-                        ),
+                        self.remote_cls.id.in_(self.association_subquery(obj)),
                         condition
                     )
                 )
             )
         return relationship
 
-    def build_association_version_tables(self, property_):
+    def build_association_version_tables(self):
         """
         Builds many-to-many association history table for given property.
         Association history tables are used for tracking change history of
         many-to-many associations.
-
-        :param property_: RelationshipProperty instance
         """
-        column = list(property_.remote_side)[0]
+        column = list(self.property.remote_side)[0]
 
         self.manager.association_tables.add(column.table)
-        builder = VersionedTableBuilder(
+        builder = TableBuilder(
             self.manager,
             column.table,
             remove_primary_keys=True
@@ -130,50 +126,34 @@ class RelationshipBuilder(VersionedBuilder):
                 version_table
             )
 
-    def build_reflected_relationship(self, property_):
+    def build_reflected_relationship(self):
         """
         Builds reflected relationship between history classes based on given
         parent object's RelationshipProperty.
-
-        :param property_: RelationshipProperty instance
         """
-        local_cls = self.model.__versioned__['class']
+        self.local_cls = self.model.__versioned__['class']
         try:
-            remote_cls = property_.mapper.class_.__versioned__['class']
+            self.remote_cls = (
+                self.property.mapper.class_.__versioned__['class']
+            )
         except (AttributeError, KeyError):
             return
-        primary_join = property_.primaryjoin
 
-        if property_.secondary is not None:
-            setattr(
-                local_cls,
-                property_.key,
-                self.reflected_association_factory(
-                    local_cls,
-                    remote_cls,
-                    property_,
-                )
-            )
-        else:
-            setattr(
-                local_cls,
-                property_.key,
-                self.reflected_relationship_factory(
-                    local_cls, remote_cls, primary_join
-                )
-            )
+        reflection_func = 'reflected_relationship'
+        if self.property.secondary is not None:
+            self.build_association_version_tables()
 
-    def build_reflected_relationships(self):
-        """
-        Build reflected relationships for history model based on defined
-        relationships of parent model.
-        """
-        for attr in self.attrs:
-            if attr.key == 'versions':
-                continue
-            property_ = attr.property
-            if isinstance(property_, sa.orm.RelationshipProperty):
-                if property_.remote_side and property_.secondary is not None:
-                    self.build_association_version_tables(property_)
+            for column_pair in self.property.local_remote_pairs:
+                if column_pair[0] in self.property.table.c.values():
+                    self.remote_column = column_pair[1]
+                    break
 
-                self.build_reflected_relationship(property_)
+            self.remote_table = self.remote_column.table.metadata.tables[
+                self.remote_column.table.name + '_history'
+            ]
+            reflection_func = 'reflected_association'
+        setattr(
+            self.local_cls,
+            self.property.key,
+            getattr(self, reflection_func)
+        )

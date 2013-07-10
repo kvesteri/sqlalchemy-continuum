@@ -189,8 +189,12 @@ class VersioningManager(object):
         for cls in history_classes:
             if not self.option(cls, 'versioning'):
                 continue
-            builder = RelationshipBuilder(self, cls)
-            builder.build_reflected_relationships()
+
+            for prop in cls.__mapper__.iterate_properties:
+                if prop.key == 'versions':
+                    continue
+                builder = RelationshipBuilder(self, cls, prop)
+                builder.build_reflected_relationship()
 
     def option(self, model, name):
         """
