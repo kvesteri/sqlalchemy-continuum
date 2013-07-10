@@ -156,7 +156,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 
 0.3.12 (2013-06-18)
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 - Not null constraints removed from all reflected columns
 - Fixed reify when parent has not null constraints
@@ -164,13 +164,13 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 
 0.3.11 (2013-06-18)
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 - Single table inheritance support added
 
 
 0.3.10 (2013-06-18)
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 - Generated operation_type column not nullable by default
 
