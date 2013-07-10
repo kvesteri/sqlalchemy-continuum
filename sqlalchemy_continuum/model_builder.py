@@ -108,6 +108,9 @@ class VersionedModelBuilder(VersionedBuilder):
         return parents + (VersionClassBase, )
 
     def inheritance_args(self):
+        """
+        Return mapper inheritance args for currently built history model.
+        """
         if self.find_closest_versioned_parent():
             reflector = ClassExpressionReflector(self.model)
             inherit_condition = reflector(

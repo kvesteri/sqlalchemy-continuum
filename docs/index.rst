@@ -66,6 +66,12 @@ In order to make your models versioned you need two things:
     sa.orm.configure_mappers()
 
 
+After this setup SQLAlchemy-Continuum does the following things:
+
+1. It creates ArticleHistory model that acts as version history for Article model
+2. Creates TransactionLog and TransactionChanges models for transactional history tracking
+3. Adds couple of listeners so that each Article object insert, update and delete gets recorded
+
 
 When the models have been configured either by calling configure_mappers() or by accessing some of them the first time, the following __versioned__ attributes become available:
 
