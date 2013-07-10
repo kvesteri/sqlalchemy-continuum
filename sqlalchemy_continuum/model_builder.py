@@ -8,6 +8,10 @@ from .version import VersionClassBase
 
 
 class VersionedModelBuilder(VersionedBuilder):
+    """
+    VersionedModelBuilder handles the building of History models based on
+    parent table attributes and versioning configuration.
+    """
     def build_parent_relationship(self):
         """
         Builds a relationship between currently built history class and
@@ -94,7 +98,7 @@ class VersionedModelBuilder(VersionedBuilder):
 
     def base_classes(self):
         """
-        Returns all base classes for to history model.
+        Returns all base classes for history model.
         """
         parents = (
             self.find_closest_versioned_parent()

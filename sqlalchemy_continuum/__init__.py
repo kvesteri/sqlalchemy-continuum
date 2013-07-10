@@ -4,7 +4,7 @@ from .operation import Operation
 from .utils import changeset
 
 
-__version__ = '0.7.7'
+__version__ = '0.7.8'
 
 
 __all__ = (
@@ -15,10 +15,6 @@ __all__ = (
 
 
 versioning_manager = VersioningManager()
-
-
-class Versioned(object):
-    __versioned__ = {}
 
 
 def make_versioned(

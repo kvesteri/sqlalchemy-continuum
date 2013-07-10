@@ -1,9 +1,7 @@
 from flask import Flask, url_for
 from flask.ext.login import LoginManager
 import sqlalchemy as sa
-from sqlalchemy_continuum import (
-    make_versioned, versioning_manager, Versioned
-)
+from sqlalchemy_continuum import make_versioned, versioning_manager
 from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
 )
@@ -62,7 +60,7 @@ class TestFlaskVersioningManager(TestCase):
     def create_models(self):
         TestCase.create_models(self)
 
-        class User(self.Model, Versioned):
+        class User(self.Model):
             __tablename__ = 'user'
             __versioned__ = {
                 'base_classes': (self.Model, )

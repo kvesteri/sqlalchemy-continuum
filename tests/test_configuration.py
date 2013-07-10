@@ -1,11 +1,10 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import Versioned
 from tests import TestCase
 
 
 class TestVersionedModelWithoutVersioning(TestCase):
     def create_models(self):
-        class TextItem(self.Model, Versioned):
+        class TextItem(self.Model):
             __tablename__ = 'text_item'
             __versioned__ = {
                 'versioning': False

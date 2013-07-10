@@ -1,11 +1,10 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import Versioned
 from tests import TestCase
 
 
 class TestVersionedModel(TestCase):
     def create_models(self):
-        class Article(self.Model, Versioned):
+        class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
                 'base_classes': (self.Model, )
@@ -16,7 +15,7 @@ class TestVersionedModel(TestCase):
             content = sa.Column(sa.UnicodeText)
             description = sa.Column(sa.UnicodeText)
 
-        class Tag(self.Model, Versioned):
+        class Tag(self.Model):
             __tablename__ = 'tag'
             __versioned__ = {
                 'base_classes': (self.Model, )

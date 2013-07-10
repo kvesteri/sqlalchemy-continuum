@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+
+0.7.8 (2013-07-03)
+^^^^^^^^^^^^^^^^^^
+
+- Removed Versioned base class (adding __versioned__ attribute and calling make_versioned() is sufficient for making declarative class versioned)
+
+
 0.7.7 (2013-07-03)
 ^^^^^^^^^^^^^^^^^^
 
