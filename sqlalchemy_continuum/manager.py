@@ -13,11 +13,29 @@ from .utils import declarative_base
 
 
 class VersioningManager(object):
+    """
+    VersioningManager delegates versioning configuration operations to builder
+    classes and the actual versioning to UnitOfWork class. Manager contains
+    configuration options that act as defaults for all versioned classes.
+    """
     def __init__(
         self,
+        options={}
     ):
         self.uow = UnitOfWork(self)
         self.reset()
+        self.options = {
+            'versioning': True,
+            'base_classes': None,
+            'table_name': '%s_history',
+            'exclude': [],
+            'include': [],
+            'transaction_log_base': TransactionLogBase,
+            'transaction_column_name': 'transaction_id',
+            'operation_type_column_name': 'operation_type',
+            'relation_naming_function': lambda a: pluralize(underscore(a))
+        }
+        self.options.update(options)
 
     def reset(self):
         """
@@ -35,17 +53,6 @@ class VersioningManager(object):
         self.uow.reset()
 
         self.metadata = None
-        self.options = {
-            'versioning': True,
-            'base_classes': None,
-            'table_name': '%s_history',
-            'exclude': [],
-            'include': [],
-            'transaction_log_base': TransactionLogBase,
-            'transaction_column_name': 'transaction_id',
-            'operation_type_column_name': 'operation_type',
-            'relation_naming_function': lambda a: pluralize(underscore(a))
-        }
 
     @contextmanager
     def tx_context(self, **tx_context):

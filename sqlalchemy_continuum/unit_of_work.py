@@ -59,7 +59,7 @@ class UnitOfWork(object):
         rolling back) of given session. This method should be used in
         conjuction with `track_operations`.
 
-        :param session: session to track the operations from
+        :param session: SQLAlchemy session to track the operations from
         """
         sa.event.listen(
             session, 'after_flush', self.after_flush
@@ -107,25 +107,30 @@ class UnitOfWork(object):
             'operation_type': Operation.DELETE
         }
 
-    def create_version_objects(self, session):
+    def create_history_objects(self, session):
+        """
+        Create history objects for given session based on operations collected
+        by insert, update and deleted trackers.
+
+        :param session: SQLAlchemy session object
+        """
         if not self.manager.options['versioning']:
             return
 
-        if self._committing:
-            for key, value in self.operations.items():
-                if not session.is_modified(
-                    value['target'], include_collections=False
-                ) and value['target'] not in session.deleted:
-                    continue
-                version_obj = value['target'].__versioned__['class']()
-                session.add(version_obj)
+        for key, value in self.operations.items():
+            if not session.is_modified(
+                value['target'], include_collections=False
+            ) and value['target'] not in session.deleted:
+                continue
+            version_obj = value['target'].__versioned__['class']()
+            session.add(version_obj)
 
-                version_obj.operation_type = value['operation_type']
-                self.assign_attributes(value['target'], version_obj)
+            version_obj.operation_type = value['operation_type']
+            self.assign_attributes(value['target'], version_obj)
 
-                version_obj.transaction_id = (
-                    self.current_transaction_id
-                )
+            version_obj.transaction_id = (
+                self.current_transaction_id
+            )
 
     def create_association_versions(self, session):
         for stmt in self.pending_statements:
@@ -146,7 +151,7 @@ class UnitOfWork(object):
 
         if self._committing:
             self.create_transaction_log_entry(session)
-            self.create_version_objects(session)
+            self.create_history_objects(session)
             self.create_association_versions(session)
             self.create_transaction_changes_entries(session)
 
@@ -154,6 +159,12 @@ class UnitOfWork(object):
             self._committing = False
 
     def create_transaction_log_entry(self, session):
+        """
+        Creates TransactionLog object for current transaction. We use raw
+        insert here to be able to get current transaction id right away.
+
+        :param session: SQLAlchemy session
+        """
         if self.current_transaction_id:
             return self.current_transaction_id
 
@@ -186,6 +197,8 @@ class UnitOfWork(object):
     def changed_entities(self, session):
         """
         Return a set of changed versioned entities for given session.
+
+        :param session: SQLAlchemy session object
         """
         changed_entities = set()
 
@@ -235,7 +248,10 @@ class UnitOfWork(object):
         """
         self.reset()
 
-    def track_association_operation(self, conn, table_name, params, op):
+    def append_association_operation(self, conn, table_name, params, op):
+        """
+        Appends history association operation to pending_statements list.
+        """
         params['operation_type'] = op
         stmt = (
             self.manager.metadata.tables[table_name + '_history']
@@ -247,6 +263,10 @@ class UnitOfWork(object):
     def track_association_operations(
         self, conn, cursor, statement, parameters, context, executemany
     ):
+        """
+        Tracks association operations and adds the generated history
+        association operations to pending_statements list.
+        """
         if not self.manager.options['versioning']:
             return
 
@@ -268,15 +288,25 @@ class UnitOfWork(object):
                     # multi-inserts, hence we need to convert the orignal
                     # multi-insert into batch of normal inserts
                     for params in parameters:
-                        self.track_association_operation(
+                        self.append_association_operation(
                             conn, table_name, params, op
                         )
                 else:
-                    self.track_association_operation(
+                    self.append_association_operation(
                         conn, table_name, parameters, op
                     )
 
     def assign_attributes(self, parent_obj, version_obj):
+        """
+        Assigns attributes values from parent object to version object. If the
+        parent object is deleted this method assigns None values to all version
+        object's attributes.
+
+        :param parent_obj:
+            Parent object to get the attribute values from
+        :param version_obj:
+            Version object to assign the attribute values to
+        """
         excluded_attributes = self.manager.option(parent_obj, 'exclude')
         for key, attr in parent_obj._sa_class_manager.items():
             if key in excluded_attributes:

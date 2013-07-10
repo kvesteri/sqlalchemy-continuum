@@ -28,7 +28,7 @@ def make_versioned(
 ):
     """
     This is the public API function of SQLAlchemy-Continuum for making certain
-    mappers and session versioned. By default this applies to all mappers and
+    mappers and sessions versioned. By default this applies to all mappers and
     all sessions.
 
     :param mapper:
