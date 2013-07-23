@@ -8,7 +8,7 @@ Why?
 
 SQLAlchemy already has versioning extension. This extension however is very limited. It does not support versioning entire transactions.
 
-Hibernate for Java has Envers, which is propably the most advanced database versioning tool out there. Ruby on Rails has `papertrail https://github.com/airblade/paper_trail`_, which has very nice API but lacks the efficiency and feature set of Envers.
+Hibernate for Java has Envers, which is propably the most advanced database versioning tool out there. Ruby on Rails has papertrail_, which has very nice API but lacks the efficiency and feature set of Envers.
 
 As a Python/SQLAlchemy enthusiast I wanted to create a database versioning tool for Python with all the features of Envers and with as intuitive API as papertrail. Also I wanted to make it _fast_ keeping things as close to the database as possible.
 
@@ -537,4 +537,5 @@ License
 
 .. include:: ../LICENSE
 
+.. _papertrail:  https://github.com/airblade/paper_trail
 
