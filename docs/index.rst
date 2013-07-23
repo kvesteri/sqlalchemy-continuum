@@ -169,10 +169,10 @@ Version traversal
     # 1
 
 
-Changelog
+Changeset
 ---------
 
-Continuum provides easy way for getting the changelog of given version object. Each version contains a changelog
+Continuum provides easy way for getting the changeset of given version object. Each version contains a changeset
 property which holds a dict of changed fields in that version.
 
 ::
@@ -183,7 +183,7 @@ property which holds a dict of changed fields in that version.
     session.commit(article)
 
     version = article.versions[0]
-    version.changelog
+    version.changeset
     # {
     #   'id': [None, 1],
     #   'name': [None, u'New article'],
@@ -193,14 +193,14 @@ property which holds a dict of changed fields in that version.
     session.commit()
 
     version = article.versions[1]
-    version.changelog
+    version.changeset
     # {
     #   'name': [u'New article', u'Updated article'],
     # }
 
     session.delete(article)
     version = article.versions[1]
-    version.changelog
+    version.changeset
     # {
     #   'id': [1, None]
     #   'name': [u'Updated article', None],
@@ -208,19 +208,19 @@ property which holds a dict of changed fields in that version.
     # }
 
 
-SQLAlchemy-Continuum also provides a utility function called changelog. With this function
-you can easily check the changelog of given object in current transaction.
+SQLAlchemy-Continuum also provides a utility function called changeset. With this function
+you can easily check the changeset of given object in current transaction.
 
 
 
 ::
 
 
-    from sqlalchemy_continuum import changelog
+    from sqlalchemy_continuum import changeset
 
 
     article = Article(name=u'Some article')
-    changelog(article)
+    changeset(article)
     # {'name': [u'Some article', None]}
 
 
