@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from .utils import is_auto_assigned_date_column
+from sqlalchemy_utils.functions import is_auto_assigned_date_column
 
 
 class TableBuilder(object):

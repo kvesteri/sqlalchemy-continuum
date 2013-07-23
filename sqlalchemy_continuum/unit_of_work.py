@@ -1,8 +1,9 @@
 from collections import OrderedDict
 from functools import wraps
 import sqlalchemy as sa
+from sqlalchemy_utils.functions import identity
 from .operation import Operation
-from .utils import is_versioned, identity
+from .utils import is_versioned
 
 
 def tracked_operation(func):
@@ -161,7 +162,7 @@ class UnitOfWork(object):
     def create_transaction_log_entry(self, session):
         """
         Creates TransactionLog object for current transaction. We use raw
-        insert here to be able to get current transaction id right away.
+        insert here to be able to get current transaction id.
 
         :param session: SQLAlchemy session
         """

@@ -4,12 +4,12 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.dialects.postgresql import HSTORE
+from sqlalchemy_utils.functions import declarative_base
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogBase, TransactionChangesBase
 from .unit_of_work import UnitOfWork
-from .utils import declarative_base
 
 
 class VersioningManager(object):

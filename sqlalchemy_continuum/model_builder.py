@@ -1,8 +1,7 @@
 from copy import copy
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import primary_keys
+from sqlalchemy_utils.functions import primary_keys, declarative_base
 from .expression_reflector import ClassExpressionReflector
-from .utils import declarative_base
 from .version import VersionClassBase
 
 

@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.7.10 (2013-07-23)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed is_auto_assigned_date_column (again)
+- Moved some core utility functions to SQLAlchemy-Utils
+
+
 0.7.9 (2013-07-23)
 ^^^^^^^^^^^^^^^^^^
 
@@ -162,7 +169,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 
 0.3.12 (2013-06-18)
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 - Not null constraints removed from all reflected columns
 - Fixed reify when parent has not null constraints
