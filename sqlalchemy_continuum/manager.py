@@ -18,11 +18,13 @@ class VersioningManager(object):
     classes and the actual versioning to UnitOfWork class. Manager contains
     configuration options that act as defaults for all versioned classes.
     """
+
     def __init__(
         self,
+        unit_of_work_cls=UnitOfWork,
         options={}
     ):
-        self.uow = UnitOfWork(self)
+        self.uow = unit_of_work_cls(self)
         self.reset()
         self.options = {
             'versioning': True,

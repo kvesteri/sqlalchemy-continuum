@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from flask import request
-from flask.globals import _app_ctx_stack
+from flask.globals import _app_ctx_stack, _request_ctx_stack
 from flask.ext.login import current_user
 import sqlalchemy as sa
 
@@ -11,7 +11,7 @@ from ..manager import VersioningManager
 
 def fetch_current_user_id(self):
     # Return None if we are outside of request context.
-    if _app_ctx_stack.top is None:
+    if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
         return
     try:
         return current_user.id
@@ -21,7 +21,7 @@ def fetch_current_user_id(self):
 
 def fetch_remote_addr(self):
     # Return None if we are outside of request context.
-    if _app_ctx_stack.top is None:
+    if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
         return
     return request.remote_addr
 
@@ -44,10 +44,9 @@ class TransactionLogBase(_TransactionLogBase):
 
 
 class FlaskVersioningManager(VersioningManager):
-    def transaction_log_factory(self):
-        self.options['transaction_log_base'] = TransactionLogBase
-
-        return VersioningManager.transaction_log_factory(self)
+    def __init__(self, options={}):
+        options.setdefault('transaction_log_base', TransactionLogBase)
+        VersioningManager.__init__(self, options=options)
 
 
 versioning_manager = FlaskVersioningManager()

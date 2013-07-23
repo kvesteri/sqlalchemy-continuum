@@ -3,6 +3,11 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
+0.7.12 (2013-07-23)
+^^^^^^^^^^^^^^^^^^^
+
+- Fixed FlaskVersioningManager schematics when working outside of request context (again)
+- Added possibility to use custom UnitOfWork class
 
 
 0.7.11 (2013-07-23)
