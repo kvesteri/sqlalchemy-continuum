@@ -91,7 +91,7 @@ def changeset(obj):
     """
     Returns a humanized changeset for given SQLAlchemy declarative object.
 
-    :param obj: SQLAlchemy declarative object
+    :param obj: SQLAlchemy declarative
     """
     data = {}
     session = sa.orm.object_session(obj)

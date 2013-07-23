@@ -24,7 +24,7 @@ class PyTest(Command):
 
 setup(
     name='SQLAlchemy-Continuum',
-    version='0.7.8',
+    version='0.7.9',
     url='https://github.com/kvesteri/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
@@ -40,7 +40,8 @@ setup(
     platforms='any',
     install_requires=[
         'SQLAlchemy>=0.8',
-        'SQLAlchemy-Utils>=0.13.0'
+        'SQLAlchemy-Utils>=0.13.0',
+        'inflection>=0.2.0'
     ],
     cmdclass={'test': PyTest},
     classifiers=[
