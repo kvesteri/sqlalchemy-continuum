@@ -89,3 +89,31 @@ class TestFlaskVersioningManager(TestCase):
         article = self.session.query(self.Article).first()
         tx = article.versions[-1].transaction
         assert tx.user.id == user.id
+
+
+class TestFlaskVersioningManagerWithoutRequestContext(TestCase):
+    def setup_class(cls):
+        versioning_manager.options['versioning'] = False
+        flask_versioning_manager.options['versioning'] = True
+
+    def teardown_class(cls):
+        versioning_manager.options['versioning'] = True
+        flask_versioning_manager.options['versioning'] = False
+
+    def create_models(self):
+        TestCase.create_models(self)
+
+        class User(self.Model):
+            __tablename__ = 'user'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+        self.User = User
+
+    def test_versioning_outside_request(self):
+        user = self.User(name=u'Rambo')
+        self.session.add(user)
+        self.session.commit()
