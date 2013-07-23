@@ -40,7 +40,7 @@ setup(
     platforms='any',
     install_requires=[
         'SQLAlchemy>=0.8',
-        'SQLAlchemy-Utils>=0.13.0',
+        'SQLAlchemy-Utils>=0.15.0',
         'inflection>=0.2.0'
     ],
     cmdclass={'test': PyTest},
