@@ -40,17 +40,9 @@ class TableBuilder(object):
         2. Columns that are part of exclude option parameter.
         """
         columns = []
-        excluded_column_names = self.option('exclude')
-        included_column_names = self.option('include')
 
         for column in self.parent_table.c:
-            if self.model and column.name in excluded_column_names:
-                continue
-
-            if (
-                is_auto_assigned_date_column(column) and
-                column.name not in included_column_names
-            ):
+            if self.manager.is_excluded_column(self.model, column):
                 continue
 
             # Make a copy of the column so that it does not point to wrong

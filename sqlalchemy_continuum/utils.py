@@ -35,11 +35,31 @@ def is_versioned(obj):
     )
 
 
+def is_modified(obj):
+    """
+    Returns whether or not the versioned properties of given object have been
+    modified.
+
+    :param obj: SQLAlchemy declarative model object.
+    """
+    manager = obj.__versioned__['manager']
+
+    for prop in obj.__mapper__.iterate_properties:
+        if (
+            isinstance(prop, sa.orm.ColumnProperty) and
+            not manager.is_excluded_column(obj, prop.columns[0])
+        ):
+            attr = getattr(obj._sa_instance_state.attrs, prop.key)
+            if attr.history.has_changes():
+                return True
+    return False
+
+
 def changeset(obj):
     """
     Returns a humanized changeset for given SQLAlchemy declarative object.
 
-    :param obj: SQLAlchemy declarative
+    :param obj: SQLAlchemy declarative model object.
     """
     data = {}
     session = sa.orm.object_session(obj)

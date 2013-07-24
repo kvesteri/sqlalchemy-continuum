@@ -4,7 +4,9 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.dialects.postgresql import HSTORE
-from sqlalchemy_utils.functions import declarative_base
+from sqlalchemy_utils.functions import (
+    declarative_base, is_auto_assigned_date_column
+)
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
@@ -197,6 +199,23 @@ class VersioningManager(object):
                     continue
                 builder = RelationshipBuilder(self, cls, prop)
                 builder()
+
+    def is_excluded_column(self, model, column):
+        """
+        Returns whether or not given column of given model is excluded from
+        the associated history model.
+
+        :param model: SQLAlchemy declarative model object.
+        :param column: SQLAlchemy Column object.
+        """
+        return (
+            column.name in self.option(model, 'exclude')
+            or
+            (
+                is_auto_assigned_date_column(column) and
+                column.name not in self.option(model, 'include')
+            )
+        )
 
     def option(self, model, name):
         """

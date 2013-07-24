@@ -3,7 +3,7 @@ from functools import wraps
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity
 from .operation import Operation
-from .utils import is_versioned
+from .utils import is_versioned, is_modified
 
 
 def tracked_operation(func):
@@ -119,9 +119,10 @@ class UnitOfWork(object):
             return
 
         for key, value in self.operations.items():
-            if not session.is_modified(
-                value['target'], include_collections=False
-            ) and value['target'] not in session.deleted:
+            if (
+                not is_modified(value['target']) and
+                value['target'] not in session.deleted
+            ):
                 continue
             version_obj = value['target'].__versioned__['class']()
             session.add(version_obj)
@@ -203,7 +204,7 @@ class UnitOfWork(object):
         """
         changed_entities = set()
 
-        for key, value in self.operations.items():
+        for key, value in self.operations.iteritems():
             if not session.is_modified(
                 value['target'], include_collections=False
             ) and value['target'] not in session.deleted:

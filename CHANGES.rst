@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
+
+0.7.13 (2013-07-24)
+^^^^^^^^^^^^^^^^^^^
+
+- Smarter is_modified handling for UnitOfWork (now understands excluded properties)
+
+
 0.7.12 (2013-07-23)
 ^^^^^^^^^^^^^^^^^^^
 
