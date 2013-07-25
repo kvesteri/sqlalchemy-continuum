@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.1 (2013-07-25)
+^^^^^^^^^^^^^^^^^^^
+
+- Added support for SQLAlchemy-i18n
+
+
 0.8.0 (2013-07-25)
 ^^^^^^^^^^^^^^^^^^^
 

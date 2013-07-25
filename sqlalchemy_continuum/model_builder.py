@@ -48,7 +48,7 @@ class ModelBuilder(object):
                 foreign_keys=foreign_keys,
                 lazy='dynamic',
                 backref=sa.orm.backref(
-                    'parent'
+                    'version_parent'
                 ),
                 viewonly=True
             )

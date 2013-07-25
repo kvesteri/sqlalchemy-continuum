@@ -10,11 +10,11 @@ class VersionClassBase(object):
         history. If current version is the first version this method returns
         None.
         """
-        if not self.parent:
+        if not self.version_parent:
             # parent object has been deleted
             return self._previous_query.first()
         if self.index > 0:
-            return self.parent.versions[self.index - 1]
+            return self.version_parent.versions[self.index - 1]
 
     @property
     def _previous_query(self):
@@ -62,11 +62,11 @@ class VersionClassBase(object):
         history. If current version is the last version this method returns
         None.
         """
-        if not self.parent:
+        if not self.version_parent:
             # parent object has been deleted
             return self._next_query.first()
-        if self.index < (self.parent.versions.count() - 1):
-            return self.parent.versions[self.index + 1]
+        if self.index < (self.version_parent.versions.count() - 1):
+            return self.version_parent.versions[self.index + 1]
 
     @property
     def _next_query(self):
@@ -116,12 +116,12 @@ class VersionClassBase(object):
         """
         Return the index of this version in the version history.
         """
-        if not self.parent:
+        if not self.version_parent:
             # parent object has been deleted
             session = sa.orm.object_session(self)
             return session.execute(self._index_query).fetchone()[0]
 
-        for index_, version in enumerate(self.parent.versions):
+        for index_, version in enumerate(self.version_parent.versions):
             if version == self:
                 return index_
 
@@ -161,16 +161,16 @@ class VersionClassBase(object):
         session = sa.orm.object_session(self)
 
         if self.operation_type == 2:
-            session.delete(self.parent)
+            session.delete(self.version_parent)
             return
 
         visited_objects.append(self)
         parent_mapper = self.__parent_class__.__mapper__
 
         # Check if parent object has been deleted
-        if self.parent is None:
-            self.parent = self.__parent_class__()
-            session.add(self.parent)
+        if self.version_parent is None:
+            self.version_parent = self.__parent_class__()
+            session.add(self.version_parent)
 
         # Before reifying relations we need to reify object properties. This
         # is needed because reifying relations might need to flush the session
@@ -179,21 +179,21 @@ class VersionClassBase(object):
         for key, attr in parent_mapper.class_manager.items():
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if key != 'transaction_id':
-                    setattr(self.parent, key, getattr(self, key))
+                    setattr(self.version_parent, key, getattr(self, key))
 
         for key, attr in parent_mapper.class_manager.items():
             if isinstance(attr.property, sa.orm.RelationshipProperty):
                 if key not in ['versions', 'transaction']:
                     if attr.property.secondary is not None:
-                        setattr(self.parent, key, [])
+                        setattr(self.version_parent, key, [])
                         for value in getattr(self, key):
                             value = value.reify()
                             if value:
-                                getattr(self.parent, key).append(
+                                getattr(self.version_parent, key).append(
                                     value
                                 )
                     else:
                         for value in getattr(self, key):
                             value.reify(visited_objects)
 
-        return self.parent
+        return self.version_parent
