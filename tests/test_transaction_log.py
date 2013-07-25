@@ -21,34 +21,31 @@ class TestTransactionLog(TestCase):
         tx = self.article.versions[0].transaction
         assert tx.changes
 
-    def test_has_meta_parameter(self):
+    def test_has_meta_attribute(self):
         tx = self.article.versions[0].transaction
-        assert tx.meta is None
+        assert tx.meta == {}
 
-        tx.meta = {'some key': 'some value'}
+        tx.meta = {u'some key': u'some value'}
         self.session.commit()
         self.session.refresh(tx)
-        assert tx.meta == {'some key': 'some value'}
+        assert tx.meta == {u'some key': u'some value'}
 
-    def test_tx_context_manager(self):
+    def test_tx_meta_manager(self):
         self.article.name = u'Some update article'
-        meta = {'some_key': u'some_value'}
-        with versioning_manager.tx_context(meta=meta):
+        meta = {u'some_key': u'some_value'}
+        with versioning_manager.tx_meta(**meta):
             self.session.commit()
-        assert (
-            self.article.versions[-1].transaction.meta['some_key']
-            == u'some_value'
-        )
 
-    def test_passing_callables_for_tx_contenxt_meta(self):
+        tx = self.article.versions[-1].transaction
+        assert tx.meta[u'some_key'] == u'some_value'
+
+    def test_passing_callables_for_tx_meta(self):
         self.article.name = u'Some update article'
-        meta = {'some_key': lambda: self.article.id}
-        with versioning_manager.tx_context(meta=meta):
+        meta = {u'some_key': lambda: self.article.id}
+        with versioning_manager.tx_meta(**meta):
             self.session.commit()
-        assert (
-            self.article.versions[-1].transaction.meta['some_key']
-            == str(self.article.id)
-        )
+        tx = self.article.versions[-1].transaction
+        assert tx.meta[u'some_key'] == str(self.article.id)
 
     def test_only_saves_transaction_if_actual_modifications(self):
         self.article.name = u'Some article'

@@ -35,6 +35,7 @@ class UnitOfWork(object):
         self.operations = OrderedDict()
         self._committing = False
         self.tx_context = {}
+        self.tx_meta = {}
         self.pending_statements = []
 
     def track_operations(self, mapper):
@@ -156,6 +157,7 @@ class UnitOfWork(object):
             self.create_history_objects(session)
             self.create_association_versions(session)
             self.create_transaction_changes_entries(session)
+            self.create_transaction_meta_entries(session)
 
             self.operations = OrderedDict()
             self._committing = False
@@ -177,11 +179,6 @@ class UnitOfWork(object):
                 self.pending_statements
             )
         ):
-            if 'meta' in self.tx_context and self.tx_context['meta']:
-                for key, value in self.tx_context['meta'].items():
-                    if callable(value):
-                        self.tx_context['meta'][key] = str(value())
-
             table = self.manager.transaction_log_cls.__table__
 
             stmt = (
@@ -227,6 +224,24 @@ class UnitOfWork(object):
                 entity_name=unicode(entity.__name__)
             )
             session.add(changes)
+
+    def create_transaction_meta_entries(self, session):
+        """
+        Create transaction meta entries based on transaction meta context
+        key-value pairs.
+
+        :param session: SQLAlchemy session object
+        """
+        if self.tx_meta:
+            for key, value in self.tx_meta.items():
+                if callable(value):
+                    value = unicode(value())
+                meta = self.manager.transaction_meta_cls(
+                    transaction_id=self.current_transaction_id,
+                    key=key,
+                    value=value
+                )
+                session.add(meta)
 
     def before_commit(self, session):
         """

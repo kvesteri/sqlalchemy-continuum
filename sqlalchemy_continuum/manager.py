@@ -2,15 +2,19 @@ from contextlib import contextmanager
 from inflection import underscore, pluralize
 from copy import copy
 import sqlalchemy as sa
-from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.dialects.postgresql import HSTORE
+from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
-from .transaction_log import TransactionLogBase, TransactionChangesBase
+from .transaction_log import (
+    TransactionLogBase,
+    TransactionChangesBase,
+    TransactionMetaBase
+)
 from .unit_of_work import UnitOfWork
 
 
@@ -72,6 +76,21 @@ class VersioningManager(object):
         yield
         self.uow.tx_context = old_tx_context
 
+    @contextmanager
+    def tx_meta(self, **tx_meta):
+        """
+        Assigns values for current transaction meta. When committing
+        transaction new TransactionMeta records are created for each key-value
+        pair.
+
+        :param tx_context:
+            dictionary containing key-value meta attribute pairs.
+        """
+        old_tx_meta = self.uow.tx_meta
+        self.uow.tx_meta = tx_meta
+        yield
+        self.uow.tx_meta = old_tx_meta
+
     def transaction_log_factory(self):
         """
         Creates TransactionLog class.
@@ -81,7 +100,6 @@ class VersioningManager(object):
             self.options['transaction_log_base']
         ):
             __tablename__ = 'transaction_log'
-            meta = sa.Column(MutableDict.as_mutable(HSTORE))
             manager = self
 
         return TransactionLog
@@ -98,8 +116,6 @@ class VersioningManager(object):
     def transaction_changes_factory(self):
         """
         Creates TransactionChanges class.
-
-        :param transaction_log_class: TransactionLog class
         """
         class TransactionChanges(
             self.declarative_base,
@@ -110,7 +126,7 @@ class VersioningManager(object):
         TransactionChanges.transaction_log = sa.orm.relationship(
             self.transaction_log_cls,
             backref=sa.orm.backref(
-                'changes'
+                'changes',
             ),
             primaryjoin=(
                 '%s.id == TransactionChanges.transaction_id' %
@@ -124,8 +140,6 @@ class VersioningManager(object):
         """
         Creates TransactionChanges class but only if it doesn't already exist
         in declarative model registry.
-
-        :param transaction_log_class: TransactionLog class
         """
         if (
             'TransactionChanges' not in
@@ -133,6 +147,49 @@ class VersioningManager(object):
         ):
             return self.transaction_changes_factory()
         return self.declarative_base._decl_class_registry['TransactionChanges']
+
+    def transaction_meta_factory(self):
+        """
+        Creates TransactionMeta class.
+        """
+        class TransactionMeta(
+            self.declarative_base,
+            TransactionMetaBase
+        ):
+            __tablename__ = 'transaction_meta'
+
+        TransactionMeta.transaction_log = sa.orm.relationship(
+            self.transaction_log_cls,
+            backref=sa.orm.backref(
+                'meta_relation',
+                collection_class=attribute_mapped_collection('key')
+            ),
+            primaryjoin=(
+                '%s.id == TransactionMeta.transaction_id' %
+                self.transaction_log_cls.__name__
+            ),
+            foreign_keys=[TransactionMeta.transaction_id]
+        )
+
+        self.transaction_log_cls.meta = association_proxy(
+            'meta_relation',
+            'value',
+            creator=lambda key, value: TransactionMeta(key=key, value=value)
+        )
+
+        return TransactionMeta
+
+    def create_transaction_meta(self):
+        """
+        Creates TransactionMeta class but only if it doesn't already exist
+        in declarative model registry.
+        """
+        if (
+            'TransactionMeta' not in
+            self.declarative_base._decl_class_registry
+        ):
+            return self.transaction_meta_factory()
+        return self.declarative_base._decl_class_registry['TransactionMeta']
 
     def build_tables(self):
         """
@@ -171,6 +228,7 @@ class VersioningManager(object):
             self.declarative_base = declarative_base(cls)
             self.transaction_log_cls = self.create_transaction_log()
             self.transaction_changes_cls = self.create_transaction_changes()
+            self.transaction_meta_cls = self.create_transaction_meta()
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):

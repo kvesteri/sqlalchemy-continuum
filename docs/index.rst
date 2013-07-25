@@ -312,8 +312,13 @@ TransactionLog can be queried just like any other sqlalchemy declarative model.
     session.query(TransactionLog).all()
 
 
-Transaction contexts
---------------------
+TransactionMeta
+---------------
+
+Each transaction has a relation to TransactionMeta class. This class contains three columns transaction_id, key and value.
+
+You can easily 'tag' transactions with certain key value pairs by giving these keys and values as parameters to tx_meta function of VersioningManager.
+
 
 ::
 
@@ -323,19 +328,19 @@ Transaction contexts
     article = Article()
     session.add(article)
 
-    with versioning_manager.tx_context(meta={'tags': 'article'})
+    with versioning_manager.tx_meta(some_key=u'some value')
         session.commit()
 
 
     # find all transactions with 'article' tags
     query = (
         session.query(TransactionLog)
-        .filter(TransactionLog.meta['tags'] == 'article')
+        .filter(TransactionLog.meta['some_key'] == 'some value')
     )
 
 
-Using lazy values in transaction context meta
----------------------------------------------
+Using lazy values in transaction meta
+-------------------------------------
 
 ::
 
@@ -345,7 +350,7 @@ Using lazy values in transaction context meta
     article = Article()
     session.add(article)
 
-    with versioning_manager.tx_context(meta={'article_id': lambda: article.id})
+    with versioning_manager.tx_meta(article_id=lambda: article.id)
         session.commit()
 
 

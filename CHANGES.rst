@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.0 (2013-07-25)
+^^^^^^^^^^^^^^^^^^^
+
+- Added database independent transaction meta parameter handling (formerly supported postgres only)
+
+
 0.7.13 (2013-07-24)
 ^^^^^^^^^^^^^^^^^^^
 
