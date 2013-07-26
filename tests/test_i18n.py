@@ -42,3 +42,19 @@ class TestVersioningWithI18nExtension(TestCase):
         self.session.commit()
 
         assert article.translations['en'].versions[0].changeset
+
+    def test_changed_entities(self):
+        article = self.Article()
+        article.description = u'something'
+        self.session.add(article)
+        self.session.commit()
+        article.name = u'Some article'
+        self.session.commit()
+
+        tx_log = self.Article.__versioned__['transaction_log']
+        tx = (
+            self.session.query(tx_log)
+            .order_by(sa.desc(tx_log.issued_at))
+            .first()
+        )
+        assert 'ArticleTranslation' in tx.entity_names
