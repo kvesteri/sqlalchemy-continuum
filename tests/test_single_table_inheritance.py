@@ -40,3 +40,18 @@ class TestSingleTableInheritance(TestCase):
         assert BlogPostHistory.__table__.name == 'text_item_history'
         assert issubclass(ArticleHistory, TextItemHistory)
         assert issubclass(BlogPostHistory, TextItemHistory)
+
+    def test_transaction_log(self):
+        b = self.Article()
+        b.name = u'Text 1'
+        self.session.add(b)
+        self.session.commit()
+
+        options = self.TextItem.__versioned__
+        TransactionLog = options['transaction_log']
+        transaction = (
+            self.session.query(TransactionLog)
+            .order_by(sa.sql.expression.desc(TransactionLog.issued_at))
+        ).first()
+        assert transaction.entity_names == [u'Article']
+        assert self.Article in transaction.changed_entities
