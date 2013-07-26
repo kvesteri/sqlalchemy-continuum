@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.2 (2013-07-26)
+^^^^^^^^^^^^^^^^^^^
+
+- Fixed MySQL history table primary key generation (autoincrement=False now forced for transaction_id column)
+
+
 0.8.1 (2013-07-25)
 ^^^^^^^^^^^^^^^^^^^
 

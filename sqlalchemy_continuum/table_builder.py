@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import is_auto_assigned_date_column
 
 
 class TableBuilder(object):
@@ -87,7 +86,8 @@ class TableBuilder(object):
         return sa.Column(
             self.option('transaction_column_name'),
             sa.BigInteger,
-            primary_key=True
+            primary_key=True,
+            autoincrement=False  # This is needed for MySQL
         )
 
     def __call__(self, extends=None):
