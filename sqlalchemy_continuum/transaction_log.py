@@ -24,6 +24,7 @@ class TransactionLogBase(object):
         entities = []
 
         for class_, history_class in tuples:
+
             if class_.__name__ not in self.entity_names:
                 continue
 

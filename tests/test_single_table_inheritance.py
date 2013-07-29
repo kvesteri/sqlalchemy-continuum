@@ -31,6 +31,16 @@ class TestSingleTableInheritance(TestCase):
         self.Article = Article
         self.BlogPost = BlogPost
 
+    def test_history_class_map(self):
+        manager = self.TextItem.__versioned__['manager']
+        assert len(manager.history_class_map.keys()) == 3
+
+    def test_transaction_log_relations(self):
+        tx_log = self.TextItem.__versioned__['transaction_log']
+        assert tx_log.text_items
+        assert tx_log.articles
+        assert tx_log.blog_posts
+
     def test_each_class_has_distinct_history_class(self):
         TextItemHistory = self.TextItem.__versioned__['class']
         ArticleHistory = self.Article.__versioned__['class']
@@ -41,10 +51,10 @@ class TestSingleTableInheritance(TestCase):
         assert issubclass(ArticleHistory, TextItemHistory)
         assert issubclass(BlogPostHistory, TextItemHistory)
 
-    def test_transaction_log(self):
-        b = self.Article()
-        b.name = u'Text 1'
-        self.session.add(b)
+    def test_transaction_log_changed_entities(self):
+        article = self.Article()
+        article.name = u'Text 1'
+        self.session.add(article)
         self.session.commit()
 
         options = self.TextItem.__versioned__
@@ -54,4 +64,4 @@ class TestSingleTableInheritance(TestCase):
             .order_by(sa.sql.expression.desc(TransactionLog.issued_at))
         ).first()
         assert transaction.entity_names == [u'Article']
-        assert self.Article in transaction.changed_entities
+        assert transaction.changed_entities

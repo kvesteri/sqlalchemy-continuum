@@ -62,6 +62,11 @@ class ModelBuilder(object):
         """
         # Only define transaction relation if it doesn't already exist in
         # parent class.
+
+        backref_name = self.manager.options['relation_naming_function'](
+            self.model.__name__
+        )
+
         if not hasattr(self.extension_class, 'transaction'):
             self.extension_class.transaction = sa.orm.relationship(
                 tx_log_class,
@@ -72,6 +77,19 @@ class ModelBuilder(object):
                 foreign_keys=[self.extension_class.transaction_id],
                 backref=self.manager.options['relation_naming_function'](
                     self.model.__name__
+                )
+            )
+        else:
+            setattr(
+                tx_log_class,
+                backref_name,
+                sa.orm.relationship(
+                    self.extension_class,
+                    primaryjoin=(
+                        tx_log_class.id ==
+                        self.extension_class.transaction_id
+                    ),
+                    foreign_keys=[self.extension_class.transaction_id]
                 )
             )
 

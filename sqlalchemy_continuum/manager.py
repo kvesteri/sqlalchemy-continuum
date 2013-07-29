@@ -218,6 +218,13 @@ class VersioningManager(object):
                 table = builder()
                 self.tables[cls] = table
 
+    def closest_matching_table(self, model):
+        if model in self.tables:
+            return self.tables[model]
+        for cls in self.tables:
+            if issubclass(model, cls):
+                return self.tables[cls]
+
     def build_models(self):
         """
         Build declarative history models based on classes that were collected
@@ -234,10 +241,11 @@ class VersioningManager(object):
                 if not self.option(cls, 'versioning'):
                     continue
 
-                if cls in self.tables:
+                table = self.closest_matching_table(cls)
+                if table is not None:
                     builder = ModelBuilder(self, cls)
                     builder(
-                        self.tables[cls],
+                        table,
                         self.transaction_log_cls,
                         self.transaction_changes_cls
                     )
