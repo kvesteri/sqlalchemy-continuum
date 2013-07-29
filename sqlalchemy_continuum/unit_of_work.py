@@ -202,9 +202,10 @@ class UnitOfWork(object):
         changed_entities = set()
 
         for key, value in self.operations.iteritems():
-            if not session.is_modified(
-                value['target'], include_collections=False
-            ) and value['target'] not in session.deleted:
+            if (
+                not is_modified(value['target']) and
+                value['target'] not in session.deleted
+            ):
                 continue
             changed_entities.add(key[0])
         return changed_entities
@@ -232,7 +233,13 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        if self.tx_meta:
+        if (
+            self.tx_meta and
+            (
+                self.changed_entities(session) or
+                self.pending_statements
+            )
+        ):
             for key, value in self.tx_meta.items():
                 if callable(value):
                     value = unicode(value())

@@ -1,3 +1,6 @@
+from datetime import datetime
+import sqlalchemy as sa
+
 from tests import TestCase
 from sqlalchemy_continuum import versioning_manager
 
@@ -50,9 +53,22 @@ class TestTransactionLog(TestCase):
     def test_only_saves_transaction_if_actual_modifications(self):
         self.article.name = u'Some article'
         self.session.commit()
+        self.article.name = u'Some article'
+        self.session.commit()
         assert self.session.query(
             versioning_manager.transaction_log_cls
         ).count() == 1
+
+    def test_only_saves_meta_if_actual_moficication(self):
+        self.article.name = u'Some article'
+        self.session.commit()
+        meta = {u'some_key': u'some_value'}
+        with versioning_manager.tx_meta(**meta):
+            self.article.name = u'Some article'
+            self.session.commit()
+        assert self.session.query(
+            versioning_manager.transaction_meta_cls
+        ).count() == 0
 
 
 class TestTransactionLogChangedEntities(TestCase):
