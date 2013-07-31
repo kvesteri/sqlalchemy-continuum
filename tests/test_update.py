@@ -87,7 +87,7 @@ class TestUpdateWithDefaultValues(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
-            updated_at = sa.Column(sa.DateTime, server_default='NOW()')
+            updated_at = sa.Column(sa.DateTime, server_default=sa.func.now())
             is_editable = sa.Column(sa.Boolean)
 
         self.Article = Article
@@ -99,9 +99,7 @@ class TestUpdateWithDefaultValues(TestCase):
         self.session.add(article)
         self.session.commit()
 
-        self.connection.execute(
-            "UPDATE article SET is_editable = True"
-        )
+        article.is_editable = True
         self.session.commit()
         article = article.versions.all()[-1]
         assert article.name == u'Some article'

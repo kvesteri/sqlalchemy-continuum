@@ -184,13 +184,13 @@ class UnitOfWork(object):
             stmt = (
                 table
                 .insert()
-                .returning(table.c.id)
+                #.returning(table.c.id)
                 .values(
                     issued_at=sa.func.now(),
                     **self.tx_context
                 )
             )
-            self.current_transaction_id = session.execute(stmt).fetchone()[0]
+            self.current_transaction_id = session.execute(stmt).lastrowid
             return self.current_transaction_id
 
     def changed_entities(self, session):

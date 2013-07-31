@@ -1,6 +1,3 @@
-from datetime import datetime
-import sqlalchemy as sa
-
 from tests import TestCase
 from sqlalchemy_continuum import versioning_manager
 

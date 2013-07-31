@@ -1,8 +1,20 @@
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+
+
+class BigInteger(sa.types.BigInteger):
+    """Workaround for the restriction of SQLite that only integer primary keys
+    can be autoincremented.
+    """
+
+
+@compiles(BigInteger, 'sqlite')
+def compile_big_integer(element, compiler, **kw):
+    return 'INTEGER'
 
 
 class TransactionLogBase(object):
-    id = sa.Column(sa.BigInteger, primary_key=True)
+    id = sa.Column(BigInteger, primary_key=True, autoincrement=True)
     issued_at = sa.Column(sa.DateTime)
 
     @property
@@ -49,7 +61,6 @@ class TransactionLogBase(object):
 class TransactionMetaBase(object):
     transaction_id = sa.Column(
         sa.BigInteger,
-        autoincrement=True,
         primary_key=True
     )
     key = sa.Column(sa.Unicode(255), primary_key=True)
@@ -59,7 +70,6 @@ class TransactionMetaBase(object):
 class TransactionChangesBase(object):
     transaction_id = sa.Column(
         sa.BigInteger,
-        autoincrement=True,
         primary_key=True
     )
     entity_name = sa.Column(sa.Unicode(255), primary_key=True)
