@@ -219,6 +219,13 @@ class VersioningManager(object):
                 self.tables[cls] = table
 
     def closest_matching_table(self, model):
+        """
+        Returns the closest matching table from the generated tables dictionary
+        for given model. First tries to fetch an exact match for given model.
+        If no table was found then tries to match given model as a subclass.
+
+        :param model: SQLAlchemy declarative model class.
+        """
         if model in self.tables:
             return self.tables[model]
         for cls in self.tables:
