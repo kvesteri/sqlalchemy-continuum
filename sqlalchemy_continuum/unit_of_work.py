@@ -1,3 +1,4 @@
+import re
 from collections import OrderedDict
 from functools import wraps
 import sqlalchemy as sa
@@ -313,12 +314,53 @@ class UnitOfWork(object):
                     # multi-insert into batch of normal inserts
                     for params in parameters:
                         self.append_association_operation(
-                            conn, table_name, params, op
+                            conn,
+                            table_name,
+                            self.positional_args_to_dict(
+                                op, statement, params
+                            ),
+                            op
                         )
                 else:
                     self.append_association_operation(
-                        conn, table_name, parameters, op
+                        conn,
+                        table_name,
+                        self.positional_args_to_dict(
+                            op,
+                            statement,
+                            parameters
+                        ),
+                        op
                     )
+
+    def positional_args_to_dict(self, op, statement, params):
+        """
+        On some drivers (eg sqlite) generated INSERT statements use positional
+        args instead of key value dictionary. This method converts positional
+        args to key value dict.
+
+        :param statement: SQL statement string
+        :param params: tuple or dict of statement parameters
+        """
+        if isinstance(params, tuple):
+            parameters = {}
+            if op == Operation.DELETE:
+                regexp = '^DELETE FROM (.+?) WHERE'
+                match = re.match(regexp, statement)
+                tablename = match.groups()[0].strip('"').strip("'").strip('`')
+                table = self.manager.metadata.tables[tablename]
+                columns = table.primary_key.columns.values()
+                for index, column in enumerate(columns):
+                    parameters[column.name] = params[index]
+            else:
+                columns = [
+                    column.strip() for column in
+                    statement.split('(')[1].split(')')[0].split(',')
+                ]
+                for index, column in enumerate(columns):
+                    parameters[column] = params[index]
+            return parameters
+        return params
 
     def assign_attributes(self, parent_obj, version_obj):
         """
