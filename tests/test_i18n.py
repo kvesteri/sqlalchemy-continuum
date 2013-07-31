@@ -54,7 +54,7 @@ class TestVersioningWithI18nExtension(TestCase):
         tx_log = self.Article.__versioned__['transaction_log']
         tx = (
             self.session.query(tx_log)
-            .order_by(sa.desc(tx_log.issued_at))
+            .order_by(sa.desc(tx_log.id))
             .first()
         )
         assert 'ArticleTranslation' in tx.entity_names
