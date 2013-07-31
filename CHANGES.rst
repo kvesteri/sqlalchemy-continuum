@@ -4,8 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.4 (2013-07-31)
+^^^^^^^^^^^^^^^^^^
+
+- Full MySQL and SQLite support added
+
+
 0.8.3 (2013-07-29)
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 - Fixed UnitOfWork changed entities handling (now checks only for versioned attributes not all object attributes)
 - Fixed UnitOfWork TransactionMeta object creation (now checks if actual modifications were made)
