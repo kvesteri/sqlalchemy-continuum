@@ -185,13 +185,18 @@ class UnitOfWork(object):
             stmt = (
                 table
                 .insert()
-                #.returning(table.c.id)
                 .values(
                     issued_at=sa.func.now(),
                     **self.tx_context
                 )
             )
-            self.current_transaction_id = session.execute(stmt).lastrowid
+            if session.connection().engine.driver == 'psycopg2':
+                stmt = stmt.returning(table.c.id)
+                self.current_transaction_id = (
+                    session.execute(stmt).fetchone()[0]
+                )
+            else:
+                self.current_transaction_id = session.execute(stmt).lastrowid
             return self.current_transaction_id
 
     def changed_entities(self, session):
