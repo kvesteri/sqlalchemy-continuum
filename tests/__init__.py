@@ -33,13 +33,13 @@ class TestCase(object):
         flask_versioning_manager.options['versioning'] = False
 
     def setup_method(self, method):
-        self.engine = create_engine(
-            'sqlite:///:memory:'
-        )
-
         # self.engine = create_engine(
-        #     'postgres://postgres@localhost/sqlalchemy_continuum_test'
+        #     'sqlite:///:memory:'
         # )
+
+        self.engine = create_engine(
+            'postgres://postgres@localhost/sqlalchemy_continuum_test'
+        )
         self.connection = self.engine.connect()
         self.Model = declarative_base()
 

@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.5 (2013-08-01)
+^^^^^^^^^^^^^^^^^^
+
+- TSVectorType columns not versioned by default (in order to avoid massive version histories)
+
+
 0.8.4 (2013-07-31)
 ^^^^^^^^^^^^^^^^^^
 

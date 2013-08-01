@@ -4,7 +4,7 @@ from .operation import Operation
 from .utils import changeset
 
 
-__version__ = '0.8.4'
+__version__ = '0.8.5'
 
 
 __all__ = (

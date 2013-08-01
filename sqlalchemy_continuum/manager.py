@@ -7,6 +7,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
+from sqlalchemy_utils.types import TSVectorType
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
@@ -281,13 +282,14 @@ class VersioningManager(object):
         :param model: SQLAlchemy declarative model object.
         :param column: SQLAlchemy Column object.
         """
+        if column.name in self.option(model, 'include'):
+            return False
         return (
             column.name in self.option(model, 'exclude')
             or
-            (
-                is_auto_assigned_date_column(column) and
-                column.name not in self.option(model, 'include')
-            )
+            is_auto_assigned_date_column(column)
+            or
+            isinstance(column.type, TSVectorType)
         )
 
     def option(self, model, name):

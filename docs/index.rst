@@ -119,7 +119,6 @@ History objects
 ===============
 
 
-
 Operation types
 ---------------
 

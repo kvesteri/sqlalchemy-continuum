@@ -1,5 +1,6 @@
 from datetime import datetime
 import sqlalchemy as sa
+from sqlalchemy_utils import TSVectorType
 from tests import TestCase
 
 
@@ -33,6 +34,24 @@ class TestDateTimeColumnExclusion(TestCase):
     def test_datetime_exclusion_only_applies_to_datetime_types(self):
         assert (
             'is_deleted' in
+            self.Article.__versioned__['class'].__table__.c
+        )
+
+
+class TestTSVectorTypeColumnExclusion(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {}
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+            search_vector = sa.Column(TSVectorType)
+
+        self.Article = Article
+
+    def test_tsvector_typed_columns_excluded_by_default(self):
+        assert (
+            'search_vector' not in
             self.Article.__versioned__['class'].__table__.c
         )
 
