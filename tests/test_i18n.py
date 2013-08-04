@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy_i18n import Translatable, make_translatable
+from sqlalchemy_continuum import versioning_manager
 from . import TestCase
 
 
@@ -58,3 +59,21 @@ class TestVersioningWithI18nExtension(TestCase):
             .first()
         )
         assert 'ArticleTranslation' in tx.entity_names
+
+    def test_history_with_many_translations(self):
+        self.article = self.Article()
+        self.article.description = u'Some text'
+        self.session.add(self.article)
+
+        with self.article.force_locale('fi'):
+            self.article.name = 'Text 1'
+        with self.article.force_locale('en'):
+            self.article.name = 'Text 2'
+
+        self.session.commit()
+
+        TransactionLog = self.Article.__versioned__['transaction_log']
+        transaction = self.session.query(TransactionLog).one()
+
+        assert transaction.changes[1].entity_name == u'ArticleTranslation'
+        assert len(transaction.changes[1].article_translations) == 2
