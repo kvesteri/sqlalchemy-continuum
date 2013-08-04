@@ -22,6 +22,16 @@ class PyTest(Command):
         errno = subprocess.call(['py.test'])
         raise SystemExit(errno)
 
+
+extras_require = {
+    'test': [
+        'pytest>=2.3.5',
+        'flexmock>=0.9.7',
+        'psycopg2>=2.4.6'
+    ],
+}
+
+
 setup(
     name='SQLAlchemy-Continuum',
     version='0.8.5',

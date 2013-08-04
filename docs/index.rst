@@ -450,6 +450,14 @@ By default SQLAlchemy-Continuum versions all sessions. You can override this beh
     make_versioned(session=my_session)
 
 
+Alembic migrations
+==================
+
+Each time you make changes to database structure you should also change the associated history tables. When you make changes to your models SQLAlchemy-Continuum automatically alters the history model definitions, hence you can use `alembic revision --autogenerate` just like before.
+
+Pay close attention when dropping or moving data from parent tables and reflecting these changes to history tables.
+
+
 Internals
 =========
 
