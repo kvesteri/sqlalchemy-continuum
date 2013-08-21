@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 from sqlalchemy_i18n import Translatable, make_translatable
-from sqlalchemy_continuum import versioning_manager
 from . import TestCase
 
 
@@ -21,7 +20,8 @@ class TestVersioningWithI18nExtension(TestCase):
                 'base_classes': (self.Model, )
             }
             __translatable__ = {
-                'base_classes': (Versioned, )
+                'base_classes': (Versioned, ),
+                'locales': ['fi', 'en']
             }
             __translated_columns__ = [
                 sa.Column('name', sa.Unicode(255)),
@@ -76,4 +76,3 @@ class TestVersioningWithI18nExtension(TestCase):
         transaction = self.session.query(TransactionLog).one()
 
         assert transaction.changes[1].entity_name == u'ArticleTranslation'
-        assert len(transaction.changes[1].article_translations) == 2
