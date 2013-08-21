@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.6 (2013-08-21)
+^^^^^^^^^^^^^^^^^^
+
+- Custom database schema support added
+
+
 0.8.5 (2013-08-01)
 ^^^^^^^^^^^^^^^^^^
 
