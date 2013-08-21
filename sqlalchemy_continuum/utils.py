@@ -3,6 +3,22 @@ import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 
 
+def history_table(table):
+    """
+    Returns associated history table for given SQLAlchemy Table object.
+
+    :param table: SQLAlchemy Table object
+    """
+    if table.metadata.schema:
+        return table.metadata.tables[
+            table.metadata.schema + '.' + table.name + '_history'
+        ]
+    else:
+        return table.metadata.tables[
+            table.name + '_history'
+        ]
+
+
 def versioned_objects(session):
     """
     Returns all versioned objects in given session.

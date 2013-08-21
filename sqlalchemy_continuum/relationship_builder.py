@@ -2,6 +2,7 @@ import sqlalchemy as sa
 from .table_builder import TableBuilder
 from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
+from .utils import history_table
 
 
 class RelationshipBuilder(object):
@@ -119,7 +120,13 @@ class RelationshipBuilder(object):
             column.table,
             remove_primary_keys=True
         )
-        if builder.table_name not in column.table.metadata.tables:
+        metadata = column.table.metadata
+        if metadata.schema:
+            table_name = metadata.schema + '.' + builder.table_name
+        else:
+            table_name = builder.table_name
+
+        if table_name not in metadata.tables:
             version_table = builder()
 
             self.manager.association_history_tables.add(
@@ -148,9 +155,7 @@ class RelationshipBuilder(object):
                     self.remote_column = column_pair[1]
                     break
 
-            self.remote_table = self.remote_column.table.metadata.tables[
-                self.remote_column.table.name + '_history'
-            ]
+            self.remote_table = history_table(self.remote_column.table)
             reflection_func = 'reflected_association'
         setattr(
             self.local_cls,
