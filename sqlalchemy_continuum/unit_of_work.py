@@ -302,9 +302,9 @@ class UnitOfWork(object):
 
         op = None
 
-        if statement.startswith('INSERT INTO '):
+        if context.isinsert:
             op = Operation.INSERT
-        elif statement.startswith('DELETE FROM '):
+        elif context.isdelete:
             op = Operation.DELETE
 
         if op is not None:
