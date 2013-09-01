@@ -143,6 +143,11 @@ class UnitOfWork(object):
             )
 
     def create_association_versions(self, session):
+        """
+        Creates association table history records for given session.
+
+        :param session: SQLAlchemy session object
+        """
         for stmt in self.pending_statements:
             stmt = stmt.values(transaction_id=self.current_transaction_id)
             session.execute(stmt)
