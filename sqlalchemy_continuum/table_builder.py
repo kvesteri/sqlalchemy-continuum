@@ -40,6 +40,8 @@ class TableBuilder(object):
         """
         columns = []
 
+        transaction_column_name = self.option('transaction_column_name')
+
         for column in self.parent_table.c:
             if self.manager.is_excluded_column(self.model, column):
                 continue
@@ -50,7 +52,7 @@ class TableBuilder(object):
             # Remove unique constraints
             column_copy.unique = False
             column_copy.autoincrement = False
-            if column_copy.name == 'transaction_id':
+            if column_copy.name == transaction_column_name:
                 column_copy.nullable = False
 
             if not column_copy.primary_key:
@@ -58,10 +60,10 @@ class TableBuilder(object):
 
             columns.append(column_copy)
 
-        # When using join table inheritance each table should have
-        # transaction_id column.
-        if 'transaction_id' not in [c.name for c in columns]:
-            columns.append(sa.Column('transaction_id', sa.Integer))
+        # When using join table inheritance each table should have own
+        # transaction column.
+        if transaction_column_name not in [c.name for c in columns]:
+            columns.append(sa.Column(transaction_column_name, sa.BigInteger))
 
         return columns
 

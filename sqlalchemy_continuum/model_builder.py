@@ -21,6 +21,9 @@ class ModelBuilder(object):
         self.manager = versioning_manager
         self.model = model
 
+    def option(self, name):
+        return self.manager.option(self.model, name)
+
     def build_parent_relationship(self):
         """
         Builds a relationship between currently built history class and
@@ -33,17 +36,17 @@ class ModelBuilder(object):
             conditions.append(
                 getattr(self.model, primary_key.name)
                 ==
-                getattr(self.extension_class, primary_key.name)
+                getattr(self.history_class, primary_key.name)
             )
             foreign_keys.append(
-                getattr(self.extension_class, primary_key.name)
+                getattr(self.history_class, primary_key.name)
             )
 
         # We need to check if versions relation was already set for parent
         # class.
         if not hasattr(self.model, 'versions'):
             self.model.versions = sa.orm.relationship(
-                self.extension_class,
+                self.history_class,
                 primaryjoin=sa.and_(*conditions),
                 foreign_keys=foreign_keys,
                 lazy='dynamic',
@@ -67,14 +70,14 @@ class ModelBuilder(object):
             self.model.__name__
         )
 
-        if not hasattr(self.extension_class, 'transaction'):
-            self.extension_class.transaction = sa.orm.relationship(
+        if not hasattr(self.history_class, 'transaction'):
+            self.history_class.transaction = sa.orm.relationship(
                 tx_log_class,
                 primaryjoin=(
                     tx_log_class.id ==
-                    self.extension_class.transaction_id
+                    self.history_class.transaction_id
                 ),
-                foreign_keys=[self.extension_class.transaction_id],
+                foreign_keys=[self.history_class.transaction_id],
                 backref=self.manager.options['relation_naming_function'](
                     self.model.__name__
                 )
@@ -84,12 +87,12 @@ class ModelBuilder(object):
                 tx_log_class,
                 backref_name,
                 sa.orm.relationship(
-                    self.extension_class,
+                    self.history_class,
                     primaryjoin=(
                         tx_log_class.id ==
-                        self.extension_class.transaction_id
+                        self.history_class.transaction_id
                     ),
-                    foreign_keys=[self.extension_class.transaction_id]
+                    foreign_keys=[self.history_class.transaction_id]
                 )
             )
 
@@ -102,12 +105,12 @@ class ModelBuilder(object):
         """
         # Only define changes relation if it doesn't already exist in
         # parent class.
-        if not hasattr(self.extension_class, 'changes'):
-            self.extension_class.changes = sa.orm.relationship(
+        if not hasattr(self.history_class, 'changes'):
+            self.history_class.changes = sa.orm.relationship(
                 tx_changes_class,
                 primaryjoin=(
                     tx_changes_class.transaction_id ==
-                    self.extension_class.transaction_id
+                    self.history_class.transaction_id
                 ),
                 foreign_keys=[tx_changes_class.transaction_id],
                 backref=self.manager.options['relation_naming_function'](
@@ -176,10 +179,10 @@ class ModelBuilder(object):
         self.model.__versioned__['transaction_log'] = tx_log_class
         self.model.__versioned__['transaction_changes'] = tx_changes_class
         self.model.__versioned__['manager'] = self.manager
-        self.extension_class = self.build_model(table)
+        self.history_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(tx_log_class)
         self.build_changes_relationship(tx_changes_class)
-        self.model.__versioned__['class'] = self.extension_class
-        self.extension_class.__parent_class__ = self.model
-        self.manager.history_class_map[self.model] = self.extension_class
+        self.model.__versioned__['class'] = self.history_class
+        self.history_class.__parent_class__ = self.model
+        self.manager.history_class_map[self.model] = self.history_class
