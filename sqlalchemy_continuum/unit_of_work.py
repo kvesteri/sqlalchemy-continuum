@@ -79,7 +79,13 @@ class UnitOfWork(object):
 
     @tracked_operation
     def track_inserts(self, key, target):
+        """
+        Tracks object insert operations. Whenever object is inserted it is
+        added to this UnitOfWork's internal operations dictionary.
+        """
         if key in self.operations:
+            # If the object is deleted and then inserted within the same
+            # transaction we are actually dealing with an update.
             self.operations[key]['target'] = target
             self.operations[key]['operation_type'] = Operation.UPDATE
         else:
@@ -91,7 +97,7 @@ class UnitOfWork(object):
     @tracked_operation
     def track_updates(self, key, target):
         """
-        Tracks object update operations. Whenever object is deleted it is
+        Tracks object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
         self.operations[key] = {
