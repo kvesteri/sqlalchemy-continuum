@@ -450,23 +450,30 @@ By default SQLAlchemy-Continuum versions all sessions. You can override this beh
     make_versioned(session=my_session)
 
 
+
+Continuum Schema
+================
+
+By default SQLAlchemy-Continuum creates a history table for each versioned entity table. The history tables are suffixed with '_history'. So for example if you have two versioned tables 'article' and 'category', SQLAlchemy-Continuum would create two history models 'article_history' and 'category_history'.
+
+The history tables contain these columns:
+
+* id of the original entity (this can be more then one column in the case of composite primary keys)
+* transaction_id - an integer. Matches to the id number in the transaction_log table.
+* operation_type - a small integer defining the type of the operation
+* versioned fields from the original entity
+
+The primary key of each history table is the combination of parent table's primary key + the transaction_id. This means there can be at most one history table entry for a given entity instance at given transaction.
+
+Continuum also generates 3 tables for efficient transaction storage namely transaction_log, transaction_changes and transaction_meta. The generation of transaction_changes and transaction_meta is optional. However it is recommended if transactions need to be queried efficently afterwards.
+
+
 Alembic migrations
 ==================
 
 Each time you make changes to database structure you should also change the associated history tables. When you make changes to your models SQLAlchemy-Continuum automatically alters the history model definitions, hence you can use `alembic revision --autogenerate` just like before. You just need to make sure `make_versioned` function gets called before alembic gathers all your models.
 
 Pay close attention when dropping or moving data from parent tables and reflecting these changes to history tables.
-
-
-Internals
-=========
-
-Continuum schema
-----------------
-
-By default SQLAlchemy-Continuum creates history tables for all versioned tables. So for example if you have two models Article and Category, SQLAlchemy-Continuum would create two history models ArticleHistory and CategoryHistory.
-
-Continuum also creates transaction_log table and transaction_changes table. By default transaction_log contains columns id (autoincremented primary key column) and issued_at (auto-assigned datetime column) whereas transaction_changes contains columns transaction_id and entity_name.
 
 
 Extensions
