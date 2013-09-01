@@ -293,12 +293,15 @@ You can query history models just like any other sqlalchemy declarative model.
 
 
 
-Transaction Log
-===============
+Transactions
+============
+
+
+TransactionLog
+--------------
 
 
 For each committed transaction SQLAlchemy-Continuum creates a new TransactionLog record.
-
 
 TransactionLog can be queried just like any other sqlalchemy declarative model.
 
@@ -338,8 +341,8 @@ You can easily 'tag' transactions with certain key value pairs by giving these k
     )
 
 
-Using lazy values in transaction meta
--------------------------------------
+Using lazy values
+^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -361,7 +364,7 @@ Using lazy values in transaction meta
 
 
 TransactionChanges
-==================
+------------------
 
 In order to be able to to fetch efficiently entities that changed in given transaction SQLAlchemy-Continuum keeps track of changed entities in transaction_changes table.
 
@@ -377,7 +380,7 @@ transaction_id          entity_name
 
 
 Find entities that changed in given transaction
------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can easily get a dictionary of all changed entities by accessing the changed_entities property of
 given transaction. This dictionary contains class objects as keys and entities as values.
