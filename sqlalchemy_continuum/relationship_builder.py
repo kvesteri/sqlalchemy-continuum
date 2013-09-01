@@ -11,17 +11,24 @@ class RelationshipBuilder(object):
         self.property = property_
         self.model = model
 
+    def option(self, name):
+        return self.manager.option(self.model, name)
+
     def relationship_subquery(self, obj):
         primary_keys = []
+
+        column_name = self.option('transaction_column_name')
+
         for column in self.remote_cls.__table__.c:
-            if column.primary_key and column.name != 'transaction_id':
+            if column.primary_key and column.name != column_name:
                 primary_keys.append(column)
 
-        return self.remote_cls.transaction_id.in_(
+        return getattr(self.remote_cls, column_name).in_(
             sa.select(
-                [sa.func.max(self.remote_cls.transaction_id)]
+                [sa.func.max(getattr(self.remote_cls, column_name))]
             ).where(
-                self.remote_cls.transaction_id <= obj.transaction_id
+                getattr(self.remote_cls, column_name) <=
+                getattr(obj, column_name)
             ).group_by(
                 *primary_keys
             ).correlate(self.local_cls)
@@ -50,15 +57,16 @@ class RelationshipBuilder(object):
         return relationship
 
     def association_subquery(self, obj):
+        column_name = self.option('transaction_column_name')
         reflector = ObjectExpressionReflector(obj)
         subquery = (
-            self.remote_table.c.transaction_id.in_(
+            getattr(self.remote_table.c, column_name).in_(
                 sa.select(
-                    [sa.func.max(self.remote_table.c.transaction_id)],
+                    [sa.func.max(getattr(self.remote_table.c, column_name))],
                 ).where(
                     sa.and_(
-                        self.remote_table.c.transaction_id <=
-                        obj.transaction_id,
+                        getattr(self.remote_table.c, column_name) <=
+                        getattr(obj, column_name),
                         reflector(self.property.primaryjoin)
                     )
                 ).group_by(
@@ -84,15 +92,18 @@ class RelationshipBuilder(object):
         Builds a reflected many-to-many relationship between two history
         classes.
         """
+        column_name = self.option('transaction_column_name')
+
         @property
         def relationship(obj):
             session = sa.orm.object_session(obj)
 
             condition = (
-                self.remote_cls.transaction_id == sa.select(
-                    [sa.func.max(self.remote_cls.transaction_id)]
+                getattr(self.remote_cls, column_name) == sa.select(
+                    [sa.func.max(getattr(self.remote_cls, column_name))]
                 ).where(
-                    self.remote_cls.transaction_id <= obj.transaction_id
+                    getattr(self.remote_cls, column_name) <=
+                    getattr(obj, column_name)
                 ).correlate(self.local_cls)
             )
             return (

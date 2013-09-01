@@ -70,14 +70,16 @@ class ModelBuilder(object):
             self.model.__name__
         )
 
+        transaction_column = getattr(
+            self.history_class,
+            self.option('transaction_column_name')
+        )
+
         if not hasattr(self.history_class, 'transaction'):
             self.history_class.transaction = sa.orm.relationship(
                 tx_log_class,
-                primaryjoin=(
-                    tx_log_class.id ==
-                    self.history_class.transaction_id
-                ),
-                foreign_keys=[self.history_class.transaction_id],
+                primaryjoin=tx_log_class.id == transaction_column,
+                foreign_keys=[transaction_column],
                 backref=self.manager.options['relation_naming_function'](
                     self.model.__name__
                 )
@@ -88,11 +90,8 @@ class ModelBuilder(object):
                 backref_name,
                 sa.orm.relationship(
                     self.history_class,
-                    primaryjoin=(
-                        tx_log_class.id ==
-                        self.history_class.transaction_id
-                    ),
-                    foreign_keys=[self.history_class.transaction_id]
+                    primaryjoin=tx_log_class.id == transaction_column,
+                    foreign_keys=[transaction_column]
                 )
             )
 
@@ -103,14 +102,18 @@ class ModelBuilder(object):
 
         :param tx_changes_class: TransactionChanges class
         """
+        transaction_column = getattr(
+            self.history_class,
+            self.option('transaction_column_name')
+        )
+
         # Only define changes relation if it doesn't already exist in
         # parent class.
         if not hasattr(self.history_class, 'changes'):
             self.history_class.changes = sa.orm.relationship(
                 tx_changes_class,
                 primaryjoin=(
-                    tx_changes_class.transaction_id ==
-                    self.history_class.transaction_id
+                    tx_changes_class.transaction_id == transaction_column
                 ),
                 foreign_keys=[tx_changes_class.transaction_id],
                 backref=self.manager.options['relation_naming_function'](
