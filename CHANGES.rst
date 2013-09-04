@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.8.7 (No release date yet)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Only autoincremented columns marked as autoincrement=False for history tables. This enables alembic migrations to generate without annoying explicit autoincrement=False args.
+
+
 0.8.6 (2013-08-21)
 ^^^^^^^^^^^^^^^^^^
 
