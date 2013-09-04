@@ -51,7 +51,8 @@ class TableBuilder(object):
             column_copy = column.copy()
             # Remove unique constraints
             column_copy.unique = False
-            column_copy.autoincrement = False
+            if column_copy.autoincrement:
+                column_copy.autoincrement = False
             if column_copy.name == transaction_column_name:
                 column_copy.nullable = False
 
