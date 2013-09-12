@@ -20,10 +20,16 @@ class TestCompositePrimaryKey(TestCase):
             __tablename__ = 'team_member'
             __versioned__ = {}
             user_id = sa.Column(
-                sa.Integer, sa.ForeignKey(User.id), primary_key=True
+                sa.Integer,
+                sa.ForeignKey(User.id, ondelete='CASCADE'),
+                primary_key=True,
+                nullable=False
             )
             team_id = sa.Column(
-                sa.Integer, sa.ForeignKey(Team.id), primary_key=True
+                sa.Integer,
+                sa.ForeignKey(Team.id, ondelete='CASCADE'),
+                primary_key=True,
+                nullable=False
             )
             role = sa.Column(sa.Unicode(255))
 
@@ -34,3 +40,34 @@ class TestCompositePrimaryKey(TestCase):
     def test_composite_primary_key_on_history_tables(self):
         TeamMemberHistory = self.TeamMember.__versioned__['class']
         assert len(TeamMemberHistory.__table__.primary_key.columns) == 3
+
+    def test_does_not_make_composite_primary_keys_not_nullable(self):
+        TeamMemberHistory = self.TeamMember.__versioned__['class']
+
+        assert not TeamMemberHistory.__table__.c.user_id.nullable
+
+
+class TestCompositePrimaryKeyWithPkConstraint(TestCase):
+    def create_models(self):
+        class TeamMember(self.Model):
+            __tablename__ = 'team_member'
+            __versioned__ = {}
+            user_id = sa.Column(
+                sa.Integer,
+                nullable=False
+            )
+            team_id = sa.Column(
+                sa.Integer,
+                nullable=False
+            )
+            role = sa.Column(sa.Unicode(255))
+            __table_args__ = (
+                sa.schema.PrimaryKeyConstraint('user_id', 'team_id'),
+            )
+
+        self.TeamMember = TeamMember
+
+    def test_does_not_make_composite_primary_keys_not_nullable(self):
+        TeamMemberHistory = self.TeamMember.__versioned__['class']
+
+        assert not TeamMemberHistory.__table__.c.user_id.nullable
