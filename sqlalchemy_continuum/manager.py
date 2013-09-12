@@ -8,6 +8,7 @@ from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
 from sqlalchemy_utils.types import TSVectorType
+from .fetcher import DefaultFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
@@ -17,6 +18,11 @@ from .transaction_log import (
     TransactionMetaBase
 )
 from .unit_of_work import UnitOfWork
+
+
+class VersioningStrategy(object):
+    DEFAULT = 1
+    VALIDITY = 2
 
 
 class VersioningManager(object):
@@ -43,10 +49,18 @@ class VersioningManager(object):
             'transaction_column_name': 'transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
+            'strategy': VersioningStrategy.DEFAULT,
             'track_property_modifications': False,
             'modified_flag_suffix': '_mod'
         }
         self.options.update(options)
+
+    @property
+    def fetcher(self):
+        if self.options['strategy'] == VersioningStrategy.DEFAULT:
+            return DefaultFetcher(self)
+        else:
+            return ValidityFetcher(self)
 
     def reset(self):
         """

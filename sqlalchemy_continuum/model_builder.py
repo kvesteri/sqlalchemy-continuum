@@ -188,4 +188,5 @@ class ModelBuilder(object):
         self.build_changes_relationship(tx_changes_class)
         self.model.__versioned__['class'] = self.history_class
         self.history_class.__parent_class__ = self.model
+        self.history_class.__versioning_manager__ = self.manager
         self.manager.history_class_map[self.model] = self.history_class
