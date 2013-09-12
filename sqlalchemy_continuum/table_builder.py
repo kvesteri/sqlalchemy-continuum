@@ -46,7 +46,10 @@ class TableBuilder(object):
 
             column_copy = self.reflect_column(column)
             columns.append(column_copy)
-            if self.option('track_property_modifications'):
+            if (
+                self.option('track_property_modifications') and
+                not column.primary_key
+            ):
                 columns.append(
                     sa.Column(
                         column_copy.name + self.option('modified_flag_suffix'),

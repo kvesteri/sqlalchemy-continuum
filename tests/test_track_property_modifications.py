@@ -22,3 +22,7 @@ class TestPropertyModificationsTracking(TestCase):
         column = UserHistory.__table__.c['name_mod']
         assert not column.nullable
         assert isinstance(column.type, sa.Boolean)
+
+    def test_primary_keys_not_included(self):
+        UserHistory = self.User.__versioned__['class']
+        assert 'id_mod' not in UserHistory.__table__.c
