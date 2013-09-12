@@ -426,6 +426,10 @@ Here is a full list of options that can be passed to __versioned__ attribute:
 
 * relation_naming_function (default: lambda a: pluralize(underscore(a)))
 
+* track_property_modifications (default: False)
+
+* modified_flag_suffix (default: '_mod')
+
 
 Example
 ::
