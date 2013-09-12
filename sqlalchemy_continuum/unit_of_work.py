@@ -390,31 +390,45 @@ class UnitOfWork(object):
             Version object to assign the attribute values to
         """
         excluded_attributes = self.manager.option(parent_obj, 'exclude')
-        for key, attr in parent_obj._sa_class_manager.items():
-            if key in excluded_attributes:
+        for attr_name, attr in parent_obj._sa_class_manager.items():
+            if attr_name in excluded_attributes:
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if (version_obj.operation_type == Operation.DELETE and
                         attr.property.columns[0].primary_key is not True
-                        and key != 'transaction_id'):
+                        and attr_name != 'transaction_id'):
                     value = None
                 else:
-                    value = getattr(parent_obj, key)
-                    self.assign_modified_flag(parent_obj, version_obj, key)
+                    value = getattr(parent_obj, attr_name)
+                    self.assign_modified_flag(
+                        parent_obj, version_obj, attr_name
+                    )
 
-                setattr(version_obj, key, value)
+                setattr(version_obj, attr_name, value)
 
-    def assign_modified_flag(self, parent_obj, version_obj, key):
+    def assign_modified_flag(self, parent_obj, version_obj, attr_name):
+        """
+        Assigns modified flag for given attribute of given version model object
+        based on the modification state of this property in given parent model
+        object.
+
+        :param parent_obj:
+            Parent object to check the modification state of given attribute
+        :param version_obj:
+            Version object to assign the modification flag into
+        :param attr_name:
+            Name of the attribute to check the modification state
+        """
         if (
             self.manager.option(
                 parent_obj,
                 'track_property_modifications'
             ) and
-            has_changes(parent_obj, key)
+            has_changes(parent_obj, attr_name)
         ):
             setattr(
                 version_obj,
-                key + self.manager.option(
+                attr_name + self.manager.option(
                     parent_obj,
                     'modified_flag_suffix'
                 ),
