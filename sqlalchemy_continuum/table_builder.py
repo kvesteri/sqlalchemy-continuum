@@ -10,13 +10,11 @@ class TableBuilder(object):
         self,
         versioning_manager,
         parent_table,
-        model=None,
-        remove_primary_keys=False
+        model=None
     ):
         self.manager = versioning_manager
         self.parent_table = parent_table
         self.model = model
-        self.remove_primary_keys = remove_primary_keys
 
     def option(self, name):
         return self.manager.option(self.model, name)
@@ -46,20 +44,17 @@ class TableBuilder(object):
             if self.manager.is_excluded_column(self.model, column):
                 continue
 
-            # Make a copy of the column so that it does not point to wrong
-            # table.
-            column_copy = column.copy()
-            # Remove unique constraints
-            column_copy.unique = False
-            if column_copy.autoincrement:
-                column_copy.autoincrement = False
-            if column_copy.name == transaction_column_name:
-                column_copy.nullable = False
-
-            if not column_copy.primary_key:
-                column_copy.nullable = True
-
+            column_copy = self.reflect_column(column)
             columns.append(column_copy)
+            if self.option('track_property_modifications'):
+                columns.append(
+                    sa.Column(
+                        column_copy.name + self.option('modified_flag_suffix'),
+                        sa.Boolean,
+                        default=False,
+                        nullable=False
+                    )
+                )
 
         # When using join table inheritance each table should have own
         # transaction column.
@@ -67,6 +62,26 @@ class TableBuilder(object):
             columns.append(sa.Column(transaction_column_name, sa.BigInteger))
 
         return columns
+
+    def reflect_column(self, column):
+        """
+        Make a copy of parent table column and some alterations to it.
+
+        :param column: SQLAlchemy Column object of parent table
+        """
+        # Make a copy of the column so that it does not point to wrong
+        # table.
+        column_copy = column.copy()
+        # Remove unique constraints
+        column_copy.unique = False
+        if column_copy.autoincrement:
+            column_copy.autoincrement = False
+        if column_copy.name == self.option('transaction_column_name'):
+            column_copy.nullable = False
+
+        if not column_copy.primary_key:
+            column_copy.nullable = True
+        return column_copy
 
     @property
     def operation_type_column(self):

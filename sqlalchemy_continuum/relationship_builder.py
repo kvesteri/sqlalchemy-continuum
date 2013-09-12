@@ -57,6 +57,11 @@ class RelationshipBuilder(object):
         return relationship
 
     def association_subquery(self, obj):
+        """
+        Returns association subquery for given SQLAlchemy declarative object.
+
+        :param obj: SQLAlchemy declarative object
+        """
         column_name = self.option('transaction_column_name')
         reflector = ObjectExpressionReflector(obj)
         subquery = (
@@ -128,8 +133,7 @@ class RelationshipBuilder(object):
         self.manager.association_tables.add(column.table)
         builder = TableBuilder(
             self.manager,
-            column.table,
-            remove_primary_keys=True
+            column.table
         )
         metadata = column.table.metadata
         if metadata.schema:

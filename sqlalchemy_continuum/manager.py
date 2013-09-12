@@ -42,7 +42,9 @@ class VersioningManager(object):
             'transaction_log_base': TransactionLogBase,
             'transaction_column_name': 'transaction_id',
             'operation_type_column_name': 'operation_type',
-            'relation_naming_function': lambda a: pluralize(underscore(a))
+            'relation_naming_function': lambda a: pluralize(underscore(a)),
+            'track_property_modifications': False,
+            'modified_flag_suffix': '_mod'
         }
         self.options.update(options)
 
