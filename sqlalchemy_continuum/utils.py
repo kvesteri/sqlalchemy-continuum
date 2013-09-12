@@ -51,6 +51,23 @@ def is_versioned(obj):
     )
 
 
+def has_changes(obj, attr):
+    """
+    Simple shortcut function for checking if given attribute of given
+    declarative model object has changed during the transaction.
+
+    :param obj: SQLAlchemy declarative model object
+    :param attr: Name of the attribute
+    """
+    return (
+        sa.inspect(obj)
+        .attrs
+        .get(attr)
+        .history
+        .has_changes()
+    )
+
+
 def is_modified(obj):
     """
     Returns whether or not the versioned properties of given object have been

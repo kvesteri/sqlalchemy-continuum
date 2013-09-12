@@ -14,6 +14,8 @@ class TestPropertyModificationsTracking(TestCase):
 
             name = sa.Column(sa.Unicode(255))
 
+            age = sa.Column(sa.Integer)
+
         self.User = User
 
     def test_each_column_generates_additional_mod_column(self):
@@ -26,3 +28,10 @@ class TestPropertyModificationsTracking(TestCase):
     def test_primary_keys_not_included(self):
         UserHistory = self.User.__versioned__['class']
         assert 'id_mod' not in UserHistory.__table__.c
+
+    def test_mod_properties_get_updated(self):
+        user = self.User(name=u'John')
+        self.session.add(user)
+        self.session.commit()
+
+        assert user.versions[-1].name_mod

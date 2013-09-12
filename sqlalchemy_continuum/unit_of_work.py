@@ -4,7 +4,7 @@ from functools import wraps
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity
 from .operation import Operation
-from .utils import is_versioned, is_modified
+from .utils import is_versioned, is_modified, has_changes
 
 
 def tracked_operation(func):
@@ -400,4 +400,23 @@ class UnitOfWork(object):
                     value = None
                 else:
                     value = getattr(parent_obj, key)
+                    self.assign_modified_flag(parent_obj, version_obj, key)
+
                 setattr(version_obj, key, value)
+
+    def assign_modified_flag(self, parent_obj, version_obj, key):
+        if (
+            self.manager.option(
+                parent_obj,
+                'track_property_modifications'
+            ) and
+            has_changes(parent_obj, key)
+        ):
+            setattr(
+                version_obj,
+                key + self.manager.option(
+                    parent_obj,
+                    'modified_flag_suffix'
+                ),
+                True
+            )
