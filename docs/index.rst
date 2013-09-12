@@ -276,23 +276,6 @@ Lastly we check the category relations of different article versions.
     article.versions[1].category.name = u'Some other category'
 
 
-
-
-Querying
---------
-
-
-You can query history models just like any other sqlalchemy declarative model.
-
-::
-
-    ArticleHistory = Article.__versioned__['class']
-
-    session.query(ArticleHistory).filter_by(name=u'some name').all()
-
-
-
-
 Transactions
 ============
 
@@ -393,6 +376,34 @@ given transaction. This dictionary contains class objects as keys and entities a
 
     tx_log.changed_entities
     # dict of changed entities
+
+
+
+Queries
+=======
+
+
+You can query history models just like any other sqlalchemy declarative model.
+
+::
+
+    ArticleHistory = Article.__versioned__['class']
+
+    session.query(ArticleHistory).filter_by(name=u'some name').all()
+
+
+
+Querying for versions of entity that modified given property
+------------------------------------------------------------
+
+In the following example we want to find all versions of Article class which changed the attribute 'name'. This example assumes you have set 'track_property_modifications' configuration option as True.
+
+::
+
+    ArticleHistory = Article.__versioned__['class']
+
+    session.query(ArticleHistory).filter(ArticleHistory.name_mod).all()
+
 
 
 Configuration

@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.9.0 (2013-09-12)
+^^^^^^^^^^^^^^^^^^
+
+- Ability to track property modifications
+- New configuration options: track_property_modifications and modified_flag_suffix
+
+
 0.8.7 (2013-09-04)
 ^^^^^^^^^^^^^^^^^^
 
