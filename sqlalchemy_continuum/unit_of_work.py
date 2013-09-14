@@ -145,6 +145,15 @@ class UnitOfWork(object):
             self.update_version_validity(value['target'], version_obj)
 
     def update_version_validity(self, parent, version_obj):
+        """
+        Updates previous version object end_transaction_id based on given
+        parent object and newly created version object.
+
+        This method is only used when using 'validity' versioning strategy.
+
+        :param parent: SQLAlchemy declarative parent object
+        :parem version_obj: SQLAlchemy declarative version object
+        """
         if (
             self.manager.option(parent, 'strategy') ==
             VersioningStrategy.VALIDITY
