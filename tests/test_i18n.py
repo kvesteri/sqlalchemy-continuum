@@ -66,9 +66,9 @@ class TestVersioningWithI18nExtension(TestCase):
         self.session.add(self.article)
 
         with self.article.force_locale('fi'):
-            self.article.name = 'Text 1'
+            self.article.name = u'Text 1'
         with self.article.force_locale('en'):
-            self.article.name = 'Text 2'
+            self.article.name = u'Text 2'
 
         self.session.commit()
 

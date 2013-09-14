@@ -13,24 +13,14 @@ class HistoryObjectFetcher(object):
         history. If current version is the first version this method returns
         None.
         """
-        if not obj.version_parent:
-            # parent object has been deleted
-            return self._previous_query(obj).first()
-        if self.index(obj) > 0:
-            return obj.version_parent.versions[self.index(obj) - 1]
+        return self._previous_query(obj).first()
 
     def index(self, obj):
         """
         Return the index of this version in the version history.
         """
-        if not obj.version_parent:
-            # parent object has been deleted
-            session = sa.orm.object_session(obj)
-            return session.execute(self._index_query(obj)).fetchone()[0]
-
-        for index_, version in enumerate(obj.version_parent.versions):
-            if version == obj:
-                return index_
+        session = sa.orm.object_session(obj)
+        return session.execute(self._index_query(obj)).fetchone()[0]
 
     def next(self, obj):
         """
@@ -38,15 +28,11 @@ class HistoryObjectFetcher(object):
         history. If current version is the last version this method returns
         None.
         """
-        if not obj.version_parent:
-            # parent object has been deleted
-            return self._next_query(obj).first()
-        if obj.index < (obj.version_parent.versions.count() - 1):
-            return obj.version_parent.versions[self.index(obj) + 1]
+        return self._next_query(obj).first()
 
 
 class DefaultFetcher(HistoryObjectFetcher):
-    def _next_prev_query(self, obj, next_or_prev='next'):
+    def _transaction_id_subquery(self, obj, next_or_prev='next'):
         if next_or_prev == 'next':
             op = operator.gt
             func = sa.func.max
@@ -54,9 +40,8 @@ class DefaultFetcher(HistoryObjectFetcher):
             op = operator.lt
             func = sa.func.min
 
-        session = sa.orm.object_session(obj)
         alias = sa.orm.aliased(obj)
-        subquery = (
+        return (
             sa.select(
                 [func(alias.transaction_id)],
                 from_obj=[alias.__table__]
@@ -64,10 +49,21 @@ class DefaultFetcher(HistoryObjectFetcher):
             .where(op(alias.transaction_id, obj.transaction_id))
             .correlate(alias.__table__)
         )
+
+    def _next_prev_query(self, obj, next_or_prev='next'):
+        session = sa.orm.object_session(obj)
+
         return (
             session.query(obj.__class__)
-            .filter(sa.and_(*self._pk_correlation_condition(obj)))
-            .filter(obj.__class__.transaction_id == subquery)
+            .filter(
+                sa.and_(
+                    obj.__class__.transaction_id ==
+                    self._transaction_id_subquery(
+                        obj, next_or_prev=next_or_prev
+                    ),
+                    *self._pk_correlation_condition(obj)
+                )
+            )
         )
 
     def _previous_query(self, obj):

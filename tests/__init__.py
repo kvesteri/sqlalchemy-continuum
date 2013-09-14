@@ -1,3 +1,4 @@
+import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -6,6 +7,9 @@ from sqlalchemy_continuum import make_versioned, versioning_manager
 from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
 )
+
+
+warnings.simplefilter('error', sa.exc.SAWarning)
 
 
 make_versioned()

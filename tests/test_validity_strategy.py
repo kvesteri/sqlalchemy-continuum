@@ -5,8 +5,8 @@ from tests import TestCase
 
 class TestValidityStrategy(TestCase):
     def create_models(self):
-        class TextItem(self.Model):
-            __tablename__ = 'text_item'
+        class BlogPost(self.Model):
+            __tablename__ = 'blog_post'
             __versioned__ = {
                 'base_classes': (self.Model, ),
                 'strategy': VersioningStrategy.VALIDITY
@@ -15,14 +15,43 @@ class TestValidityStrategy(TestCase):
 
             name = sa.Column(sa.Unicode(255))
 
-        self.TextItem = TextItem
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.Model, ),
+                'strategy': VersioningStrategy.VALIDITY
+            }
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+
+            name = sa.Column(sa.Unicode(255))
+
+        self.BlogPost = BlogPost
+        self.Article = Article
 
     def test_schema_contains_end_transaction_id(self):
-        table = self.TextItem.__versioned__['class'].__table__
+        table = self.Article.__versioned__['class'].__table__
         assert 'end_transaction_id' in table.c
         table.c.end_transaction_id
         assert table.c.end_transaction_id.nullable
         assert not table.c.end_transaction_id.primary_key
+
+    def test_end_transaction_id_none_for_newly_inserted_record(self):
+        article = self.Article(name=u'Something')
+        self.session.add(article)
+        self.session.commit()
+        assert article.versions[-1].end_transaction_id is None
+
+    def test_updated_end_transaction_id_of_previous_version(self):
+        article = self.Article(name=u'Something')
+        self.session.add(article)
+        self.session.commit()
+
+        article.name = u'Some other thing'
+        self.session.commit()
+        assert (
+            article.versions[-2].end_transaction_id ==
+            article.versions[-1].transaction_id
+        )
 
 
 class TestJoinTableInheritanceWithValidityVersioning(TestCase):

@@ -4,6 +4,7 @@ from functools import wraps
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity
 from .operation import Operation
+from .strategy import VersioningStrategy
 from .utils import is_versioned, is_modified, has_changes
 
 
@@ -140,6 +141,31 @@ class UnitOfWork(object):
 
             version_obj.transaction_id = (
                 self.current_transaction_id
+            )
+            self.update_version_validity(value['target'], version_obj)
+
+    def update_version_validity(self, parent, version_obj):
+        if (
+            self.manager.option(parent, 'strategy') ==
+            VersioningStrategy.VALIDITY
+        ):
+            fetcher = self.manager.fetcher
+            session = sa.orm.object_session(version_obj)
+            return (
+                session.query(version_obj.__class__)
+                .filter(
+                    sa.and_(
+                        version_obj.__class__.transaction_id ==
+                        fetcher._transaction_id_subquery(
+                            version_obj, next_or_prev='prev'
+                        ),
+                        *fetcher._pk_correlation_condition(version_obj)
+                    )
+                )
+                .update(
+                    {'end_transaction_id': self.current_transaction_id},
+                    synchronize_session=False
+                )
             )
 
     def create_association_versions(self, session):
