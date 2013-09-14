@@ -12,17 +12,13 @@ from .fetcher import DefaultFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
+from .strategy import VersioningStrategy
 from .transaction_log import (
     TransactionLogBase,
     TransactionChangesBase,
     TransactionMetaBase
 )
 from .unit_of_work import UnitOfWork
-
-
-class VersioningStrategy(object):
-    DEFAULT = 1
-    VALIDITY = 2
 
 
 class VersioningManager(object):
@@ -47,6 +43,7 @@ class VersioningManager(object):
             'include': [],
             'transaction_log_base': TransactionLogBase,
             'transaction_column_name': 'transaction_id',
+            'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
             'strategy': VersioningStrategy.DEFAULT,

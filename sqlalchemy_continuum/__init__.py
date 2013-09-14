@@ -2,6 +2,7 @@ import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
 from .utils import changeset
+from .strategy import VersioningStrategy
 
 
 __version__ = '0.9.0'
@@ -10,7 +11,8 @@ __version__ = '0.9.0'
 __all__ = (
     changeset,
     Operation,
-    VersioningManager
+    VersioningManager,
+    VersioningStrategy
 )
 
 

@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from .strategy import VersioningStrategy
 
 
 class TableBuilder(object):
@@ -111,6 +112,17 @@ class TableBuilder(object):
             autoincrement=False  # This is needed for MySQL
         )
 
+    @property
+    def end_transaction_column(self):
+        """
+        Returns end_transaction column. By default the name of this column is
+        'end_transaction_id'.
+        """
+        return sa.Column(
+            self.option('end_transaction_column_name'),
+            sa.BigInteger
+        )
+
     def __call__(self, extends=None):
         """
         Builds history table.
@@ -119,6 +131,8 @@ class TableBuilder(object):
         if extends is None:
             items.extend(self.reflected_columns)
             items.append(self.transaction_column)
+            if self.option('strategy') == VersioningStrategy.VALIDITY:
+                items.append(self.end_transaction_column)
             items.append(self.operation_type_column)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
