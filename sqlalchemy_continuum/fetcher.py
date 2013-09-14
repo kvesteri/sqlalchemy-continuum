@@ -1,3 +1,4 @@
+import operator
 import sqlalchemy as sa
 from sqlalchemy_utils import primary_keys
 
@@ -45,40 +46,22 @@ class HistoryObjectFetcher(object):
 
 
 class DefaultFetcher(HistoryObjectFetcher):
-    # def _next_prev_query(self, obj, next_or_prev='next'):
-    #     if next_or_prev == 'next':
-    #         op = operator.lt
-    #     else:
-    #         op = operator.gt
-    #     session = sa.orm.object_session(obj)
-    #     alias = sa.orm.aliased(obj)
-    #     subquery = (
-    #         sa.select(
-    #             [sa.func.max(alias.transaction_id)],
-    #             from_obj=[alias.__table__]
-    #         )
-    #         .where(alias.transaction_id < obj.transaction_id)
-    #         .correlate(alias.__table__)
-    #     )
-    #     return (
-    #         session.query(obj.__class__)
-    #         .filter(sa.and_(*self._pk_correlation_condition(obj)))
-    #         .filter(obj.__class__.transaction_id == subquery)
-    #     )
+    def _next_prev_query(self, obj, next_or_prev='next'):
+        if next_or_prev == 'next':
+            op = operator.gt
+            func = sa.func.max
+        else:
+            op = operator.lt
+            func = sa.func.min
 
-    def _previous_query(self, obj):
-        """
-        Returns the query that fetches the previous version relative to this
-        version in the version history.
-        """
         session = sa.orm.object_session(obj)
         alias = sa.orm.aliased(obj)
         subquery = (
             sa.select(
-                [sa.func.max(alias.transaction_id)],
+                [func(alias.transaction_id)],
                 from_obj=[alias.__table__]
             )
-            .where(alias.transaction_id < obj.transaction_id)
+            .where(op(alias.transaction_id, obj.transaction_id))
             .correlate(alias.__table__)
         )
         return (
@@ -86,6 +69,13 @@ class DefaultFetcher(HistoryObjectFetcher):
             .filter(sa.and_(*self._pk_correlation_condition(obj)))
             .filter(obj.__class__.transaction_id == subquery)
         )
+
+    def _previous_query(self, obj):
+        """
+        Returns the query that fetches the previous version relative to this
+        version in the version history.
+        """
+        return self._next_prev_query(obj, 'previous')
 
     def _pk_correlation_condition(self, obj, skip_transaction_id=True):
         conditions = []
@@ -109,22 +99,7 @@ class DefaultFetcher(HistoryObjectFetcher):
         Returns the query that fetches the next version relative to this
         version in the version history.
         """
-        session = sa.orm.object_session(obj)
-
-        alias = sa.orm.aliased(obj)
-        subquery = (
-            sa.select(
-                [sa.func.min(alias.transaction_id)],
-                from_obj=[alias.__table__]
-            )
-            .where(alias.transaction_id > obj.transaction_id)
-            .correlate(alias.__table__)
-        )
-        return (
-            session.query(obj.__class__)
-            .filter(sa.and_(*self._pk_correlation_condition(obj)))
-            .filter(obj.__class__.transaction_id == subquery)
-        )
+        return self._next_prev_query(obj, 'next')
 
     def _index_query(self, obj):
         """
