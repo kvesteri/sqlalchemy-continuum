@@ -422,6 +422,9 @@ In this example we find all transactions which affected any instance of 'Article
 
 ::
 
+    TransactionChanges = Article.__versioned__['transaction_changes']
+
+
     entries = (
         session.query(TransactionLog)
         .innerjoin(TransactionLog.changes)
