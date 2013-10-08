@@ -33,6 +33,8 @@ def log_sql(
 
 class TestCase(object):
     versioning_strategy = 'default'
+    transaction_column_name = 'transaction_id'
+    end_transaction_column_name = 'end_transaction_id'
 
     def setup_class(cls):
         versioning_manager.options['versioning'] = True
@@ -98,7 +100,7 @@ class TestCase(object):
             __tablename__ = 'tag'
             __versioned__ = {
                 'base_classes': (self.Model, ),
-                'strategy': self.versioning_strategy
+                'strategy': self.versioning_strategy,
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)

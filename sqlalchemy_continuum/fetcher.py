@@ -7,6 +7,12 @@ class HistoryObjectFetcher(object):
     def __init__(self, manager):
         self.manager = manager
 
+    def transaction_column_name(self, obj):
+        return self.manager.option(obj, 'transaction_column_name')
+
+    def end_transaction_column_name(self, obj):
+        return self.manager.option(obj, 'end_transaction_column_name')
+
     def previous(self, obj):
         """
         Returns the previous version relative to this version in the version
@@ -34,11 +40,14 @@ class HistoryObjectFetcher(object):
         conditions = []
         pks = (
             [pk.name for pk in primary_keys(obj.__parent_class__)] +
-            ['transaction_id']
+            [self.transaction_column_name(obj)]
         )
 
         for column_name in pks:
-            if skip_transaction_id and column_name == 'transaction_id':
+            if (
+                skip_transaction_id and
+                column_name == self.transaction_column_name(obj)
+            ):
                 continue
             conditions.append(
                 getattr(obj, column_name)
@@ -58,10 +67,17 @@ class HistoryObjectFetcher(object):
         alias = sa.orm.aliased(obj)
         return (
             sa.select(
-                [func(alias.transaction_id)],
+                [func(
+                    getattr(alias, self.transaction_column_name(obj))
+                )],
                 from_obj=[alias.__table__]
             )
-            .where(op(alias.transaction_id, obj.transaction_id))
+            .where(
+                op(
+                    getattr(alias, self.transaction_column_name(obj)),
+                    getattr(obj, self.transaction_column_name(obj))
+                )
+            )
             .correlate(alias.__table__)
         )
 
@@ -72,7 +88,11 @@ class HistoryObjectFetcher(object):
             session.query(obj.__class__)
             .filter(
                 sa.and_(
-                    obj.__class__.transaction_id ==
+                    getattr(
+                        obj.__class__,
+                        self.transaction_column_name(obj)
+                    )
+                    ==
                     self._transaction_id_subquery(
                         obj, next_or_prev=next_or_prev
                     ),
@@ -87,16 +107,23 @@ class HistoryObjectFetcher(object):
         to version history.
         """
         alias = sa.orm.aliased(obj)
+
         subquery = (
             sa.select([sa.func.count('1')], from_obj=[alias.__table__])
-            .where(alias.transaction_id < obj.transaction_id)
+            .where(
+                getattr(alias, self.transaction_column_name(obj))
+                <
+                getattr(obj, self.transaction_column_name(obj))
+            )
             .correlate(alias.__table__)
             .label('position')
         )
         query = (
             sa.select([subquery], from_obj=[obj.__table__])
             .where(sa.and_(*self._pk_correlation_condition(obj, False)))
-            .order_by(obj.__class__.transaction_id)
+            .order_by(
+                getattr(obj.__class__, self.transaction_column_name(obj))
+            )
         )
         return query
 
