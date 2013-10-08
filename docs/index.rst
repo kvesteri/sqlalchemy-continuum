@@ -459,24 +459,34 @@ Basic configuration options
 Here is a full list of options that can be passed to __versioned__ attribute:
 
 * base_classes (default: None)
+    A tuple defining history class base classes.
 
 * table_name (default: '%s_history')
-
-* revision_column_name (default: 'revision')
+    The name of the history table.
 
 * transaction_column_name (default: 'transaction_id')
+    The name of the transaction column (used by history tables).
 
 * operation_type_column_name (default: 'operation_type')
+    The name of the operation type column (used by history tables).
 
 * relation_naming_function (default: lambda a: pluralize(underscore(a)))
+    The relation naming function that is being used for generating the relationship names between various generated models.
+
+    For example lets say you have versioned class called 'User'. By default SA-Continuum builds relationship from TransactionLog with name 'users' that points to User class.
 
 * track_property_modifications (default: False)
+    Whether or not to track modifications at property level.
 
 * modified_flag_suffix (default: '_mod')
+
+* store_data_at_delete (default: True)
+    Whether or not to store data in history records when parent object gets deleted.
 
 
 Example
 ::
+
 
     class Article(Base):
         __versioned__ = {
