@@ -46,6 +46,7 @@ class VersioningManager(object):
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
             'strategy': 'default',
+            'store_data_at_delete': True,
             'track_property_modifications': False,
             'modified_flag_suffix': '_mod'
         }
