@@ -35,6 +35,15 @@ class TestCase(object):
     versioning_strategy = 'default'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
+    store_data_at_delete = False
+
+    @property
+    def options(self):
+        return {
+            'base_classes': (self.Model, ),
+            'strategy': self.versioning_strategy,
+            'store_data_at_delete': self.store_data_at_delete
+        }
 
     def setup_class(cls):
         versioning_manager.options['versioning'] = True
@@ -86,10 +95,7 @@ class TestCase(object):
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
-            __versioned__ = {
-                'base_classes': (self.Model, ),
-                'strategy': self.versioning_strategy
-            }
+            __versioned__ = self.options
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
@@ -98,10 +104,7 @@ class TestCase(object):
 
         class Tag(self.Model):
             __tablename__ = 'tag'
-            __versioned__ = {
-                'base_classes': (self.Model, ),
-                'strategy': self.versioning_strategy,
-            }
+            __versioned__ = self.options
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))

@@ -412,6 +412,31 @@ class UnitOfWork(object):
             return parameters
         return params
 
+    def should_nullify_attr(self, version_obj, attr):
+        """
+        Returns whether or not given attribute of given version object should
+        be nullified (set to None) at the end of the transaction.
+
+        :param version_obj:
+            Version object to check the attribute nullification
+        :paremt attr:
+            SQLAlchemy InstrumentedAttribute object
+        """
+        parent = version_obj.__parent_class__
+        return (
+            not self.manager.option(
+                parent,
+                'store_data_at_delete'
+            ) and
+            version_obj.operation_type == Operation.DELETE and
+            attr.property.columns[0].primary_key is not True and
+            attr.key !=
+            self.manager.option(
+                parent,
+                'transaction_column_name'
+            )
+        )
+
     def assign_attributes(self, parent_obj, version_obj):
         """
         Assigns attributes values from parent object to version object. If the
@@ -428,9 +453,7 @@ class UnitOfWork(object):
             if attr_name in excluded_attributes:
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
-                if (version_obj.operation_type == Operation.DELETE and
-                        attr.property.columns[0].primary_key is not True
-                        and attr_name != 'transaction_id'):
+                if self.should_nullify_attr(version_obj, attr):
                     value = None
                 else:
                     value = getattr(parent_obj, attr_name)
