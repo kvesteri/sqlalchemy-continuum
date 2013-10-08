@@ -15,13 +15,12 @@ Features
 - Query for changed records at given transaction
 
 
-.. image:: http://replygif.net/i/1182.gif
-
-
 QuickStart
 ----------
 
 ::
+
+
     pip install SQLAlchemy-Continuum
 
 
@@ -32,6 +31,7 @@ In order to make your models versioned you need two things:
 2. Add __versioned__ to all models you wish to add versioning to
 
 ::
+
 
     from sqlalchemy_continuum import make_versioned
 
@@ -70,12 +70,12 @@ In order to make your models versioned you need two things:
     # u'Some article'
 
 
-.. image:: http://i.imgur.com/UFaRx.gif
-
-
 Resources
 ---------
 
 - `Documentation <http://sqlalchemy-continuum.readthedocs.org/>`_
 - `Issue Tracker <http://github.com/kvesteri/sqlalchemy-continuum/issues>`_
 - `Code <http://github.com/kvesteri/sqlalchemy-continuum/>`_
+
+
+.. image:: http://i.imgur.com/UFaRx.gif
