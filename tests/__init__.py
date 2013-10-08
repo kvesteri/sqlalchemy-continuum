@@ -32,6 +32,8 @@ def log_sql(
 
 
 class TestCase(object):
+    versioning_strategy = 'default'
+
     def setup_class(cls):
         versioning_manager.options['versioning'] = True
         flask_versioning_manager.options['versioning'] = False
@@ -83,7 +85,8 @@ class TestCase(object):
         class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model, ),
+                'strategy': self.versioning_strategy
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
@@ -94,7 +97,8 @@ class TestCase(object):
         class Tag(self.Model):
             __tablename__ = 'tag'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model, ),
+                'strategy': self.versioning_strategy
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)

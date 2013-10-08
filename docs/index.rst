@@ -20,8 +20,10 @@ Features
 * Supports alembic migrations
 * Can revert objects data as well as all object relations at given transaction even if the object was deleted
 * Transactions can be queried afterwards using SQLAlchemy query syntax
-* Query for changed records at given transaction
-* History models give access to parent objects relations at given point in time
+* Querying for changed records at given transaction
+* Querying for versions of entity that modified given property
+* Querying for transactions, at which entities of a given class changed
+* History models give access to parent objects relations at any given point in time
 
 
 

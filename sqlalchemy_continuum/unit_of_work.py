@@ -4,7 +4,6 @@ from functools import wraps
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity
 from .operation import Operation
-from .strategy import VersioningStrategy
 from .utils import is_versioned, is_modified, has_changes
 
 
@@ -156,9 +155,9 @@ class UnitOfWork(object):
         """
         if (
             self.manager.option(parent, 'strategy') ==
-            VersioningStrategy.VALIDITY
+            'validity'
         ):
-            fetcher = self.manager.fetcher
+            fetcher = self.manager.fetcher(parent)
             session = sa.orm.object_session(version_obj)
             return (
                 session.query(version_obj.__class__)

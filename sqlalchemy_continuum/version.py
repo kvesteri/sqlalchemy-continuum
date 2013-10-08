@@ -9,7 +9,7 @@ class VersionClassBase(object):
         history. If current version is the first version this method returns
         None.
         """
-        return self.__versioning_manager__.fetcher.previous(self)
+        return self.__versioning_manager__.fetcher(self).previous(self)
 
     @property
     def next(self):
@@ -18,14 +18,14 @@ class VersionClassBase(object):
         history. If current version is the last version this method returns
         None.
         """
-        return self.__versioning_manager__.fetcher.next(self)
+        return self.__versioning_manager__.fetcher(self).next(self)
 
     @property
     def index(self):
         """
         Return the index of this version in the version history.
         """
-        return self.__versioning_manager__.fetcher.index(self)
+        return self.__versioning_manager__.fetcher(self).index(self)
 
     @property
     def changeset(self):

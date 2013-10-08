@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from tests import TestCase
 
 
-class TestReify(TestCase):
+class ReifyTestCase(TestCase):
     def test_simple_reify(self):
         article = self.Article()
         article.name = u'Some article'
@@ -73,6 +73,14 @@ class TestReify(TestCase):
         assert article.content == u'Some content'
         assert len(article.tags) == 1
         assert article.tags[0].name == u'some tag'
+
+
+class TestReifyWithDefaultVersioningStrategy(ReifyTestCase):
+    pass
+
+
+class TestReifyWithValidityVersioningStrategy(ReifyTestCase):
+    versioning_strategy = 'validity'
 
 
 class TestReifyManyToManyRelationship(TestCase):

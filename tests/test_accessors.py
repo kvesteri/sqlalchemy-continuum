@@ -1,7 +1,8 @@
+import sqlalchemy as sa
 from tests import TestCase
 
 
-class TestVersionModelAccessors(TestCase):
+class VersionModelAccessorsTestCase(TestCase):
     def test_previous_for_first_version(self):
         article = self.Article()
         article.name = u'Some article'
@@ -99,3 +100,11 @@ class TestVersionModelAccessors(TestCase):
         self.session.commit()
 
         assert article.versions[0].index == 0
+
+
+class TestAccessorsWithDefaultStrategy(VersionModelAccessorsTestCase):
+    versioning_strategy = 'default'
+
+
+class TestAccessorsWithValidityStrategy(VersionModelAccessorsTestCase):
+    versioning_strategy = 'validity'

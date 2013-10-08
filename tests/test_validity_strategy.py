@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import VersioningStrategy
 from tests import TestCase
 
 
@@ -9,7 +8,7 @@ class TestValidityStrategy(TestCase):
             __tablename__ = 'blog_post'
             __versioned__ = {
                 'base_classes': (self.Model, ),
-                'strategy': VersioningStrategy.VALIDITY
+                'strategy': 'validity'
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
@@ -19,7 +18,7 @@ class TestValidityStrategy(TestCase):
             __tablename__ = 'article'
             __versioned__ = {
                 'base_classes': (self.Model, ),
-                'strategy': VersioningStrategy.VALIDITY
+                'strategy': 'validity'
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
@@ -60,7 +59,7 @@ class TestJoinTableInheritanceWithValidityVersioning(TestCase):
             __tablename__ = 'text_item'
             __versioned__ = {
                 'base_classes': (self.Model, ),
-                'strategy': VersioningStrategy.VALIDITY
+                'strategy': 'validity'
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 

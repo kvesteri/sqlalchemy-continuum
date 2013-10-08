@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from .strategy import VersioningStrategy
 
 
 class TableBuilder(object):
@@ -131,7 +130,7 @@ class TableBuilder(object):
         if extends is None:
             items.extend(self.reflected_columns)
             items.append(self.transaction_column)
-            if self.option('strategy') == VersioningStrategy.VALIDITY:
+            if self.option('strategy') == 'validity':
                 items.append(self.end_transaction_column)
             items.append(self.operation_type_column)
         return sa.schema.Table(

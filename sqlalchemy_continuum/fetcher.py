@@ -13,7 +13,7 @@ class HistoryObjectFetcher(object):
         history. If current version is the first version this method returns
         None.
         """
-        return self._previous_query(obj).first()
+        return self.previous_query(obj).first()
 
     def index(self, obj):
         """
@@ -28,10 +28,25 @@ class HistoryObjectFetcher(object):
         history. If current version is the last version this method returns
         None.
         """
-        return self._next_query(obj).first()
+        return self.next_query(obj).first()
 
+    def _pk_correlation_condition(self, obj, skip_transaction_id=True):
+        conditions = []
+        pks = (
+            [pk.name for pk in primary_keys(obj.__parent_class__)] +
+            ['transaction_id']
+        )
 
-class DefaultFetcher(HistoryObjectFetcher):
+        for column_name in pks:
+            if skip_transaction_id and column_name == 'transaction_id':
+                continue
+            conditions.append(
+                getattr(obj, column_name)
+                ==
+                getattr(obj.__class__, column_name)
+            )
+        return conditions
+
     def _transaction_id_subquery(self, obj, next_or_prev='next'):
         if next_or_prev == 'next':
             op = operator.gt
@@ -66,37 +81,6 @@ class DefaultFetcher(HistoryObjectFetcher):
             )
         )
 
-    def _previous_query(self, obj):
-        """
-        Returns the query that fetches the previous version relative to this
-        version in the version history.
-        """
-        return self._next_prev_query(obj, 'previous')
-
-    def _pk_correlation_condition(self, obj, skip_transaction_id=True):
-        conditions = []
-        pks = (
-            [pk.name for pk in primary_keys(obj.__parent_class__)] +
-            ['transaction_id']
-        )
-
-        for column_name in pks:
-            if skip_transaction_id and column_name == 'transaction_id':
-                continue
-            conditions.append(
-                getattr(obj, column_name)
-                ==
-                getattr(obj.__class__, column_name)
-            )
-        return conditions
-
-    def _next_query(self, obj):
-        """
-        Returns the query that fetches the next version relative to this
-        version in the version history.
-        """
-        return self._next_prev_query(obj, 'next')
-
     def _index_query(self, obj):
         """
         Returns the query needed for fetching the index of this record relative
@@ -117,5 +101,69 @@ class DefaultFetcher(HistoryObjectFetcher):
         return query
 
 
+class DefaultFetcher(HistoryObjectFetcher):
+    def previous_query(self, obj):
+        """
+        Returns the query that fetches the previous version relative to this
+        version in the version history.
+        """
+        return self._next_prev_query(obj, 'previous')
+
+    def next_query(self, obj):
+        """
+        Returns the query that fetches the next version relative to this
+        version in the version history.
+        """
+        return self._next_prev_query(obj, 'next')
+
+
 class ValidityFetcher(HistoryObjectFetcher):
-    pass
+    def next_query(self, obj):
+        """
+        Returns the query that fetches the next version relative to this
+        version in the version history.
+        """
+        session = sa.orm.object_session(obj)
+
+        return (
+            session.query(obj.__class__)
+            .filter(
+                sa.and_(
+                    getattr(
+                        obj.__class__,
+                        self.manager.option(obj, 'transaction_column_name')
+                    )
+                    ==
+                    getattr(
+                        obj,
+                        self.manager.option(obj, 'end_transaction_column_name')
+                    ),
+                    *self._pk_correlation_condition(obj)
+                )
+            )
+        )
+
+    def previous_query(self, obj):
+        """
+        Returns the query that fetches the previous version relative to this
+        version in the version history.
+        """
+        session = sa.orm.object_session(obj)
+
+        return (
+            session.query(obj.__class__)
+            .filter(
+                sa.and_(
+                    getattr(
+                        obj.__class__,
+                        self.manager.option(obj, 'end_transaction_column_name')
+                    )
+                    ==
+                    getattr(
+                        obj,
+                        self.manager.option(obj, 'transaction_column_name')
+                    ),
+                    *self._pk_correlation_condition(obj)
+                )
+            )
+        )

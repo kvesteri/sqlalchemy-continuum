@@ -12,7 +12,6 @@ from .fetcher import DefaultFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
-from .strategy import VersioningStrategy
 from .transaction_log import (
     TransactionLogBase,
     TransactionChangesBase,
@@ -46,15 +45,14 @@ class VersioningManager(object):
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
-            'strategy': VersioningStrategy.DEFAULT,
+            'strategy': 'default',
             'track_property_modifications': False,
             'modified_flag_suffix': '_mod'
         }
         self.options.update(options)
 
-    @property
-    def fetcher(self):
-        if self.options['strategy'] == VersioningStrategy.DEFAULT:
+    def fetcher(self, obj):
+        if self.option(obj, 'strategy') == 'default':
             return DefaultFetcher(self)
         else:
             return ValidityFetcher(self)
