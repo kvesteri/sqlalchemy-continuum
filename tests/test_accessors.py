@@ -133,8 +133,8 @@ class VersionModelAccessorsTestCase(TestCase):
         assert article.versions[0].index == 0
 
 
-class TestAccessorsWithDefaultStrategy(VersionModelAccessorsTestCase):
-    versioning_strategy = 'default'
+class TestAccessorsWithSubqueryStrategy(VersionModelAccessorsTestCase):
+    versioning_strategy = 'subquery'
 
 
 class TestAccessorsWithValidityStrategy(VersionModelAccessorsTestCase):

@@ -135,7 +135,7 @@ class HistoryObjectFetcher(object):
         return query
 
 
-class DefaultFetcher(HistoryObjectFetcher):
+class SubqueryFetcher(HistoryObjectFetcher):
     def previous_query(self, obj):
         """
         Returns the query that fetches the previous version relative to this
@@ -165,7 +165,10 @@ class ValidityFetcher(HistoryObjectFetcher):
                 sa.and_(
                     getattr(
                         obj.__class__,
-                        self.manager.option(obj, 'transaction_column_name')
+                        self.manager.option(
+                            obj.__parent_class__,
+                            'transaction_column_name'
+                        )
                     )
                     ==
                     getattr(
@@ -190,12 +193,18 @@ class ValidityFetcher(HistoryObjectFetcher):
                 sa.and_(
                     getattr(
                         obj.__class__,
-                        self.manager.option(obj, 'end_transaction_column_name')
+                        self.manager.option(
+                            obj.__parent_class__,
+                            'end_transaction_column_name'
+                        )
                     )
                     ==
                     getattr(
                         obj,
-                        self.manager.option(obj, 'transaction_column_name')
+                        self.manager.option(
+                            obj.__parent_class__,
+                            'transaction_column_name'
+                        )
                     ),
                     *self._pk_correlation_condition(obj)
                 )

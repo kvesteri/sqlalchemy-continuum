@@ -13,7 +13,7 @@ from sqlalchemy_continuum.ext.flask import (
 warnings.simplefilter('error', sa.exc.SAWarning)
 
 
-make_versioned()
+make_versioned(options={'strategy': 'subquery'})
 
 
 class QueryPool(object):
@@ -33,7 +33,7 @@ def log_sql(
 
 
 class TestCase(object):
-    versioning_strategy = 'default'
+    versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
     store_data_at_delete = False
@@ -117,5 +117,3 @@ class TestCase(object):
 
         self.Article = Article
         self.Tag = Tag
-
-

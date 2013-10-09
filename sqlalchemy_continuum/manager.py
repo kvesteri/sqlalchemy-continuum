@@ -8,7 +8,7 @@ from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
 from sqlalchemy_utils.types import TSVectorType
-from .fetcher import DefaultFetcher, ValidityFetcher
+from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
@@ -45,7 +45,7 @@ class VersioningManager(object):
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
-            'strategy': 'default',
+            'strategy': 'validity',
             'store_data_at_delete': True,
             'track_property_modifications': False,
             'modified_flag_suffix': '_mod'
@@ -53,8 +53,8 @@ class VersioningManager(object):
         self.options.update(options)
 
     def fetcher(self, obj):
-        if self.option(obj, 'strategy') == 'default':
-            return DefaultFetcher(self)
+        if self.option(obj, 'strategy') == 'subquery':
+            return SubqueryFetcher(self)
         else:
             return ValidityFetcher(self)
 

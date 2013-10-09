@@ -20,7 +20,8 @@ versioning_manager = VersioningManager()
 def make_versioned(
     mapper=sa.orm.mapper,
     session=sa.orm.session.Session,
-    manager=versioning_manager
+    manager=versioning_manager,
+    options={}
 ):
     """
     This is the public API function of SQLAlchemy-Continuum for making certain
@@ -40,6 +41,7 @@ def make_versioned(
     uow = manager.uow
     uow.track_operations(mapper)
     uow.track_session(session)
+    manager.options.update(options)
 
     sa.event.listen(
         sa.engine.Engine,
