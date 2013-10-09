@@ -34,7 +34,7 @@ extras_require = {
 
 setup(
     name='SQLAlchemy-Continuum',
-    version='0.10.0-dev',
+    version='0.10.0',
     url='https://github.com/kvesteri/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
