@@ -65,12 +65,13 @@ class HistoryObjectFetcher(object):
     def _transaction_id_subquery(self, obj, next_or_prev='next'):
         if next_or_prev == 'next':
             op = operator.gt
-            func = sa.func.max
+            func = sa.func.min
         else:
             op = operator.lt
-            func = sa.func.min
+            func = sa.func.max
 
         alias = sa.orm.aliased(obj)
+
         return (
             sa.select(
                 [func(

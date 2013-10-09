@@ -62,5 +62,5 @@ class VersionClassBase(object):
                     ]
         return data
 
-    def reify(self):
-        return Reverter(self)()
+    def reify(self, relations=[]):
+        return Reverter(self, relations=relations)()

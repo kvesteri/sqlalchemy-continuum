@@ -1,4 +1,3 @@
-import sqlalchemy as sa
 from tests import TestCase
 
 
@@ -40,6 +39,22 @@ class VersionModelAccessorsTestCase(TestCase):
         ).all()
         assert versions[1].previous.name == u'Some article'
 
+    def test_previous_chaining(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        article.name = u'Updated article'
+        self.session.commit()
+        self.session.delete(article)
+        self.session.commit()
+        version = (
+            self.session.query(self.ArticleHistory)
+            .order_by(self.ArticleHistory.id)
+        ).all()[-1]
+        assert version.previous.previous
+
     def test_next_for_last_version(self):
         article = self.Article()
         article.name = u'Some article'
@@ -74,6 +89,22 @@ class VersionModelAccessorsTestCase(TestCase):
         self.session.commit()
 
         assert version.next
+
+    def test_chaining_next(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        article.name = u'Updated article'
+        self.session.commit()
+        article.content = u'Updated content'
+        self.session.commit()
+
+        versions = article.versions.all()
+        version = versions[0]
+        assert version.next == versions[1]
+        assert version.next.next == versions[2]
 
     def test_index_for_deleted_parent(self):
         article = self.Article()

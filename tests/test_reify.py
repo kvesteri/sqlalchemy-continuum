@@ -1,6 +1,22 @@
+from pytest import raises
 import sqlalchemy as sa
+from sqlalchemy_continuum.reverter import Reverter, ReverterException
 
 from tests import TestCase
+
+
+class TestReverter(TestCase):
+    def test_raises_exception_for_unknown_relations(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+
+        self.session.commit()
+        version = article.versions[0]
+
+        with raises(ReverterException):
+            Reverter(version, relations=['unknown_relation'])
 
 
 class ReifyTestCase(TestCase):
@@ -47,6 +63,11 @@ class ReifyTestCase(TestCase):
         self.session.commit()
         version.reify()
         self.session.commit()
+        assert self.session.query(self.Article).count() == 1
+        article = self.session.query(self.Article).get(old_article_id)
+
+        assert version.next.next
+
         version.next.reify()
         self.session.commit()
         assert not self.session.query(self.Article).get(old_article_id)
@@ -66,7 +87,7 @@ class ReifyTestCase(TestCase):
         assert article.tags == []
         assert len(article.versions[0].tags.all()) == 1
         assert article.versions[0].tags[0].article
-        article.versions[0].reify()
+        article.versions[0].reify(relations=['tags'])
         self.session.commit()
 
         assert article.name == u'Some article'
@@ -174,7 +195,7 @@ class TestReifyManyToManyRelationship(TestCase):
         self.session.commit()
         self.session.refresh(article)
         assert article.tags == []
-        article.versions[0].reify()
+        article.versions[0].reify(relations=['tags'])
         self.session.commit()
 
         assert article.name == u'Some article'
