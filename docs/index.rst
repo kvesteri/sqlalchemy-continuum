@@ -572,7 +572,6 @@ In the following example we want to find all versions of Article class which cha
     session.query(ArticleHistory).filter(ArticleHistory.name_mod).all()
 
 
-
 Configuration
 =============
 
@@ -600,6 +599,43 @@ As the name suggests class level configuration only applies to given class. Clas
         __versioned__ = {
             'store_data_at_delete': False
         }
+
+
+Versioning strategies
+---------------------
+
+
+Similar to Hibernate Envers SQLAlchemy-Continuum offers two distinct versioning strategies 'validity' and 'subquery'. The default strategy is 'validity'.
+
+
+Validity
+^^^^^^^^
+
+The 'validity' strategy saves two columns in each history table, namely 'transaction_id' and 'end_transaction_id'. The names of these columns can be configured with configuration options `transaction_column_name` and `end_transaction_column_name`.
+
+As with 'subquery' strategy for each inserted, updated and deleted entity Continuum creates new version in the history table. However it also updates the end_transaction_id of the previous version to point at the current version.
+
+Pros:
+    * Version traversal is much faster since no correlated subqueries are needed
+
+
+Cons:
+    * Updates, inserts and deletes are little bit slower
+
+
+Subquery
+^^^^^^^^
+
+The 'subquery' strategy uses one column in each history table, namely 'transaction_id'. The name of this columns can be configured with configuration option `transaction_column_name`.
+
+After each inserted, updated and deleted entity Continuum creates new version in the history table and sets the 'transaction_id' column to point at the current transaction.
+
+
+Pros:
+    * Updates, inserts and deletes little bit faster than in 'validity' strategy
+
+Cons:
+    * Version traversel much slower
 
 
 
