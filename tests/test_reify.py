@@ -83,6 +83,38 @@ class TestReifyWithValidityVersioningStrategy(ReifyTestCase):
     versioning_strategy = 'validity'
 
 
+class TestReifyWithCustomTransactionColumn(ReifyTestCase):
+    transaction_column_name = 'tx_id'
+
+
+class TestReifyWithColumnExclusion(ReifyTestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'exclude': ['description']
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+            content = sa.Column(sa.UnicodeText)
+            description = sa.Column(sa.UnicodeText)
+
+        self.Article = Article
+
+        class Tag(self.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+            article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
+            article = sa.orm.relationship(Article, backref='tags')
+
+        self.Article = Article
+        self.Tag = Tag
+
+
 class TestReifyManyToManyRelationship(TestCase):
     def create_models(self):
         class Article(self.Model):

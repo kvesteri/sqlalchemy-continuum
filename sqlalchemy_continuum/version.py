@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from .reverter import Reverter
 
 
 class VersionClassBase(object):
@@ -61,46 +62,5 @@ class VersionClassBase(object):
                     ]
         return data
 
-    def reify(self, visited_objects=[]):
-        if self in visited_objects:
-            return
-
-        session = sa.orm.object_session(self)
-
-        if self.operation_type == 2:
-            session.delete(self.version_parent)
-            return
-
-        visited_objects.append(self)
-        parent_mapper = self.__parent_class__.__mapper__
-
-        # Check if parent object has been deleted
-        if self.version_parent is None:
-            self.version_parent = self.__parent_class__()
-            session.add(self.version_parent)
-
-        # Before reifying relations we need to reify object properties. This
-        # is needed because reifying relations might need to flush the session
-        # which leads to errors when sqlalchemy tries to insert null values
-        # into parent object (if parent object has not null constraints).
-        for key, attr in parent_mapper.class_manager.items():
-            if isinstance(attr.property, sa.orm.ColumnProperty):
-                if key != 'transaction_id':
-                    setattr(self.version_parent, key, getattr(self, key))
-
-        for key, attr in parent_mapper.class_manager.items():
-            if isinstance(attr.property, sa.orm.RelationshipProperty):
-                if key not in ['versions', 'transaction']:
-                    if attr.property.secondary is not None:
-                        setattr(self.version_parent, key, [])
-                        for value in getattr(self, key):
-                            value = value.reify()
-                            if value:
-                                getattr(self.version_parent, key).append(
-                                    value
-                                )
-                    else:
-                        for value in getattr(self, key):
-                            value.reify(visited_objects)
-
-        return self.version_parent
+    def reify(self):
+        return Reverter(self)()
