@@ -285,6 +285,28 @@ Revert update
 
 
 
+Revert delete
+-------------
+
+::
+
+    article = Article(name=u'New article', content=u'Some content')
+    session.add(article)
+    session.commit(article)
+
+    version = article.versions[0]
+    session.delete(article)
+    session.commit()
+
+    version.revert()
+    session.commit()
+
+    # article lives again!
+    session.query(Article).first()
+
+
+
+
 Revert relationships
 --------------------
 
