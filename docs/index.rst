@@ -380,6 +380,34 @@ given transaction. This dictionary contains class objects as keys and entities a
     # dict of changed entities
 
 
+Workflow internals
+------------------
+
+Consider the following code snippet where we create a new article.
+
+::
+
+
+    article = Article()
+    article.name = u'Some article'
+    article.content = u'Some content'
+    session.add(article)
+    session.commit()
+
+
+
+This would execute the following SQL queries (on PostgreSQL)
+
+
+* INSERT INTO article (name, content) VALUES (?, ?)
+    params: ('Some article', 'Some content')
+* INSERT INTO transaction_log (issued_at) VALUES (?)
+    params: (datetime.utcnow())
+* INSERT INTO article_history (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
+    params: (article id from query 1, 'Some article', 'Some content', transaction id from query 2)
+* INSERT INTO transaction_changes (transaction_id, entity_name) VALUES (?, ?)
+    params: (transaction id from query 2, 'article')
+
 
 Queries
 =======
