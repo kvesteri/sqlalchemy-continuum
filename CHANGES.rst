@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.10.0 (No release date yet)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Validity versioning strategy
+- Changeset supports custom transaction column names
+
+
 0.9.0 (2013-09-12)
 ^^^^^^^^^^^^^^^^^^
 
