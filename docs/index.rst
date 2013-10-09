@@ -58,7 +58,7 @@ In order to make your models versioned you need two things:
 
     class Article(Base):
         __versioned__ = {}
-        __tablename__ = 'user'
+        __tablename__ = 'article'
 
         id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
         name = sa.Column(sa.Unicode(255))
