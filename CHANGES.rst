@@ -9,6 +9,8 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 - Validity versioning strategy
 - Changeset supports custom transaction column names
+- Reify -> Revert
+- Fixed revert to support class level column exclusion
 
 
 0.9.0 (2013-09-12)
