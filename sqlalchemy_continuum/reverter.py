@@ -15,6 +15,18 @@ def relationship_keys(class_):
     return map(lambda a: a.key, relationship_properties(class_))
 
 
+def first_level(paths):
+    for path in paths:
+        yield path.split('.')[0]
+
+
+def subpaths(paths, name):
+    for path in paths:
+        parts = path.split('.')
+        if len(parts) > 1 and parts[0] == name:
+            yield '.'.join(parts[1:])
+
+
 class ReverterException(Exception):
     pass
 
@@ -26,7 +38,7 @@ class Reverter(object):
         self.version_parent = self.obj.version_parent
         self.parent_mapper = self.obj.__parent_class__.__mapper__
         self.parent_class = self.obj.__parent_class__
-        self.relations = relations
+        self.relations = list(relations)
         for path in relations:
             subpath = path.split('.')[0]
             if subpath not in relationship_keys(self.obj.__parent_class__):
@@ -49,23 +61,31 @@ class Reverter(object):
     def revert_relationships(self):
         for prop in self.parent_mapper.iterate_properties:
             if isinstance(prop, sa.orm.RelationshipProperty):
-                if prop.key not in self.relations:
+                if prop.key in ['versions', 'transaction']:
                     continue
 
-                if prop.key in ['versions', 'transaction']:
+                if prop.key not in first_level(self.relations):
                     continue
 
                 if prop.secondary is not None:
                     setattr(self.version_parent, prop.key, [])
                     for value in getattr(self.obj, prop.key):
-                        value = Reverter(value, self.visited_objects)()
+                        value = Reverter(
+                            value,
+                            visited_objects=self.visited_objects,
+                            relations=subpaths(self.relations, prop.key)
+                        )()
                         if value:
                             getattr(self.version_parent, prop.key).append(
                                 value
                             )
                 else:
                     for value in getattr(self.obj, prop.key):
-                        Reverter(value, self.visited_objects)()
+                        Reverter(
+                            value,
+                            visited_objects=self.visited_objects,
+                            relations=subpaths(self.relations, prop.key)
+                        )()
 
     def __call__(self):
         if self.obj in self.visited_objects:
