@@ -8,10 +8,16 @@ class HistoryObjectFetcher(object):
         self.manager = manager
 
     def transaction_column_name(self, obj):
-        return self.manager.option(obj, 'transaction_column_name')
+        return self.manager.option(
+            obj.__parent_class__,
+            'transaction_column_name'
+        )
 
     def end_transaction_column_name(self, obj):
-        return self.manager.option(obj, 'end_transaction_column_name')
+        return self.manager.option(
+            obj.__parent_class__,
+            'end_transaction_column_name'
+        )
 
     def previous(self, obj):
         """

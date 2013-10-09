@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from tests import TestCase
 
 
-class TestChangeSet(TestCase):
+class ChangeSetTestCase(TestCase):
     def test_changeset_for_insert(self):
         article = self.Article()
         article.name = u'Some article'
@@ -39,16 +39,24 @@ class TestChangeSet(TestCase):
 
         self.session.execute(
             '''INSERT INTO article_history
-            (id, transaction_id, name, content, operation_type)
+            (id, %s, name, content, operation_type)
             VALUES
             (1, %d, 'something', 'some content', 1)
-            ''' % tx_log.id
+            ''' % (self.transaction_column_name, tx_log.id)
         )
 
         assert self.session.query(self.ArticleHistory).first().changeset == {}
 
 
-class TestChangeSetWhenParentContainsAdditionalColumns(TestCase):
+class TestChangeSet(ChangeSetTestCase):
+    pass
+
+
+class TestChangeSetWithCustomTransactionColumn(ChangeSetTestCase):
+    transaction_column_name = 'tx_id'
+
+
+class TestChangeSetWhenParentContainsAdditionalColumns(ChangeSetTestCase):
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
@@ -80,31 +88,3 @@ class TestChangeSetWhenParentContainsAdditionalColumns(TestCase):
 
         self.Article = Article
         self.Tag = Tag
-
-    def test_changeset_for_insert(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        self.session.add(article)
-        self.session.commit()
-        assert article.versions[0].changeset == {
-            'content': [None, u'Some content'],
-            'name': [None, u'Some article'],
-            'id': [None, 1]
-        }
-
-    def test_changeset_for_update(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        self.session.add(article)
-        self.session.commit()
-
-        article.name = u'Updated name'
-        article.content = u'Updated content'
-        self.session.commit()
-
-        assert article.versions[1].changeset == {
-            'content': [u'Some content', u'Updated content'],
-            'name': [u'Some article', u'Updated name']
-        }

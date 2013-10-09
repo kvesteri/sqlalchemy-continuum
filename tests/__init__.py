@@ -1,3 +1,4 @@
+from copy import copy
 import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
@@ -42,6 +43,8 @@ class TestCase(object):
         return {
             'base_classes': (self.Model, ),
             'strategy': self.versioning_strategy,
+            'transaction_column_name': self.transaction_column_name,
+            'end_transaction_column_name': self.end_transaction_column_name,
             'store_data_at_delete': self.store_data_at_delete
         }
 
@@ -63,6 +66,7 @@ class TestCase(object):
         self.create_models()
 
         sa.orm.configure_mappers()
+
         if hasattr(self, 'Article'):
             self.ArticleHistory = self.Article.__versioned__['class']
         if hasattr(self, 'Tag'):
@@ -95,7 +99,7 @@ class TestCase(object):
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
-            __versioned__ = self.options
+            __versioned__ = copy(self.options)
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
@@ -104,7 +108,7 @@ class TestCase(object):
 
         class Tag(self.Model):
             __tablename__ = 'tag'
-            __versioned__ = self.options
+            __versioned__ = copy(self.options)
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -113,3 +117,5 @@ class TestCase(object):
 
         self.Article = Article
         self.Tag = Tag
+
+

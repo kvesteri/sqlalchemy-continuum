@@ -41,7 +41,12 @@ class VersionClassBase(object):
             return {}
 
         for key, attr in class_manager.items():
-            if key in ['transaction_id', 'operation_type']:
+            if key in [
+                self.__versioning_manager__.option(
+                    self.__parent_class__, 'transaction_column_name'
+                ),
+                'operation_type'
+            ]:
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if not previous_version:

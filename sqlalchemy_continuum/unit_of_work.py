@@ -138,7 +138,12 @@ class UnitOfWork(object):
             version_obj.operation_type = value['operation_type']
             self.assign_attributes(value['target'], version_obj)
 
-            version_obj.transaction_id = (
+            setattr(
+                version_obj,
+                self.manager.option(
+                    value['target'],
+                    'transaction_column_name'
+                ),
                 self.current_transaction_id
             )
             self.update_version_validity(value['target'], version_obj)
