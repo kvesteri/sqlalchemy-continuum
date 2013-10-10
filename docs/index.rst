@@ -613,7 +613,16 @@ Validity
 
 The 'validity' strategy saves two columns in each history table, namely 'transaction_id' and 'end_transaction_id'. The names of these columns can be configured with configuration options `transaction_column_name` and `end_transaction_column_name`.
 
-As with 'subquery' strategy for each inserted, updated and deleted entity Continuum creates new version in the history table. However it also updates the end_transaction_id of the previous version to point at the current version.
+As with 'subquery' strategy for each inserted, updated and deleted entity Continuum creates new version in the history table. However it also updates the end_transaction_id of the previous version to point at the current version. This creates a little be of overhead during data manipulation.
+
+With 'validity' strategy version traversal is very fast. The logic for accessing the previous version is as follows:
+
+*Find the version record where the primary keys match and end_transaction_id is the same as the transaction_id of the given version record*
+
+Accessing the next version is also very fast:
+
+*Find the version record where the primary keys match and transaction_id is the same as the end_transaction_id of the given version record*
+
 
 Pros:
     * Version traversal is much faster since no correlated subqueries are needed
@@ -626,9 +635,11 @@ Cons:
 Subquery
 ^^^^^^^^
 
-The 'subquery' strategy uses one column in each history table, namely 'transaction_id'. The name of this columns can be configured with configuration option `transaction_column_name`.
+The 'subquery' strategy uses one column in each history table, namely 'transaction_id'. The name of this column can be configured with configuration option `transaction_column_name`.
 
 After each inserted, updated and deleted entity Continuum creates new version in the history table and sets the 'transaction_id' column to point at the current transaction.
+
+With 'subquery' strategy the version traversal is slow. When accessing previous and next versions of given version object needs correlated subqueries.
 
 
 Pros:
