@@ -615,13 +615,7 @@ The 'validity' strategy saves two columns in each history table, namely 'transac
 
 As with 'subquery' strategy for each inserted, updated and deleted entity Continuum creates new version in the history table. However it also updates the end_transaction_id of the previous version to point at the current version. This creates a little be of overhead during data manipulation.
 
-With 'validity' strategy version traversal is very fast. The logic for accessing the previous version is as follows:
-
-*Find the version record where the primary keys match and end_transaction_id is the same as the transaction_id of the given version record*
-
-Accessing the next version is also very fast:
-
-*Find the version record where the primary keys match and transaction_id is the same as the end_transaction_id of the given version record*
+With 'validity' strategy version traversal is very fast. When accessing previous version Continuum tries to find the version record where the primary keys match and end_transaction_id is the same as the transaction_id of the given version record. When accessing the next version Continuum tries to find the version record where the primary keys match and transaction_id is the same as the end_transaction_id of the given version record.
 
 
 Pros:
