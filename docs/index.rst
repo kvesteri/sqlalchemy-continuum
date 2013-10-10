@@ -768,7 +768,7 @@ By default the history tables contain these columns:
 * operation_type - a small integer defining the type of the operation
 * versioned fields from the original entity
 
-If the `track_property_modifications` configuration option is set to True, Continuum also creates aone boolean field for each versioned field. By default these boolean fields are suffixed with '_mod'.
+If the `track_property_modifications` configuration option is set to True, Continuum also creates one boolean field for each versioned field. By default these boolean fields are suffixed with '_mod'.
 
 The primary key of each history table is the combination of parent table's primary key + the transaction_id. This means there can be at most one history table entry for a given entity instance at given transaction.
 
@@ -807,6 +807,19 @@ Flask
 
 Writing own versioning extension
 --------------------------------
+
+You can write your own versioning extension by extending the VersioningManager.
+
+
+::
+
+
+    from sqlalchemy_continuum import VersioningManager
+
+
+    class MyVersioningManager(VersioningManager):
+        pass
+
 
 
 
