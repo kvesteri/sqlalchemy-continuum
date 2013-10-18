@@ -1,6 +1,8 @@
+from collections import defaultdict
 import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
+from sqlalchemy_utils.functions import naturally_equivalent
 
 
 def history_table(table):
@@ -66,6 +68,46 @@ def versioned_column_properties(obj):
             not manager.is_excluded_column(obj, prop.columns[0])
         ):
             yield prop
+
+
+def vacuum(session, model):
+    """
+    When making structural changes to history tables (for example dropping
+    columns) there are sometimes situations where some history records become
+    futile.
+
+    Vacuum deletes all history rows which had no changes compared to previous
+    version.
+
+
+    ::
+
+
+        from sqlalchemy_continuum import vacuum
+
+
+        vacuum(session, User)  # vacuums user history
+
+
+    :param session: SQLAlchemy session object
+    :param model: SQLAlchemy declarative model class
+    """
+    history_class = model.__versioned__['class']
+    manager = model.__versioned__['manager']
+    versions = defaultdict(list)
+
+    query = (
+        session.query(model)
+        .order_by(manager.option(history_class, 'transaction_column_name'))
+    )
+
+    for version in query:
+        if versions[version.id]:
+            prev_version = versions[version.id][-1]
+            if naturally_equivalent(prev_version, version):
+                session.delete(version)
+        else:
+            versions[version.id].append(version)
 
 
 def is_modified(obj):
