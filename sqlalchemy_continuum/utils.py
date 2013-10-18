@@ -73,11 +73,11 @@ def versioned_column_properties(obj):
 def vacuum(session, model):
     """
     When making structural changes to history tables (for example dropping
-    columns) there are sometimes situations where some history records become
-    futile.
+    columns) there are sometimes situations where some old history records
+    become futile.
 
-    Vacuum deletes all history rows which had no changes compared to previous
-    version.
+    Vacuum deletes all futile history rows which had no changes compared to
+    previous version.
 
 
     ::
@@ -97,7 +97,7 @@ def vacuum(session, model):
     versions = defaultdict(list)
 
     query = (
-        session.query(model)
+        session.query(history_class)
         .order_by(manager.option(history_class, 'transaction_column_name'))
     )
 
