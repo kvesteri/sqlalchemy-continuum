@@ -778,6 +778,12 @@ Transaction tables
 Continuum also generates 3 tables for efficient transaction storage namely transaction_log, transaction_changes and transaction_meta. The generation of transaction_changes and transaction_meta is optional. However it is recommended if transactions need to be queried efficently afterwards.
 
 
+Using vacuum
+------------
+
+.. module:: sqlalchemy_continuum
+.. autofunction:: vacuum
+
 Alembic migrations
 ==================
 
@@ -826,7 +832,6 @@ You can write your own versioning extension by extending the VersioningManager.
 API Documentation
 =================
 
-.. module:: sqlalchemy_continuum
 
 .. autofunction:: make_versioned
 
