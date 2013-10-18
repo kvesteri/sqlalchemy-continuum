@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.10.1 (2013-10-18)
+^^^^^^^^^^^^^^^^^^^
+
+- Added vacuum function
+
+
 0.10.0 (2013-10-09)
 ^^^^^^^^^^^^^^^^^^^
 
