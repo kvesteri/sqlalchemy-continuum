@@ -27,7 +27,8 @@ extras_require = {
     'test': [
         'pytest>=2.3.5',
         'flexmock>=0.9.7',
-        'psycopg2>=2.4.6'
+        'psycopg2>=2.4.6',
+        'six>=1.4.0'
     ],
 }
 
@@ -50,7 +51,7 @@ setup(
     platforms='any',
     install_requires=[
         'SQLAlchemy>=0.8',
-        'SQLAlchemy-Utils>=0.15.1',
+        'SQLAlchemy-Utils>=0.16.25',
         'inflection>=0.2.0'
     ],
     cmdclass={'test': PyTest},

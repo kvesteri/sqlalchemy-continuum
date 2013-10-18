@@ -2,9 +2,9 @@ import re
 from collections import OrderedDict
 from functools import wraps
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import identity
+from sqlalchemy_utils.functions import identity, has_changes
 from .operation import Operation
-from .utils import is_versioned, is_modified, has_changes
+from .utils import is_versioned, is_modified
 
 
 def tracked_operation(func):
