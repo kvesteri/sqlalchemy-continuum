@@ -1,6 +1,9 @@
+Introduction
+------------
+
 
 Why?
-----
+^^^^
 
 SQLAlchemy already has versioning extension. This extension however is very limited. It does not support versioning entire transactions.
 
@@ -12,7 +15,7 @@ As a Python/SQLAlchemy enthusiast I wanted to create a database versioning tool 
 
 
 Features
---------
+^^^^^^^^
 
 * Does not store updates which don't change anything
 * Supports alembic migrations
@@ -26,7 +29,7 @@ Features
 
 
 Installation
-------------
+^^^^^^^^^^^^
 
 
 ::
@@ -36,7 +39,7 @@ Installation
 
 
 Basics
-------
+^^^^^^
 
 In order to make your models versioned you need two things:
 
@@ -91,7 +94,7 @@ When the models have been configured either by calling configure_mappers() or by
 
 
 Versions and transactions
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 At the end of each transaction SQLAlchemy-Continuum gathers all changes together and creates
 version objects for each changed versioned entity. Continuum also creates one TransactionLog entity and
