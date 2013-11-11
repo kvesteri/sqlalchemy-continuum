@@ -48,7 +48,7 @@ In this example we find all transactions which affected any instance of 'Article
         session.query(TransactionLog)
         .innerjoin(TransactionLog.changes)
         .filter(
-            TransactionChanges.entity_name.in(['Article'])
+            TransactionChanges.entity_name.in_(['Article'])
         )
     )
 
