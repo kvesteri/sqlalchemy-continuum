@@ -4,6 +4,7 @@ from flask import request
 from flask.globals import _app_ctx_stack, _request_ctx_stack
 from flask.ext.login import current_user
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 
 from ..transaction_log import TransactionLogBase as _TransactionLogBase
 from ..manager import VersioningManager
@@ -29,7 +30,7 @@ def fetch_remote_addr(self):
 class TransactionLogBase(_TransactionLogBase):
     remote_addr = sa.Column(sa.String(50), default=fetch_remote_addr)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def user_id(self):
         return sa.Column(
             sa.Integer,
@@ -38,7 +39,7 @@ class TransactionLogBase(_TransactionLogBase):
             index=True
         )
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def user(self):
         return sa.orm.relationship('User')
 
