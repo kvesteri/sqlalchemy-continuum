@@ -5,16 +5,6 @@ from .operation import Operation
 from .utils import versioned_column_properties
 
 
-def relationship_properties(class_):
-    for prop in class_.__mapper__.iterate_properties:
-        if isinstance(prop, sa.orm.RelationshipProperty):
-            yield prop
-
-
-def relationship_keys(class_):
-    return map(lambda a: a.key, relationship_properties(class_))
-
-
 def first_level(paths):
     for path in paths:
         yield path.split('.')[0]
@@ -36,12 +26,13 @@ class Reverter(object):
         self.visited_objects = visited_objects
         self.obj = obj
         self.version_parent = self.obj.version_parent
-        self.parent_mapper = self.obj.__parent_class__.__mapper__
         self.parent_class = self.obj.__parent_class__
+        self.parent_mapper = sa.insepect(self.obj.__parent_class__)
+
         self.relations = list(relations)
         for path in relations:
             subpath = path.split('.')[0]
-            if subpath not in relationship_keys(self.obj.__parent_class__):
+            if subpath not in self.parent_mapper.relationships:
                 raise ReverterException(
                     "Could not initialize Reverter. Class '%s' does not have "
                     "relationship '%s'." % (
