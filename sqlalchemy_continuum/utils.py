@@ -1,8 +1,51 @@
+from inspect import isclass
 from collections import defaultdict
 import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy_utils.functions import naturally_equivalent
+
+
+def tx_cls(obj):
+    pass
+
+
+def versioning_manager(obj):
+    cls = obj if isclass(obj) else obj.__class__
+    return cls.__versioning_manager__
+
+
+def tx_meta_cls(obj):
+    pass
+
+
+def tx_changes_cls(obj):
+    pass
+
+
+def tx_column_name(obj):
+    return versioning_manager(obj).option(
+        obj.__parent_class__,
+        'transaction_column_name'
+    )
+
+
+def end_tx_column_name(obj):
+    return versioning_manager(obj).option(
+        obj.__parent_class__,
+        'end_transaction_column_name'
+    )
+
+
+def end_tx_attr(obj):
+    return getattr(
+        obj.__class__,
+        versioning_manager(obj).option(
+            obj.__parent_class__,
+            'end_transaction_column_name'
+        )
+    )
+
 
 
 def history_table(table):

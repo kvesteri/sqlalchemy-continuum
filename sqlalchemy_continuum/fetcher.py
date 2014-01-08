@@ -1,23 +1,12 @@
 import operator
 import sqlalchemy as sa
 from sqlalchemy_utils import primary_keys
+from .utils import tx_column_name, end_tx_column_name
 
 
 class HistoryObjectFetcher(object):
     def __init__(self, manager):
         self.manager = manager
-
-    def transaction_column_name(self, obj):
-        return self.manager.option(
-            obj.__parent_class__,
-            'transaction_column_name'
-        )
-
-    def end_transaction_column_name(self, obj):
-        return self.manager.option(
-            obj.__parent_class__,
-            'end_transaction_column_name'
-        )
 
     def previous(self, obj):
         """
@@ -46,13 +35,13 @@ class HistoryObjectFetcher(object):
         conditions = []
         pks = (
             [pk.name for pk in primary_keys(obj.__parent_class__)] +
-            [self.transaction_column_name(obj)]
+            [tx_column_name(obj)]
         )
 
         for column_name in pks:
             if (
                 skip_transaction_id and
-                column_name == self.transaction_column_name(obj)
+                column_name == tx_column_name(obj)
             ):
                 continue
             conditions.append(
@@ -75,14 +64,14 @@ class HistoryObjectFetcher(object):
         return (
             sa.select(
                 [func(
-                    getattr(alias, self.transaction_column_name(obj))
+                    getattr(alias, tx_column_name(obj))
                 )],
                 from_obj=[alias.__table__]
             )
             .where(
                 op(
-                    getattr(alias, self.transaction_column_name(obj)),
-                    getattr(obj, self.transaction_column_name(obj))
+                    getattr(alias, tx_column_name(obj)),
+                    getattr(obj, tx_column_name(obj))
                 )
             )
             .correlate(alias.__table__)
@@ -97,7 +86,7 @@ class HistoryObjectFetcher(object):
                 sa.and_(
                     getattr(
                         obj.__class__,
-                        self.transaction_column_name(obj)
+                        tx_column_name(obj)
                     )
                     ==
                     self._transaction_id_subquery(
@@ -118,9 +107,9 @@ class HistoryObjectFetcher(object):
         subquery = (
             sa.select([sa.func.count('1')], from_obj=[alias.__table__])
             .where(
-                getattr(alias, self.transaction_column_name(obj))
+                getattr(alias, tx_column_name(obj))
                 <
-                getattr(obj, self.transaction_column_name(obj))
+                getattr(obj, tx_column_name(obj))
             )
             .correlate(alias.__table__)
             .label('position')
@@ -129,7 +118,7 @@ class HistoryObjectFetcher(object):
             sa.select([subquery], from_obj=[obj.__table__])
             .where(sa.and_(*self._pk_correlation_condition(obj, False)))
             .order_by(
-                getattr(obj.__class__, self.transaction_column_name(obj))
+                getattr(obj.__class__, tx_column_name(obj))
             )
         )
         return query
@@ -165,15 +154,12 @@ class ValidityFetcher(HistoryObjectFetcher):
                 sa.and_(
                     getattr(
                         obj.__class__,
-                        self.manager.option(
-                            obj.__parent_class__,
-                            'transaction_column_name'
-                        )
+                        tx_column_name(obj)
                     )
                     ==
                     getattr(
                         obj,
-                        self.manager.option(obj, 'end_transaction_column_name')
+                        end_tx_column_name(obj)
                     ),
                     *self._pk_correlation_condition(obj)
                 )
@@ -193,19 +179,10 @@ class ValidityFetcher(HistoryObjectFetcher):
                 sa.and_(
                     getattr(
                         obj.__class__,
-                        self.manager.option(
-                            obj.__parent_class__,
-                            'end_transaction_column_name'
-                        )
+                        end_tx_column_name(obj)
                     )
                     ==
-                    getattr(
-                        obj,
-                        self.manager.option(
-                            obj.__parent_class__,
-                            'transaction_column_name'
-                        )
-                    ),
+                    getattr(obj, end_tx_column_name(obj)),
                     *self._pk_correlation_condition(obj)
                 )
             )

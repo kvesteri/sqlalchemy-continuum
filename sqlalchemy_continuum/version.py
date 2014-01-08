@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from .reverter import Reverter
+from .utils import versioning_manager
 
 
 class VersionClassBase(object):
@@ -10,7 +11,7 @@ class VersionClassBase(object):
         history. If current version is the first version this method returns
         None.
         """
-        return self.__versioning_manager__.fetcher(self).previous(self)
+        return versioning_manager(self).fetcher(self).previous(self)
 
     @property
     def next(self):
@@ -19,14 +20,14 @@ class VersionClassBase(object):
         history. If current version is the last version this method returns
         None.
         """
-        return self.__versioning_manager__.fetcher(self).next(self)
+        return versioning_manager(self).fetcher(self).next(self)
 
     @property
     def index(self):
         """
         Return the index of this version in the version history.
         """
-        return self.__versioning_manager__.fetcher(self).index(self)
+        return versioning_manager(self).fetcher(self).index(self)
 
     @property
     def changeset(self):
@@ -43,7 +44,7 @@ class VersionClassBase(object):
 
         for key, attr in class_manager.items():
             if key in [
-                self.__versioning_manager__.option(
+                versioning_manager(self).option(
                     self.__parent_class__, 'transaction_column_name'
                 ),
                 'operation_type'
