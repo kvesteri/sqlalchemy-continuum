@@ -27,7 +27,7 @@ class Reverter(object):
         self.obj = obj
         self.version_parent = self.obj.version_parent
         self.parent_class = self.obj.__parent_class__
-        self.parent_mapper = sa.insepect(self.obj.__parent_class__)
+        self.parent_mapper = sa.inspect(self.obj.__parent_class__)
 
         self.relations = list(relations)
         for path in relations:
