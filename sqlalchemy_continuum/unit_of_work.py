@@ -1,5 +1,8 @@
 import re
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 from functools import wraps
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity, has_changes
