@@ -7,6 +7,7 @@ Versioning and auditing extension for SQLAlchemy.
 
 from setuptools import setup, Command
 import subprocess
+import sys
 
 
 class PyTest(Command):
@@ -30,6 +31,8 @@ extras_require = {
         'psycopg2>=2.4.6',
         'six>=1.4.0'
     ],
+    'flask': ['Flask>=0.9'],
+    'flask-login': ['Flask-Login>=0.2.9']
 }
 
 
@@ -52,7 +55,9 @@ setup(
     install_requires=[
         'SQLAlchemy>=0.8',
         'SQLAlchemy-Utils>=0.16.25',
-        'inflection>=0.2.0'
+        'inflection>=0.2.0',
+        'ordereddict>=1.1'
+        if sys.version_info[0] == 2 and sys.version_info[1] < 7 else ''
     ],
     cmdclass={'test': PyTest},
     classifiers=[
