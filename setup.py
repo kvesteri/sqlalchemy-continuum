@@ -36,6 +36,12 @@ extras_require = {
 }
 
 
+# Add all optional dependencies to testing requirements.
+for name, requirements in extras_require.items():
+    if name != 'test':
+        extras_require['test'] += requirements
+
+
 setup(
     name='SQLAlchemy-Continuum',
     version='0.10.1',
@@ -59,6 +65,7 @@ setup(
         'ordereddict>=1.1'
         if sys.version_info[0] == 2 and sys.version_info[1] < 7 else ''
     ],
+    extras_require=extras_require,
     cmdclass={'test': PyTest},
     classifiers=[
         'Environment :: Web Environment',
