@@ -4,6 +4,7 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 from functools import wraps
+import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity, has_changes
 from .operation import Operation
@@ -260,7 +261,7 @@ class UnitOfWork(object):
         """
         changed_entities = set()
 
-        for key, value in self.operations.iteritems():
+        for key, value in six.iteritems(self.operations):
             if (
                 not is_modified(value['target']) and
                 value['target'] not in session.deleted
