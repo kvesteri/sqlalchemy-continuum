@@ -1,6 +1,8 @@
 SQLAlchemy-Continuum
 ====================
 
+|Build Status| |Version Status| |Downloads|
+
 Versioning and auditing extension for SQLAlchemy.
 
 
@@ -79,3 +81,11 @@ Resources
 
 
 .. image:: http://i.imgur.com/UFaRx.gif
+
+
+.. |Build Status| image:: https://travis-ci.org/kvesteri/sqlalchemy-continuum.png?branch=master
+   :target: https://travis-ci.org/kvesteri/sqlalchemy-continuum
+.. |Version Status| image:: https://pypip.in/v/SQLAlchemy-Continuum/badge.png
+   :target: https://crate.io/packages/SQLAlchemy-Continuum/
+.. |Downloads| image:: https://pypip.in/d/SQLAlchemy-Continuum/badge.png
+   :target: https://crate.io/packages/SQLAlchemy-Continuum/
