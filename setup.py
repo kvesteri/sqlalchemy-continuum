@@ -32,7 +32,8 @@ extras_require = {
         'six>=1.4.0'
     ],
     'flask': ['Flask>=0.9'],
-    'flask-login': ['Flask-Login>=0.2.9']
+    'flask-login': ['Flask-Login>=0.2.9'],
+    'i18n': ['SQLAlchemy-i18n >= 0.6.3'],
 }
 
 
