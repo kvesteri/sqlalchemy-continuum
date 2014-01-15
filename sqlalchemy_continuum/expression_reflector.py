@@ -1,3 +1,4 @@
+import six
 import sqlalchemy as sa
 from sqlalchemy.sql.expression import (
     BooleanClauseList,
@@ -37,7 +38,7 @@ class ExpressionReflector(object):
             # ascii strings along the way, force convert them back to avoid
             # sqlalchemy unicode warnings
             if isinstance(parameter.type, sa.Unicode):
-                parameter.value = unicode(parameter.value)
+                parameter.value = six.text_type(parameter.value)
             return parameter
 
     def binary_expression(self, expression):

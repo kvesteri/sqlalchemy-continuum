@@ -282,7 +282,7 @@ class UnitOfWork(object):
         for entity in self.changed_entities(session):
             changes = self.manager.transaction_changes_cls(
                 transaction_id=self.current_transaction_id,
-                entity_name=unicode(entity.__name__)
+                entity_name=six.text_type(entity.__name__)
             )
             session.add(changes)
 
@@ -302,7 +302,7 @@ class UnitOfWork(object):
         ):
             for key, value in self.tx_meta.items():
                 if callable(value):
-                    value = unicode(value())
+                    value = six.text_type(value())
                 meta = self.manager.transaction_meta_cls(
                     transaction_id=self.current_transaction_id,
                     key=key,
