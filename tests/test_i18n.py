@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_i18n import Translatable, make_translatable
+from sqlalchemy_i18n import Translatable, make_translatable, translation_base
 from . import TestCase
 
 
@@ -20,19 +20,20 @@ class TestVersioningWithI18nExtension(TestCase):
                 'base_classes': (self.Model, )
             }
             __translatable__ = {
-                'base_classes': (Versioned, ),
                 'locales': ['fi', 'en']
             }
-            __translated_columns__ = [
-                sa.Column('name', sa.Unicode(255)),
-                sa.Column('content', sa.UnicodeText)
-            ]
-
-            def get_locale(self):
-                return 'en'
+            locale = 'en'
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             description = sa.Column(sa.UnicodeText)
+
+        class ArticleTranslation(translation_base(Article)):
+            __tablename__ = 'article_translation'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+            name = sa.Column('name', sa.Unicode(255))
+            content = sa.Column('content', sa.UnicodeText)
 
         self.Article = Article
 

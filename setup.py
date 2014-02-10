@@ -34,7 +34,7 @@ extras_require = {
     ],
     'flask': ['Flask>=0.9'],
     'flask-login': ['Flask-Login>=0.2.9'],
-    'i18n': ['SQLAlchemy-i18n >= 0.6.3'],
+    'i18n': ['SQLAlchemy-i18n >= 0.8.2'],
 }
 
 
