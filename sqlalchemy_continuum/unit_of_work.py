@@ -168,14 +168,26 @@ class UnitOfWork(object):
         ):
             fetcher = self.manager.fetcher(parent)
             session = sa.orm.object_session(version_obj)
+
+            subquery = fetcher._transaction_id_subquery(
+                version_obj, next_or_prev='prev'
+            )
+            if session.connection().engine.dialect.name == 'mysql':
+                subquery = sa.select(
+                    [self.manager.option(
+                        parent,
+                        'transaction_column_name'
+                    )],
+                    from_obj=[
+                        sa.sql.expression.alias(subquery, name='subquery')
+                    ]
+                )
             return (
                 session.query(version_obj.__class__)
                 .filter(
                     sa.and_(
                         version_obj.__class__.transaction_id ==
-                        fetcher._transaction_id_subquery(
-                            version_obj, next_or_prev='prev'
-                        ),
+                        subquery,
                         *fetcher._pk_correlation_condition(version_obj)
                     )
                 )

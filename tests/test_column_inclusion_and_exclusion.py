@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_utils import TSVectorType
 from tests import TestCase
@@ -38,6 +40,7 @@ class TestDateTimeColumnExclusion(TestCase):
         )
 
 
+@mark.skipif("os.environ.get('DB') != 'postgres'")
 class TestTSVectorTypeColumnExclusion(TestCase):
     def create_models(self):
         class Article(self.Model):
