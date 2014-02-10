@@ -58,7 +58,7 @@ class TestCase(object):
         if adapter == 'postgres':
             dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
         elif adapter == 'mysql':
-            dns = 'mysql://travis@localhost/sqlalchemy_continuum_test'
+            dns = 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
         elif adapter == 'sqlite':
             dns = 'sqlite:///:memory:'
         else:

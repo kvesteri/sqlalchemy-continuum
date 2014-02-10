@@ -29,7 +29,7 @@ extras_require = {
         'pytest>=2.3.5',
         'flexmock>=0.9.7',
         'psycopg2>=2.4.6',
-        'MySQL-python>=1.2.5',
+        'PyMySQL==0.6.1',
         'six>=1.4.0'
     ],
     'flask': ['Flask>=0.9'],
