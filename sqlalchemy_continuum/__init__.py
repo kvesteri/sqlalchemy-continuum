@@ -4,7 +4,7 @@ from .operation import Operation
 from .utils import changeset, vacuum
 
 
-__version__ = '0.10.1'
+__version__ = '0.10.2'
 
 
 __all__ = (
