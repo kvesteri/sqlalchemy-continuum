@@ -1,3 +1,4 @@
+from six import PY3
 from tests import TestCase
 
 

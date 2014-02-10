@@ -2,6 +2,8 @@ from copy import copy
 import os
 import warnings
 import sqlalchemy as sa
+from six import PY3
+from pytest import mark
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -33,6 +35,7 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
+@mark.skipif("PY3 and os.environ.get('DB') == 'mysql'")
 class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
@@ -58,7 +61,10 @@ class TestCase(object):
         if adapter == 'postgres':
             dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
         elif adapter == 'mysql':
-            dns = 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
+            dns = (
+                'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
+                '?use_unicode=0&charset=utf8'
+            )
         elif adapter == 'sqlite':
             dns = 'sqlite:///:memory:'
         else:
