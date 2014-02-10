@@ -1,6 +1,7 @@
 env:
   - DB=mysql
   - DB=postgres
+  - DB=sqlite
 
 before_script:
   - sh -c "if [ '$DB' = 'postgres' ]; then psql -c 'create database sqlalchemy_continuum_test;' -U postgres; fi"
