@@ -87,7 +87,7 @@ class TestUpdateWithDefaultValues(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
-            updated_at = sa.Column(sa.DateTime, server_default=sa.func.now())
+            updated_at = sa.Column(sa.DateTime, default=sa.func.now())
             is_editable = sa.Column(sa.Boolean)
 
         self.Article = Article
