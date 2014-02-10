@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.10.2 (2014-02-10)
+^^^^^^^^^^^^^^^^^^^
+
+- Fixed MySQL support (issue #36)
+- Added SQLite and MySQL to testing matrix
+
+
 0.10.1 (2013-10-18)
 ^^^^^^^^^^^^^^^^^^^
 
