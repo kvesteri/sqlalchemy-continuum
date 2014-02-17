@@ -12,10 +12,6 @@ from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
 )
 
-__all__ = (
-    PY3,
-)
-
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
@@ -44,6 +40,7 @@ class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
+    track_property_modifications = False
     store_data_at_delete = False
 
     @property
@@ -53,6 +50,7 @@ class TestCase(object):
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
+            'track_property_modifications': self.track_property_modifications,
             'store_data_at_delete': self.store_data_at_delete
         }
 

@@ -3,7 +3,7 @@ from six import PY3
 from tests import TestCase
 
 
-class ChangeSetTestCase(TestCase):
+class ChangeSetBaseTestCase(TestCase):
     def test_changeset_for_insert(self):
         article = self.Article()
         article.name = u'Some article'
@@ -32,6 +32,8 @@ class ChangeSetTestCase(TestCase):
             'name': [u'Some article', u'Updated name']
         }
 
+
+class ChangeSetTestCase(ChangeSetBaseTestCase):
     def test_changeset_for_history_that_does_not_have_first_insert(self):
         tx_log_class = self.Article.__versioned__['transaction_log']
         tx_log = tx_log_class(issued_at=sa.func.now())
@@ -47,6 +49,10 @@ class ChangeSetTestCase(TestCase):
         )
 
         assert self.session.query(self.ArticleHistory).first().changeset == {}
+
+
+class TestChangeSetWithTrackPropertyModifications(ChangeSetBaseTestCase):
+    track_property_modifications = True
 
 
 class TestChangeSetWithValidityStrategy(ChangeSetTestCase):
