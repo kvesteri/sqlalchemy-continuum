@@ -8,7 +8,7 @@ import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity, has_changes
 from .operation import Operation
-from .utils import is_versioned, is_modified
+from .utils import is_versioned, is_modified, is_modified_or_deleted
 
 
 def tracked_operation(func):
@@ -42,6 +42,9 @@ class UnitOfWork(object):
         self.tx_context = {}
         self.tx_meta = {}
         self.pending_statements = []
+        # Set of objects for which the force history creation should be
+        # applied to
+        self.force_create_objs = set([])
 
     def track_operations(self, mapper):
         """
@@ -132,10 +135,11 @@ class UnitOfWork(object):
 
         for key, value in self.operations.items():
             if (
-                not is_modified(value['target']) and
-                value['target'] not in session.deleted
+                not is_modified_or_deleted(value['target']) and not
+                value['target'] in self.force_create_objs
             ):
                 continue
+
             version_obj = value['target'].__versioned__['class']()
             session.add(version_obj)
 
@@ -220,14 +224,37 @@ class UnitOfWork(object):
             return
 
         if self._committing:
-            self.create_transaction_log_entry(session)
-            self.create_history_objects(session)
-            self.create_association_versions(session)
-            self.create_transaction_changes_entries(session)
-            self.create_transaction_meta_entries(session)
+            self.make_history(session)
+        else:
+            self.force_create_objs = self.force_create_objs.union(set(session))
 
-            self.operations = OrderedDict()
-            self._committing = False
+    def make_history(self, session):
+        """
+        Create transaction, transaction changes records, history objects.
+
+        :param session: SQLAlchemy session object
+        """
+        self.create_transaction_log_entry(session)
+        self.create_history_objects(session)
+        self.create_association_versions(session)
+        self.create_transaction_changes_entries(session)
+        self.create_transaction_meta_entries(session)
+
+        self.operations = OrderedDict()
+        self._committing = False
+
+    def should_create_transaction(self, session):
+        """
+        Return whether or not transaction entry should be created for given
+        SQLAlchemy session object.
+
+        :param session: SQLAlchemy session
+        """
+        return (
+            self.changed_entities(session) or
+            self.pending_statements or
+            self.force_create_objs
+        )
 
     def create_transaction_log_entry(self, session):
         """
@@ -241,10 +268,7 @@ class UnitOfWork(object):
 
         if (
             self.manager.transaction_log_cls and
-            (
-                self.changed_entities(session) or
-                self.pending_statements
-            )
+            self.should_create_transaction(session)
         ):
             table = self.manager.transaction_log_cls.__table__
 
@@ -332,6 +356,8 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         self._committing = True
+        if session._is_clean():
+            self.make_history(session)
 
     def clear(self, session):
         """
@@ -435,7 +461,7 @@ class UnitOfWork(object):
 
     def should_nullify_attr(self, version_obj, attr):
         """
-        Returns whether or not given attribute of given version object should
+        Return whether or not given attribute of given version object should
         be nullified (set to None) at the end of the transaction.
 
         :param version_obj:
@@ -460,7 +486,7 @@ class UnitOfWork(object):
 
     def assign_attributes(self, parent_obj, version_obj):
         """
-        Assigns attributes values from parent object to version object. If the
+        Assign attributes values from parent object to version object. If the
         parent object is deleted this method assigns None values to all version
         object's attributes.
 
@@ -486,7 +512,7 @@ class UnitOfWork(object):
 
     def assign_modified_flag(self, parent_obj, version_obj, attr_name):
         """
-        Assigns modified flag for given attribute of given version model object
+        Assign modified flag for given attribute of given version model object
         based on the modification state of this property in given parent model
         object.
 

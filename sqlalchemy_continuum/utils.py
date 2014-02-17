@@ -153,6 +153,11 @@ def vacuum(session, model):
             versions[version.id].append(version)
 
 
+def is_modified_or_deleted(obj):
+    session = sa.orm.object_session(obj)
+    return is_modified(obj) or obj in session.deleted
+
+
 def is_modified(obj):
     """
     Returns whether or not the versioned properties of given object have been

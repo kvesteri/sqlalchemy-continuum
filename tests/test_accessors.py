@@ -25,6 +25,7 @@ class VersionModelAccessorsTestCase(TestCase):
         version = article.versions[1]
 
         assert version.previous.name == u'Some article'
+        assert version.previous.transaction_id == version.transaction_id - 1
 
     def test_previous_for_deleted_parent(self):
         article = self.Article()
