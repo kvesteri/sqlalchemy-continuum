@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from six import PY3
 from tests import TestCase
 
 
@@ -48,8 +49,8 @@ class ChangeSetTestCase(TestCase):
         assert self.session.query(self.ArticleHistory).first().changeset == {}
 
 
-class TestChangeSet(ChangeSetTestCase):
-    pass
+class TestChangeSetWithValidityStrategy(ChangeSetTestCase):
+    versioning_strategy = 'validity'
 
 
 class TestChangeSetWithCustomTransactionColumn(ChangeSetTestCase):

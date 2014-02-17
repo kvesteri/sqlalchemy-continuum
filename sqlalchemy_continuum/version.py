@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from .reverter import Reverter
-from .utils import versioning_manager
+from .utils import versioning_manager, is_internal_column
 
 
 class VersionClassBase(object):
@@ -43,12 +43,7 @@ class VersionClassBase(object):
             return {}
 
         for key, attr in class_manager.items():
-            if key in [
-                versioning_manager(self).option(
-                    self.__parent_class__, 'transaction_column_name'
-                ),
-                'operation_type'
-            ]:
+            if is_internal_column(self, key):
                 continue
             if isinstance(attr.property, sa.orm.ColumnProperty):
                 if not previous_version:

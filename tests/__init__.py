@@ -12,6 +12,10 @@ from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
 )
 
+__all__ = (
+    PY3,
+)
+
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 

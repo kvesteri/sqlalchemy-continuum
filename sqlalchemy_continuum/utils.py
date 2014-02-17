@@ -47,10 +47,9 @@ def end_tx_attr(obj):
     )
 
 
-
 def history_table(table):
     """
-    Returns associated history table for given SQLAlchemy Table object.
+    Return associated history table for given SQLAlchemy Table object.
 
     :param table: SQLAlchemy Table object
     """
@@ -66,7 +65,7 @@ def history_table(table):
 
 def versioned_objects(session):
     """
-    Returns all versioned objects in given session.
+    Return all versioned objects in given session.
 
     :param session: SQLAlchemy session object
     """
@@ -80,7 +79,7 @@ def versioned_objects(session):
 
 def is_versioned(obj):
     """
-    Returns whether or not given object is versioned.
+    Return whether or not given object is versioned.
 
     :param obj: SQLAlchemy declarative model object.
     """
@@ -98,7 +97,7 @@ def is_versioned(obj):
 
 def versioned_column_properties(obj):
     """
-    Returns all versioned column properties for given versioned SQLAlchemy
+    Return all versioned column properties for given versioned SQLAlchemy
     declarative model object.
 
     :param obj: SQLAlchemy declarative model object
@@ -153,14 +152,41 @@ def vacuum(session, model):
             versions[version.id].append(version)
 
 
+def is_internal_column(history_obj, column_name):
+    """
+    Return whether or not given column of given SQLAlchemy declarative history
+    object is considered an internal column (a column whose purpose is mainly
+    for SA-Continuum's internal use).
+
+    :param history_obj: SQLAlchemy declarative history object
+    :param column_name: Name of the column
+    """
+    manager = versioning_manager(history_obj)
+    parent_cls = history_obj.__parent_class__
+
+    return column_name in (
+        manager.option(parent_cls, 'transaction_column_name'),
+        manager.option(parent_cls, 'end_transaction_column_name'),
+        manager.option(parent_cls, 'operation_type_column_name')
+    ) or column_name.endswith(
+        manager.option(parent_cls, 'modified_flag_suffix')
+    )
+
+
 def is_modified_or_deleted(obj):
+    """
+    Return whether or not some of the versioned properties of given SQLAlchemy
+    declarative object have been modified or if the object has been deleted.
+
+    :param obj: SQLAlchemy declarative model object
+    """
     session = sa.orm.object_session(obj)
     return is_modified(obj) or obj in session.deleted
 
 
 def is_modified(obj):
     """
-    Returns whether or not the versioned properties of given object have been
+    Return whether or not the versioned properties of given object have been
     modified.
 
     :param obj: SQLAlchemy declarative model object
@@ -174,7 +200,7 @@ def is_modified(obj):
 
 def changeset(obj):
     """
-    Returns a humanized changeset for given SQLAlchemy declarative object.
+    Return a humanized changeset for given SQLAlchemy declarative object.
 
     :param obj: SQLAlchemy declarative model object
     """
