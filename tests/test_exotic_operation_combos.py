@@ -64,3 +64,7 @@ class TestExoticOperationCombos(TestCase):
         assert article2.versions.count() == 2
         assert article2.versions[0].operation_type == 0
         assert article2.versions[1].operation_type == 1
+
+
+class TestExoticOperationCombosWithValidityStrategy(TestExoticOperationCombos):
+    versioning_strategy = 'validity'
