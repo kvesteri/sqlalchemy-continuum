@@ -1,5 +1,6 @@
 import os
 import sqlalchemy as sa
+from six import PY3
 from pytest import mark
 from sqlalchemy.ext.declarative import declarative_base
 from tests import TestCase

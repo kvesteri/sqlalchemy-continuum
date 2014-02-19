@@ -90,9 +90,10 @@ class TableBuilder(object):
             column_copy.nullable = True
 
         # Find the right column key
-        for key, value in sa.inspect(self.model).columns.items():
-            if value is column:
-                column_copy.key = key
+        if self.model is not None:
+            for key, value in sa.inspect(self.model).columns.items():
+                if value is column:
+                    column_copy.key = key
         return column_copy
 
     @property
