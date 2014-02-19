@@ -73,6 +73,7 @@ class TestCase(object):
             raise Exception('Unknown driver given: %r' % adapter)
 
         self.engine = create_engine(dns)
+        #self.engine.echo = True
         self.connection = self.engine.connect()
         self.Model = declarative_base()
 

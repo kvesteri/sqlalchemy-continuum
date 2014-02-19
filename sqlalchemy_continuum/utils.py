@@ -6,21 +6,9 @@ from sqlalchemy.orm.attributes import get_history
 from sqlalchemy_utils.functions import naturally_equivalent
 
 
-def tx_cls(obj):
-    pass
-
-
 def versioning_manager(obj):
     cls = obj if isclass(obj) else obj.__class__
     return cls.__versioning_manager__
-
-
-def tx_meta_cls(obj):
-    pass
-
-
-def tx_changes_cls(obj):
-    pass
 
 
 def tx_column_name(obj):

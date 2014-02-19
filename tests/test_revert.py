@@ -1,3 +1,4 @@
+from six import PY3
 from pytest import raises
 import sqlalchemy as sa
 from sqlalchemy_continuum.reverter import Reverter, ReverterException

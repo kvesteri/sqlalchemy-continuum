@@ -1,3 +1,4 @@
+from six import PY3
 from tests import TestCase
 
 
@@ -21,10 +22,12 @@ class TestOneToManyRelationships(TestCase):
         self.session.commit()
         article.tags.remove(tag)
         self.session.commit()
+        assert article.versions.count() == 1
         article.tags.append(self.Tag(name=u'Some other tag'))
         article.name = u'Updated article'
         self.session.commit()
 
+        assert article.versions.count() == 2
         assert article.versions[0].tags.count() == 1
         assert article.versions[1].tags.count() == 1
         assert article.versions[1].tags[0].name == u'Some other tag'

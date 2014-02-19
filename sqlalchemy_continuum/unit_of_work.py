@@ -1,3 +1,4 @@
+from copy import copy
 import re
 try:
     from collections import OrderedDict
@@ -42,9 +43,6 @@ class UnitOfWork(object):
         self.tx_context = {}
         self.tx_meta = {}
         self.pending_statements = []
-        # Set of objects for which the force history creation should be
-        # applied to
-        self.force_create_objs = set([])
 
     def track_operations(self, mapper):
         """
@@ -107,10 +105,19 @@ class UnitOfWork(object):
         Tracks object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
-        self.operations[key] = {
-            'target': target,
-            'operation_type': Operation.UPDATE
-        }
+        state_copy = copy(sa.inspect(target).committed_state)
+        relationships = sa.inspect(target.__class__).relationships
+        # Remove all ONETOMANY and MANYTOMANY relationships
+        for rel_key, relationship in relationships.items():
+            if relationship.direction.name in ['ONETOMANY', 'MANYTOMANY']:
+                if rel_key in state_copy:
+                    del state_copy[rel_key]
+
+        if state_copy:
+            self.operations[key] = {
+                'target': target,
+                'operation_type': Operation.UPDATE
+            }
 
     @tracked_operation
     def track_deletes(self, key, target):
@@ -133,19 +140,21 @@ class UnitOfWork(object):
         if not self.manager.options['versioning']:
             return
 
-        for key, value in self.operations.items():
-            if (
-                not is_modified_or_deleted(value['target']) and not
-                value['target'] in self.force_create_objs
-            ):
-                continue
+        version_objs = []
+        values = self.operations.values()
+
+        for key, value in copy(self.operations).items():
+            # if not is_modified_or_deleted(value['target']):
+            #     assert 0
+            #     continue
 
             version_obj = value['target'].__versioned__['class']()
-            session.add(version_obj)
-
             version_obj.operation_type = value['operation_type']
-            self.assign_attributes(value['target'], version_obj)
 
+            if not self.current_transaction_id:
+                raise Exception(
+                    'Current transaction id not available.'
+                )
             setattr(
                 version_obj,
                 self.manager.option(
@@ -154,7 +163,41 @@ class UnitOfWork(object):
                 ),
                 self.current_transaction_id
             )
+            self.assign_attributes(value['target'], version_obj)
+            # The operation needs to be deleted before modifying the session
+            del self.operations[key]
+            version_objs.append(version_obj)
+
+        for version_obj in version_objs:
+            session.add(version_obj)
             self.update_version_validity(value['target'], version_obj)
+
+    def version_validity_subquery(self, parent, version_obj):
+        """
+        Return the subquery needed by update_version_validity.
+
+        This method is only used when using 'validity' versioning strategy.
+
+        :param parent: SQLAlchemy declarative parent object
+        :parem version_obj: SQLAlchemy declarative version object
+        """
+        fetcher = self.manager.fetcher(parent)
+        session = sa.orm.object_session(version_obj)
+
+        subquery = fetcher._transaction_id_subquery(
+            version_obj, next_or_prev='prev'
+        )
+        if session.connection().engine.dialect.name == 'mysql':
+            return sa.select(
+                [self.manager.option(
+                    parent,
+                    'transaction_column_name'
+                )],
+                from_obj=[
+                    sa.sql.expression.alias(subquery, name='subquery')
+                ]
+            )
+        return subquery
 
     def update_version_validity(self, parent, version_obj):
         """
@@ -173,19 +216,7 @@ class UnitOfWork(object):
             fetcher = self.manager.fetcher(parent)
             session = sa.orm.object_session(version_obj)
 
-            subquery = fetcher._transaction_id_subquery(
-                version_obj, next_or_prev='prev'
-            )
-            if session.connection().engine.dialect.name == 'mysql':
-                subquery = sa.select(
-                    [self.manager.option(
-                        parent,
-                        'transaction_column_name'
-                    )],
-                    from_obj=[
-                        sa.sql.expression.alias(subquery, name='subquery')
-                    ]
-                )
+            subquery = self.version_validity_subquery(parent, version_obj)
             return (
                 session.query(version_obj.__class__)
                 .filter(
@@ -211,37 +242,20 @@ class UnitOfWork(object):
             stmt = stmt.values(transaction_id=self.current_transaction_id)
             session.execute(stmt)
 
-    def after_flush(self, session, flush_context):
-        """
-        SQLAlchemy after_flush event listener that handles all the logic for
-        creating necessary TransactionLog, TransactionChanges and History
-        objects.
-
-        :param session: SQLAlchemy session object
-        :param flush_context: flush_context dictionary
-        """
-        if not self.manager.options['versioning']:
-            return
-
-        if self._committing:
-            self.make_history(session)
-        else:
-            self.force_create_objs = self.force_create_objs.union(set(session))
-
     def make_history(self, session):
         """
         Create transaction, transaction changes records, history objects.
 
         :param session: SQLAlchemy session object
         """
-        self.create_transaction_log_entry(session)
+        if not self.manager.options['versioning']:
+            return
+        if not self.current_transaction_id:
+            self.create_transaction_log_entry(session)
+            self.create_association_versions(session)
+            self.create_transaction_changes_entries(session)
+            self.create_transaction_meta_entries(session)
         self.create_history_objects(session)
-        self.create_association_versions(session)
-        self.create_transaction_changes_entries(session)
-        self.create_transaction_meta_entries(session)
-
-        self.operations = OrderedDict()
-        self._committing = False
 
     def should_create_transaction(self, session):
         """
@@ -250,11 +264,7 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session
         """
-        return (
-            self.changed_entities(session) or
-            self.pending_statements or
-            self.force_create_objs
-        )
+        return self.operations or self.pending_statements
 
     def create_transaction_log_entry(self, session):
         """
@@ -299,11 +309,10 @@ class UnitOfWork(object):
 
         for key, value in six.iteritems(self.operations):
             if (
-                not is_modified(value['target']) and
-                value['target'] not in session.deleted
+                is_modified(value['target']) or
+                value['target'] in session.deleted
             ):
-                continue
-            changed_entities.add(key[0])
+                changed_entities.add(key[0])
         return changed_entities
 
     def create_transaction_changes_entries(self, session):
@@ -346,6 +355,18 @@ class UnitOfWork(object):
                 )
                 session.add(meta)
 
+    def after_flush(self, session, flush_context):
+        """
+        SQLAlchemy after_flush event listener that handles all the logic for
+        creating necessary TransactionLog, TransactionChanges and History
+        objects.
+
+        :param session: SQLAlchemy session object
+        :param flush_context: flush_context dictionary
+        """
+        if self._committing:
+            self.make_history(session)
+
     def before_commit(self, session):
         """
         SQLAlchemy before commit listener that marks the internal state of this
@@ -356,8 +377,9 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         self._committing = True
-        if session._is_clean():
-            self.make_history(session)
+        # Flush is needed before updating history.
+        session.flush()
+        self.make_history(session)
 
     def clear(self, session):
         """
@@ -366,7 +388,7 @@ class UnitOfWork(object):
         this listener is to reset this UnitOfWork back to its initialization
         state.
 
-        :param session: SQLAlchey session object
+        :param session: SQLAlchemy session object
         """
         self.reset()
 

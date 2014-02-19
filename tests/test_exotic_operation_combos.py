@@ -2,7 +2,7 @@ from six import PY3
 from tests import TestCase
 
 
-class TestExoticOperationCombos(TestCase):
+class ExoticOperationCombosTestCase(TestCase):
     def test_insert_deleted_object(self):
         article = self.Article()
         article.name = u'Some article'
@@ -24,10 +24,11 @@ class TestExoticOperationCombos(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
+        assert article.versions.count()
 
         self.session.delete(article)
         self.session.flush()
-        article2 = self.Article(id=article.id, name=u'Some article')
+        article2 = self.Article(id=article.id, name=u'Some other article')
         self.session.add(article2)
         self.session.commit()
         assert article2.versions.count() == 2
@@ -66,5 +67,13 @@ class TestExoticOperationCombos(TestCase):
         assert article2.versions[1].operation_type == 1
 
 
-class TestExoticOperationCombosWithValidityStrategy(TestExoticOperationCombos):
+class TestExoticOperationCombosWithSubqueryStrategy(
+    ExoticOperationCombosTestCase
+):
+    versioning_strategy = 'subquery'
+
+
+class TestExoticOperationCombosWithValidityStrategy(
+    ExoticOperationCombosTestCase
+):
     versioning_strategy = 'validity'
