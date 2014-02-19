@@ -182,7 +182,7 @@ class ValidityFetcher(HistoryObjectFetcher):
                         end_tx_column_name(obj)
                     )
                     ==
-                    getattr(obj, end_tx_column_name(obj)),
+                    getattr(obj, tx_column_name(obj)),
                     *self._pk_correlation_condition(obj)
                 )
             )
