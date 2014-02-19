@@ -1,3 +1,4 @@
+from six import PY3
 import sqlalchemy as sa
 from tests import TestCase
 
@@ -31,6 +32,12 @@ class TestSingleTableInheritance(TestCase):
         self.Article = Article
         self.BlogPost = BlogPost
 
+    def setup_method(self, method):
+        TestCase.setup_method(self, method)
+        self.TextItemHistory = self.TextItem.__versioned__['class']
+        self.ArticleHistory = self.Article.__versioned__['class']
+        self.BlogPostHistory = self.BlogPost.__versioned__['class']
+
     def test_history_class_map(self):
         manager = self.TextItem.__versioned__['manager']
         assert len(manager.history_class_map.keys()) == 3
@@ -42,14 +49,25 @@ class TestSingleTableInheritance(TestCase):
         assert tx_log.blog_posts
 
     def test_each_class_has_distinct_history_class(self):
-        TextItemHistory = self.TextItem.__versioned__['class']
-        ArticleHistory = self.Article.__versioned__['class']
-        BlogPostHistory = self.BlogPost.__versioned__['class']
-        assert TextItemHistory.__table__.name == 'text_item_history'
-        assert ArticleHistory.__table__.name == 'text_item_history'
-        assert BlogPostHistory.__table__.name == 'text_item_history'
-        assert issubclass(ArticleHistory, TextItemHistory)
-        assert issubclass(BlogPostHistory, TextItemHistory)
+        assert self.TextItemHistory.__table__.name == 'text_item_history'
+        assert self.ArticleHistory.__table__.name == 'text_item_history'
+        assert self.BlogPostHistory.__table__.name == 'text_item_history'
+        assert issubclass(self.ArticleHistory, self.TextItemHistory)
+        assert issubclass(self.BlogPostHistory, self.TextItemHistory)
+
+    def test_each_object_has_distinct_history_class(self):
+        article = self.Article()
+        blogpost = self.BlogPost()
+        textitem = self.TextItem()
+
+        self.session.add(article)
+        self.session.add(blogpost)
+        self.session.add(textitem)
+        self.session.commit()
+
+        assert type(textitem.versions[0]) == self.TextItemHistory
+        assert type(article.versions[0]) == self.ArticleHistory
+        assert type(blogpost.versions[0]) == self.BlogPostHistory
 
     def test_transaction_log_changed_entities(self):
         article = self.Article()

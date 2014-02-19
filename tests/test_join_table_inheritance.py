@@ -1,3 +1,4 @@
+from six import PY3
 import sqlalchemy as sa
 from tests import TestCase
 
@@ -53,6 +54,20 @@ class TestJoinTableInheritance(TestCase):
         assert self.BlogPostHistory.__table__.name == 'blog_post_history'
         assert issubclass(self.ArticleHistory, self.TextItemHistory)
         assert issubclass(self.BlogPostHistory, self.TextItemHistory)
+
+    def test_each_object_has_distinct_history_class(self):
+        article = self.Article()
+        blogpost = self.BlogPost()
+        textitem = self.TextItem()
+
+        self.session.add(article)
+        self.session.add(blogpost)
+        self.session.add(textitem)
+        self.session.commit()
+
+        assert type(textitem.versions[0]) == self.TextItemHistory
+        assert type(article.versions[0]) == self.ArticleHistory
+        assert type(blogpost.versions[0]) == self.BlogPostHistory
 
     def test_all_tables_contain_transaction_id_column(self):
         assert 'transaction_id' in self.TextItemHistory.__table__.c
