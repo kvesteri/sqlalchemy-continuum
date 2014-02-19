@@ -54,6 +54,10 @@ class TableBuilder(object):
                     sa.Column(
                         column_copy.name + self.option('modified_flag_suffix'),
                         sa.Boolean,
+                        key=(
+                            column_copy.key +
+                            self.option('modified_flag_suffix')
+                        ),
                         default=False,
                         nullable=False
                     )
@@ -61,7 +65,7 @@ class TableBuilder(object):
 
         # When using join table inheritance each table should have own
         # transaction column.
-        if transaction_column_name not in [c.name for c in columns]:
+        if transaction_column_name not in [c.key for c in columns]:
             columns.append(sa.Column(transaction_column_name, sa.BigInteger))
 
         return columns
@@ -84,6 +88,11 @@ class TableBuilder(object):
 
         if not column_copy.primary_key:
             column_copy.nullable = True
+
+        # Find the right column key
+        for key, value in sa.inspect(self.model).columns.items():
+            if value is column:
+                column_copy.key = key
         return column_copy
 
     @property

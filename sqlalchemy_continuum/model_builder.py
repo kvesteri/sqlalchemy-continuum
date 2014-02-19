@@ -146,9 +146,9 @@ class ModelBuilder(object):
         """
         if self.find_closest_versioned_parent():
             reflector = ClassExpressionReflector(self.model)
-            inherit_condition = reflector(
-                self.model.__mapper__.inherit_condition
-            )
+            mapper = sa.inspect(self.model)
+            inherit_condition = reflector(mapper.inherit_condition)
+
             return {
                 'inherit_condition': inherit_condition
             }
