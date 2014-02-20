@@ -12,7 +12,7 @@ class TestCommonBaseClass(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
-            name = sa.Column('_name', sa.String)
+            name = sa.Column('_name', sa.String(255))
 
         self.TextItem = TextItem
 

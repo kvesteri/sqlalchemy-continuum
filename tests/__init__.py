@@ -35,7 +35,7 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
-@mark.skipif("PY3 and os.environ.get('DB') == 'mysql'")
+# @mark.skipif("PY3 and os.environ.get('DB') == 'mysql'")
 class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
