@@ -56,6 +56,50 @@ class VersionModelAccessorsTestCase(TestCase):
             .order_by(self.ArticleHistory.id)
         ).all()[-1]
         assert version.previous.previous
+        
+    def test_previous_two_versions(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        article2 = self.Article()
+        article2.name = u'Second article'
+        article2.content = u'Second article'
+        self.session.add(article2)
+        self.session.commit()
+        
+        article.name = u'Updated article'
+        self.session.commit()
+        article.name = u'Updated article 2'
+        self.session.commit()
+        
+        assert article.versions[2].previous
+        assert article.versions[1].previous
+        assert article.versions[2].previous == article.versions[1]
+        assert article.versions[1].previous == article.versions[0]
+        
+    def test_next_two_versions(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        article2 = self.Article()
+        article2.name = u'Second article'
+        article2.content = u'Second article'
+        self.session.add(article2)
+        self.session.commit()
+        
+        article.name = u'Updated article'
+        self.session.commit()
+        article.name = u'Updated article 2'
+        self.session.commit()
+        
+        assert article.versions[0].next
+        assert article.versions[1].next
+        assert article.versions[0].next == article.versions[1]
+        assert article.versions[1].next == article.versions[2]
 
     def test_next_for_last_version(self):
         article = self.Article()

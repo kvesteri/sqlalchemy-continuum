@@ -69,9 +69,13 @@ class HistoryObjectFetcher(object):
                 from_obj=[alias.__table__]
             )
             .where(
-                op(
-                    getattr(alias, tx_column_name(obj)),
-                    getattr(obj, tx_column_name(obj))
+                sa.and_(
+                    op(
+                        getattr(alias, tx_column_name(obj)),
+                        getattr(obj, tx_column_name(obj))
+                    ),
+                    # *self._pk_correlation_condition(alias)
+                    alias.id == obj.id
                 )
             )
             .correlate(alias.__table__)
