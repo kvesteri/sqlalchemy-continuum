@@ -61,7 +61,7 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'SQLAlchemy>=0.8',
+        'SQLAlchemy>=0.9.3',
         'SQLAlchemy-Utils>=0.23.3',
         'inflection>=0.2.0',
         'ordereddict>=1.1'

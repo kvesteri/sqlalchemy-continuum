@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+0.10.3 (2014-02-10)
+^^^^^^^^^^^^^^^^^^^
+
+- Fixed version next / previous handling
+- SQLAlchemy dependency updated to 0.9.3
+
+
 0.10.2 (2014-02-10)
 ^^^^^^^^^^^^^^^^^^^
 
