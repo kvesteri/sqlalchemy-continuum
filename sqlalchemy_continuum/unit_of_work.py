@@ -223,7 +223,7 @@ class UnitOfWork(object):
                     sa.and_(
                         version_obj.__class__.transaction_id ==
                         subquery,
-                        *fetcher._pk_correlation_condition(version_obj)
+                        *fetcher.parent_identity_correlation(version_obj)
                     )
                 )
                 .update(

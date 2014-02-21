@@ -1,7 +1,19 @@
 import operator
 import sqlalchemy as sa
-from sqlalchemy_utils import primary_keys
+from sqlalchemy_utils import primary_keys, identity
 from .utils import tx_column_name, end_tx_column_name
+
+
+def eq(tuple_):
+    return tuple_[0] == tuple_[1]
+
+
+def parent_identity(obj_or_class):
+    return tuple(
+        getattr(obj_or_class, column.name)
+        for column in primary_keys(obj_or_class)
+        if column.name != tx_column_name(obj_or_class)
+    )
 
 
 class HistoryObjectFetcher(object):
@@ -31,25 +43,14 @@ class HistoryObjectFetcher(object):
         """
         return self.next_query(obj).first()
 
-    def _pk_correlation_condition(self, obj, skip_transaction_id=True):
-        conditions = []
-        pks = (
-            [pk.name for pk in primary_keys(obj.__parent_class__)] +
-            [tx_column_name(obj)]
-        )
-
-        for column_name in pks:
-            if (
-                skip_transaction_id and
-                column_name == tx_column_name(obj)
-            ):
-                continue
-            conditions.append(
-                getattr(obj, column_name)
-                ==
-                getattr(obj.__class__, column_name)
+    def parent_identity_correlation(self, obj):
+        return map(
+            eq,
+            zip(
+                parent_identity(obj.__class__),
+                parent_identity(obj)
             )
-        return conditions
+        )
 
     def _transaction_id_subquery(self, obj, next_or_prev='next'):
         if next_or_prev == 'next':
@@ -60,8 +61,7 @@ class HistoryObjectFetcher(object):
             func = sa.func.max
 
         alias = sa.orm.aliased(obj)
-
-        return (
+        query = (
             sa.select(
                 [func(
                     getattr(alias, tx_column_name(obj))
@@ -74,12 +74,12 @@ class HistoryObjectFetcher(object):
                         getattr(alias, tx_column_name(obj)),
                         getattr(obj, tx_column_name(obj))
                     ),
-                    # *self._pk_correlation_condition(alias)
-                    alias.id == obj.id
+                    *map(eq, zip(parent_identity(alias), parent_identity(obj)))
                 )
             )
             .correlate(alias.__table__)
         )
+        return query
 
     def _next_prev_query(self, obj, next_or_prev='next'):
         session = sa.orm.object_session(obj)
@@ -96,7 +96,7 @@ class HistoryObjectFetcher(object):
                     self._transaction_id_subquery(
                         obj, next_or_prev=next_or_prev
                     ),
-                    *self._pk_correlation_condition(obj)
+                    *self.parent_identity_correlation(obj)
                 )
             )
         )
@@ -120,7 +120,11 @@ class HistoryObjectFetcher(object):
         )
         query = (
             sa.select([subquery], from_obj=[obj.__table__])
-            .where(sa.and_(*self._pk_correlation_condition(obj, False)))
+            .where(
+                sa.and_(
+                    *map(eq, zip(identity(obj.__class__), identity(obj)))
+                )
+            )
             .order_by(
                 getattr(obj.__class__, tx_column_name(obj))
             )
@@ -165,7 +169,7 @@ class ValidityFetcher(HistoryObjectFetcher):
                         obj,
                         end_tx_column_name(obj)
                     ),
-                    *self._pk_correlation_condition(obj)
+                    *self.parent_identity_correlation(obj)
                 )
             )
         )
@@ -187,7 +191,7 @@ class ValidityFetcher(HistoryObjectFetcher):
                     )
                     ==
                     getattr(obj, tx_column_name(obj)),
-                    *self._pk_correlation_condition(obj)
+                    *self.parent_identity_correlation(obj)
                 )
             )
         )

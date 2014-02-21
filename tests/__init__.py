@@ -1,4 +1,6 @@
 from copy import copy
+import inspect
+import itertools as it
 import os
 import warnings
 import sqlalchemy as sa
@@ -42,6 +44,7 @@ class TestCase(object):
     end_transaction_column_name = 'end_transaction_id'
     track_property_modifications = False
     store_data_at_delete = False
+    composite_pk = False
 
     @property
     def options(self):
@@ -131,3 +134,48 @@ class TestCase(object):
 
         self.Article = Article
         self.Tag = Tag
+
+
+setting_variants = {
+    'versioning_strategy': ['subquery', 'validity'],
+    'store_data_at_delete': [True, False],
+    'track_property_modifications': [True, False]
+}
+
+
+def create_test_cases(base_class, setting_variants=setting_variants):
+    """
+    Function for creating bunch of test case classes for given base class
+    and setting variants. Number of test cases created is the number of linear
+    combinations with setting variants.
+
+    :param base_class:
+        Base test case class, should be in format 'xxxTestCase'
+    :param setting_variants:
+        A dictionary with keys as versioned configuration option keys and
+        values as list of possible option values.
+    """
+    names = sorted(setting_variants)
+    combinations = [
+        dict(zip(names, prod))
+        for prod in
+        it.product(*(setting_variants[name] for name in names))
+    ]
+
+    # Get the module where this function was called in.
+    frm = inspect.stack()[1]
+    module = inspect.getmodule(frm[0])
+
+    class_suffix = base_class.__name__[0:-len('TestCase')]
+    for index, combination in enumerate(combinations):
+        class_name = 'Test%s%i' % (class_suffix, index)
+        # Assign a new test case class for current module.
+        setattr(
+            module,
+            class_name,
+            type(
+                class_name,
+                (base_class, ),
+                combination
+            )
+        )

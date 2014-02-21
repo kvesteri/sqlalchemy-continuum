@@ -3,11 +3,14 @@ from collections import defaultdict
 import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
+from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent
 
 
-def versioning_manager(obj):
-    cls = obj if isclass(obj) else obj.__class__
+def versioning_manager(obj_or_class):
+    if isinstance(obj_or_class, AliasedClass):
+        obj_or_class = sa.inspect(obj_or_class).mapper.class_
+    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
     return cls.__versioning_manager__
 
 
