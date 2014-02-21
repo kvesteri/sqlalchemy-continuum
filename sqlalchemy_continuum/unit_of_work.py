@@ -9,7 +9,13 @@ import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import identity, has_changes
 from .operation import Operation
-from .utils import is_versioned, is_modified, is_modified_or_deleted
+from .utils import (
+    is_versioned,
+    is_modified,
+    is_modified_or_deleted,
+    tx_column_name,
+    end_tx_column_name
+)
 
 
 def tracked_operation(func):
@@ -221,13 +227,18 @@ class UnitOfWork(object):
                 session.query(version_obj.__class__)
                 .filter(
                     sa.and_(
-                        version_obj.__class__.transaction_id ==
-                        subquery,
+                        getattr(
+                            version_obj.__class__,
+                            tx_column_name(version_obj)
+                        ) == subquery,
                         *fetcher.parent_identity_correlation(version_obj)
                     )
                 )
                 .update(
-                    {'end_transaction_id': self.current_transaction_id},
+                    {
+                        end_tx_column_name(version_obj):
+                        self.current_transaction_id
+                    },
                     synchronize_session=False
                 )
             )

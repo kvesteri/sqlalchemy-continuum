@@ -1,5 +1,5 @@
 from six import PY3
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
 class ExoticOperationCombosTestCase(TestCase):
@@ -67,13 +67,4 @@ class ExoticOperationCombosTestCase(TestCase):
         assert article2.versions[1].operation_type == 1
 
 
-class TestExoticOperationCombosWithSubqueryStrategy(
-    ExoticOperationCombosTestCase
-):
-    versioning_strategy = 'subquery'
-
-
-class TestExoticOperationCombosWithValidityStrategy(
-    ExoticOperationCombosTestCase
-):
-    versioning_strategy = 'validity'
+create_test_cases(ExoticOperationCombosTestCase)

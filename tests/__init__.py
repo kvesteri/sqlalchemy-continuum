@@ -139,7 +139,9 @@ class TestCase(object):
 setting_variants = {
     'versioning_strategy': ['subquery', 'validity'],
     'store_data_at_delete': [True, False],
-    'track_property_modifications': [True, False]
+    'track_property_modifications': [True, False],
+    'transaction_column_name': ['transaction_id', 'tx_id'],
+    'end_transaction_column_name': ['end_transaction_id', 'end_tx_id']
 }
 
 

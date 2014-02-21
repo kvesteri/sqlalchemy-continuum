@@ -1,10 +1,10 @@
 import sqlalchemy as sa
 from six import PY3
 
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
-class TestCommonBaseClass(TestCase):
+class ColumnAliasesTestCase(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
@@ -30,3 +30,6 @@ class TestCommonBaseClass(TestCase):
         self.session.commit()
         item.versions[0].revert()
         self.session.commit()
+
+
+create_test_cases(ColumnAliasesTestCase)

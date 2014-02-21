@@ -1,8 +1,8 @@
 import sqlalchemy as sa
-from . import TestCase
+from . import TestCase, create_test_cases
 
 
-class TestManyToManyRelationships(TestCase):
+class ManyToManyRelationshipsTestCase(TestCase):
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
@@ -107,3 +107,6 @@ class TestManyToManyRelationships(TestCase):
         article.name = u'Updated name'
         self.session.commit()
         assert article.versions[1].tags.count() == 0
+
+
+create_test_cases(ManyToManyRelationshipsTestCase)
