@@ -1,8 +1,8 @@
 from six import PY3
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
-class TestOneToManyRelationships(TestCase):
+class OneToManyRelationshipsTestCase(TestCase):
     def test_single_insert(self):
         article = self.Article()
         article.name = u'Some article'
@@ -59,3 +59,6 @@ class TestOneToManyRelationships(TestCase):
         self.session.commit()
         assert article.versions[0].tags.count() == 1
         assert article.versions[1].tags.count() == 0
+
+
+create_test_cases(OneToManyRelationshipsTestCase)

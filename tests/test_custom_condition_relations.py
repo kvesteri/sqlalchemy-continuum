@@ -1,8 +1,8 @@
 import sqlalchemy as sa
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
-class TestVersionedModel(TestCase):
+class CustomConditionRelationsTestCase(TestCase):
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
@@ -59,3 +59,6 @@ class TestVersionedModel(TestCase):
         self.session.commit()
         assert article.versions[0].primary_tags.all()
         assert article.versions[0].secondary_tags.all()
+
+
+create_test_cases(CustomConditionRelationsTestCase)
