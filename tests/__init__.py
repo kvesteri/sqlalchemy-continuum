@@ -66,17 +66,14 @@ class TestCase(object):
         if adapter == 'postgres':
             dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
         elif adapter == 'mysql':
-            dns = (
-                'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
-                '?use_unicode=0&charset=utf8'
-            )
+            dns = 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
         elif adapter == 'sqlite':
             dns = 'sqlite:///:memory:'
         else:
             raise Exception('Unknown driver given: %r' % adapter)
 
         self.engine = create_engine(dns)
-        #self.engine.echo = True
+        # self.engine.echo = True
         self.connection = self.engine.connect()
         self.Model = declarative_base()
 
