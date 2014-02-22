@@ -12,7 +12,7 @@ class ColumnAliasesTestCase(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
-            name = sa.Column('_name', sa.String(255))
+            name = sa.Column('_name', sa.Unicode(255))
 
         self.TextItem = TextItem
 
