@@ -81,6 +81,8 @@ class TableBuilder(object):
         column_copy = column.copy()
         # Remove unique constraints
         column_copy.unique = False
+        # Remove onupdate triggers
+        column_copy.onupdate = None
         if column_copy.autoincrement:
             column_copy.autoincrement = False
         if column_copy.name == self.option('transaction_column_name'):
