@@ -1,3 +1,6 @@
+from copy import copy
+from datetime import datetime
+import sqlalchemy as sa
 from tests import TestCase
 
 
@@ -42,3 +45,26 @@ class TestTableBuilder(TestCase):
         assert self.Article.__table__.c.name.nullable is False
         table = self.Article.__versioned__['class'].__table__
         assert table.c.transaction_id.nullable is False
+
+
+class TestTableBuilderWithOnUpdate(TestCase):
+    def create_models(self):
+        options = copy(self.options)
+        options['include'] = ['last_update', ]
+
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = options
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            last_update = sa.Column(
+                sa.DateTime,
+                default=datetime.utcnow,
+                onupdate=datetime.utcnow,
+                nullable=False
+            )
+        self.Article = Article
+
+    def test_takes_out_onupdate_triggers(self):
+        table = self.Article.__versioned__['class'].__table__
+        assert table.c.last_update.onupdate is None
