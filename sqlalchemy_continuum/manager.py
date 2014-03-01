@@ -106,7 +106,7 @@ class VersioningManager(object):
 
     def transaction_log_factory(self):
         """
-        Creates TransactionLog class.
+        Create TransactionLog class.
         """
         class TransactionLog(
             self.declarative_base,
@@ -119,7 +119,7 @@ class VersioningManager(object):
 
     def create_transaction_log(self):
         """
-        Creates TransactionLog class but only if it doesn't already exist in
+        Create TransactionLog class but only if it doesn't already exist in
         declarative model registry.
         """
         if 'TransactionLog' not in self.declarative_base._decl_class_registry:
@@ -128,7 +128,7 @@ class VersioningManager(object):
 
     def transaction_changes_factory(self):
         """
-        Creates TransactionChanges class.
+        Create TransactionChanges class.
         """
         class TransactionChanges(
             self.declarative_base,
@@ -151,7 +151,7 @@ class VersioningManager(object):
 
     def create_transaction_changes(self):
         """
-        Creates TransactionChanges class but only if it doesn't already exist
+        Create TransactionChanges class but only if it doesn't already exist
         in declarative model registry.
         """
         if (
@@ -163,7 +163,7 @@ class VersioningManager(object):
 
     def transaction_meta_factory(self):
         """
-        Creates TransactionMeta class.
+        Create TransactionMeta class.
         """
         class TransactionMeta(
             self.declarative_base,
@@ -194,7 +194,7 @@ class VersioningManager(object):
 
     def create_transaction_meta(self):
         """
-        Creates TransactionMeta class but only if it doesn't already exist
+        Create TransactionMeta class but only if it doesn't already exist
         in declarative model registry.
         """
         if (
