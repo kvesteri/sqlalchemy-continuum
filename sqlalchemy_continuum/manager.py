@@ -116,46 +116,6 @@ class VersioningManager(object):
         yield
         self.uow.tx_meta = old_tx_meta
 
-    def activity_factory(self):
-        """
-        Create Activity class.
-        """
-        from sqlalchemy_utils import generic_relationship
-
-        class Activity(
-            self.declarative_base,
-            ActivityBase
-        ):
-            __tablename__ = 'activity'
-            manager = self
-
-            object_type = sa.Column(sa.String(255))
-
-            object_id = sa.Column(sa.Integer)
-
-            target_type = sa.Column(sa.String(255))
-
-            target_id = sa.Column(sa.Integer)
-
-            object = generic_relationship(
-                object_type, object_id
-            )
-
-            target = generic_relationship(
-                target_type, target_id
-            )
-
-        return Activity
-
-    def create_activity(self):
-        """
-        Create Activity class but only if it doesn't already exist in
-        declarative model registry.
-        """
-        if 'Activity' not in self.declarative_base._decl_class_registry:
-            return self.activity_factory()
-        return self.declarative_base._decl_class_registry['Activity']
-
     def transaction_log_factory(self):
         """
         Create TransactionLog class.

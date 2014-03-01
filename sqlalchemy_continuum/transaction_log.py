@@ -51,20 +51,3 @@ class TransactionLogBase(object):
                     value
                 ))
         return dict(entities)
-
-
-class TransactionMetaBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
-    key = sa.Column(sa.Unicode(255), primary_key=True)
-    value = sa.Column(sa.UnicodeText)
-
-
-class TransactionChangesBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
-    entity_name = sa.Column(sa.Unicode(255), primary_key=True)
