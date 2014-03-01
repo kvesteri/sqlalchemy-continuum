@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import generic_relationship, JSONType
 
@@ -21,15 +22,19 @@ class ActivityBase(object):
     # This is used to point to the primary key of the linked row.
     object_id = sa.Column(sa.Integer)
 
-    object = generic_relationship(object_type, object_id)
-
     # This is used to discriminate between the linked tables.
     target_type = sa.Column(sa.Unicode(255))
 
     # This is used to point to the primary key of the linked row.
     target_id = sa.Column(sa.Integer)
 
-    target = generic_relationship(target_type, target_id)
+    @declared_attr
+    def object(cls):
+        return generic_relationship(cls.object_type, cls.object_id)
+
+    @declared_attr
+    def target(cls):
+        return generic_relationship(cls.target_type, cls.target_id)
 
     @hybrid_property
     def actor(self):

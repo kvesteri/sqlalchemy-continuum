@@ -124,8 +124,8 @@ class VersioningManager(object):
         declarative model registry.
         """
         if 'Activity' not in self.declarative_base._decl_class_registry:
-            return self.transaction_log_factory()
-        return self.declarative_base._decl_class_registry['Activity2']
+            return self.activity_factory()
+        return self.declarative_base._decl_class_registry['Activity']
 
     def transaction_log_factory(self):
         """
