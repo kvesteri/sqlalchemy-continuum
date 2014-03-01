@@ -328,6 +328,9 @@ class VersioningManager(object):
             isinstance(column.type, TSVectorType)
         )
 
+    def before_create_transaction(self, **values):
+        return values
+
     def option(self, model, name):
         """
         Returns the option value for given model. If the option is not found

@@ -293,13 +293,14 @@ class UnitOfWork(object):
         ):
             table = self.manager.transaction_log_cls.__table__
 
+            options = {'issued_at': sa.func.now()}
+            options.update(self.tx_context)
+            values = self.manager.before_create_transaction(options)
+
             stmt = (
                 table
                 .insert()
-                .values(
-                    issued_at=sa.func.now(),
-                    **self.tx_context
-                )
+                .values(values)
             )
             if session.connection().engine.driver == 'psycopg2':
                 stmt = stmt.returning(table.c.id)
