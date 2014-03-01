@@ -12,20 +12,6 @@ class TransactionLogBase(object):
     id = sa.Column(sa.types.BigInteger, primary_key=True, autoincrement=True)
     issued_at = sa.Column(sa.DateTime)
 
-    remote_addr = sa.Column(sa.String(50))
-
-    @declared_attr
-    def user_id(self):
-        return sa.Column(
-            sa.Integer,
-            sa.ForeignKey('user.id'),
-            index=True
-        )
-
-    @declared_attr
-    def user(self):
-        return sa.orm.relationship('User')
-
     @property
     def entity_names(self):
         """

@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import versioning_manager
+from sqlalchemy_continuum import versioning_manager, current_transaction_id
 from tests import TestCase
 
 
@@ -19,3 +19,15 @@ class TestActivity(TestCase):
 
     def test_creates_activity_class(self):
         assert versioning_manager.activity_cls.__name__ == 'Activity'
+
+    def test_create_activity_object(self):
+        article = self.Article(name=u'Some article')
+        self.session.add(article)
+        self.session.flush()
+        activity = versioning_manager.activity_cls(
+            object=article,
+            verb=u'create',
+            transaction_id=current_transaction_id
+        )
+        self.session.add(activity)
+        self.session.commit()

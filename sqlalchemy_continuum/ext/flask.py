@@ -24,6 +24,9 @@ def fetch_remote_addr():
 
 
 class FlaskVersioningManager(VersioningManager):
+    user = True
+    remote_addr = True
+
     def before_create_transaction(self, values):
         values.setdefault('user_id', fetch_current_user_id())
         values.setdefault('remote_addr', fetch_remote_addr())

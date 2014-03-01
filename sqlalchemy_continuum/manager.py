@@ -2,8 +2,6 @@ from contextlib import contextmanager
 from inflection import underscore, pluralize
 from copy import copy
 import sqlalchemy as sa
-from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
@@ -13,12 +11,9 @@ from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
-from .transaction_log import (
-    TransactionLogBase,
-    TransactionChangesBase,
-    TransactionMetaBase
-)
+from .transaction_log import TransactionLogBase
 from .unit_of_work import UnitOfWork
+from .plugins import TransactionChangesPlugin, TransactionMetaPlugin
 
 
 class VersioningManager(object):
@@ -27,6 +22,10 @@ class VersioningManager(object):
     classes and the actual versioning to UnitOfWork class. Manager contains
     configuration options that act as defaults for all versioned classes.
     """
+
+    remote_addr = False
+    user = False
+    _plugins = []
 
     def __init__(
         self,
@@ -41,6 +40,10 @@ class VersioningManager(object):
             'table_name': '%s_history',
             'exclude': [],
             'include': [],
+            'plugins': [
+                TransactionChangesPlugin,
+                TransactionMetaPlugin
+            ],
             'transaction_log_base': TransactionLogBase,
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
@@ -52,6 +55,14 @@ class VersioningManager(object):
             'modified_flag_suffix': '_mod'
         }
         self.options.update(options)
+
+    @property
+    def plugins(self):
+        if not self._plugins:
+            self._plugins = [
+                plugin_class(self) for plugin_class in self.options['plugins']
+            ]
+        return self._plugins
 
     def fetcher(self, obj):
         if self.option(obj, 'strategy') == 'subquery':
@@ -109,12 +120,30 @@ class VersioningManager(object):
         """
         Create Activity class.
         """
+        from sqlalchemy_utils import generic_relationship
+
         class Activity(
             self.declarative_base,
             ActivityBase
         ):
             __tablename__ = 'activity'
             manager = self
+
+            object_type = sa.Column(sa.String(255))
+
+            object_id = sa.Column(sa.Integer)
+
+            target_type = sa.Column(sa.String(255))
+
+            target_id = sa.Column(sa.Integer)
+
+            object = generic_relationship(
+                object_type, object_id
+            )
+
+            target = generic_relationship(
+                target_type, target_id
+            )
 
         return Activity
 
@@ -138,6 +167,16 @@ class VersioningManager(object):
             __tablename__ = 'transaction_log'
             manager = self
 
+        if self.remote_addr:
+            TransactionLog.remote_addr = sa.Column(sa.String(50))
+
+        if self.user:
+            TransactionLog.user_id = sa.Column(
+                sa.Integer,
+                sa.ForeignKey('user.id'),
+                index=True
+            )
+            TransactionLog.user = sa.orm.relationship('User')
         return TransactionLog
 
     def create_transaction_log(self):
@@ -148,84 +187,6 @@ class VersioningManager(object):
         if 'TransactionLog' not in self.declarative_base._decl_class_registry:
             return self.transaction_log_factory()
         return self.declarative_base._decl_class_registry['TransactionLog']
-
-    def transaction_changes_factory(self):
-        """
-        Create TransactionChanges class.
-        """
-        class TransactionChanges(
-            self.declarative_base,
-            TransactionChangesBase
-        ):
-            __tablename__ = 'transaction_changes'
-
-        TransactionChanges.transaction_log = sa.orm.relationship(
-            self.transaction_log_cls,
-            backref=sa.orm.backref(
-                'changes',
-            ),
-            primaryjoin=(
-                '%s.id == TransactionChanges.transaction_id' %
-                self.transaction_log_cls.__name__
-            ),
-            foreign_keys=[TransactionChanges.transaction_id]
-        )
-        return TransactionChanges
-
-    def create_transaction_changes(self):
-        """
-        Create TransactionChanges class but only if it doesn't already exist
-        in declarative model registry.
-        """
-        if (
-            'TransactionChanges' not in
-            self.declarative_base._decl_class_registry
-        ):
-            return self.transaction_changes_factory()
-        return self.declarative_base._decl_class_registry['TransactionChanges']
-
-    def transaction_meta_factory(self):
-        """
-        Create TransactionMeta class.
-        """
-        class TransactionMeta(
-            self.declarative_base,
-            TransactionMetaBase
-        ):
-            __tablename__ = 'transaction_meta'
-
-        TransactionMeta.transaction_log = sa.orm.relationship(
-            self.transaction_log_cls,
-            backref=sa.orm.backref(
-                'meta_relation',
-                collection_class=attribute_mapped_collection('key')
-            ),
-            primaryjoin=(
-                '%s.id == TransactionMeta.transaction_id' %
-                self.transaction_log_cls.__name__
-            ),
-            foreign_keys=[TransactionMeta.transaction_id]
-        )
-
-        self.transaction_log_cls.meta = association_proxy(
-            'meta_relation',
-            'value',
-            creator=lambda key, value: TransactionMeta(key=key, value=value)
-        )
-
-        return TransactionMeta
-
-    def create_transaction_meta(self):
-        """
-        Create TransactionMeta class but only if it doesn't already exist
-        in declarative model registry.
-        """
-        if (
-            'TransactionMeta' not in
-            self.declarative_base._decl_class_registry
-        ):
-            return self.transaction_meta_factory()
-        return self.declarative_base._decl_class_registry['TransactionMeta']
 
     def build_tables(self):
         """
@@ -276,10 +237,10 @@ class VersioningManager(object):
         if self.pending_classes:
             cls = self.pending_classes[0]
             self.declarative_base = declarative_base(cls)
-            self.activity_cls = self.create_activity()
             self.transaction_log_cls = self.create_transaction_log()
-            self.transaction_changes_cls = self.create_transaction_changes()
-            self.transaction_meta_cls = self.create_transaction_meta()
+
+            for plugin in self.plugins:
+                plugin.before_instrument()
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):
@@ -288,11 +249,12 @@ class VersioningManager(object):
                 table = self.closest_matching_table(cls)
                 if table is not None:
                     builder = ModelBuilder(self, cls)
-                    builder(
+                    history_cls = builder(
                         table,
-                        self.transaction_log_cls,
-                        self.transaction_changes_cls
+                        self.transaction_log_cls
                     )
+                    for plugin in self.plugins:
+                        plugin.after_history_class_built(cls, history_cls)
 
     def build_relationships(self, history_classes):
         """
@@ -328,7 +290,7 @@ class VersioningManager(object):
             isinstance(column.type, TSVectorType)
         )
 
-    def before_create_transaction(self, **values):
+    def before_create_transaction(self, values):
         return values
 
     def option(self, model, name):

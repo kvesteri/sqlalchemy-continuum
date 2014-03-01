@@ -12,10 +12,13 @@ from .operation import Operation
 from .utils import (
     is_versioned,
     is_modified,
-    is_modified_or_deleted,
     tx_column_name,
     end_tx_column_name
 )
+
+
+def current_transaction_id():
+    pass
 
 
 def tracked_operation(func):
@@ -75,6 +78,9 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session to track the operations from
         """
+        # sa.event.listen(
+        #     session, 'before_flush', self.before_flush
+        # )
         sa.event.listen(
             session, 'after_flush', self.after_flush
         )
@@ -147,7 +153,6 @@ class UnitOfWork(object):
             return
 
         version_objs = []
-        values = self.operations.values()
 
         for key, value in copy(self.operations).items():
             # if not is_modified_or_deleted(value['target']):
@@ -264,8 +269,8 @@ class UnitOfWork(object):
         if not self.current_transaction_id:
             self.create_transaction_log_entry(session)
             self.create_association_versions(session)
-            self.create_transaction_changes_entries(session)
-            self.create_transaction_meta_entries(session)
+            for plugin in self.manager.plugins:
+                plugin.before_flush(self, session)
         self.create_history_objects(session)
 
     def should_create_transaction(self, session):
@@ -327,45 +332,8 @@ class UnitOfWork(object):
                 changed_entities.add(key[0])
         return changed_entities
 
-    def create_transaction_changes_entries(self, session):
-        """
-        Create transaction changes entries based on all operations that
-        occurred during this UnitOfWork. For each entity that has been affected
-        by an operation during this UnitOfWork this method creates a new
-        TransactionChanges object.
-
-        :param session: SQLAlchemy session object
-        """
-        for entity in self.changed_entities(session):
-            changes = self.manager.transaction_changes_cls(
-                transaction_id=self.current_transaction_id,
-                entity_name=six.text_type(entity.__name__)
-            )
-            session.add(changes)
-
-    def create_transaction_meta_entries(self, session):
-        """
-        Create transaction meta entries based on transaction meta context
-        key-value pairs.
-
-        :param session: SQLAlchemy session object
-        """
-        if (
-            self.tx_meta and
-            (
-                self.changed_entities(session) or
-                self.pending_statements
-            )
-        ):
-            for key, value in self.tx_meta.items():
-                if callable(value):
-                    value = six.text_type(value())
-                meta = self.manager.transaction_meta_cls(
-                    transaction_id=self.current_transaction_id,
-                    key=key,
-                    value=value
-                )
-                session.add(meta)
+    # def after_flush(self, session, flush_context):
+    #    self.create_history_objects(session)
 
     def after_flush(self, session, flush_context):
         """
@@ -378,6 +346,12 @@ class UnitOfWork(object):
         """
         if self._committing:
             self.make_history(session)
+
+        if self.current_transaction_id:
+            for obj in session:
+                for key in sa.inspect(obj).attrs.keys():
+                    if getattr(obj, key) == current_transaction_id:
+                        setattr(obj, key, self.current_transaction_id)
 
     def before_commit(self, session):
         """

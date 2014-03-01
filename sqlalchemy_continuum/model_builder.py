@@ -95,32 +95,6 @@ class ModelBuilder(object):
                 )
             )
 
-    def build_changes_relationship(self, tx_changes_class):
-        """
-        Builds a relationship between currently built history class and
-        TransactionChanges class.
-
-        :param tx_changes_class: TransactionChanges class
-        """
-        transaction_column = getattr(
-            self.history_class,
-            self.option('transaction_column_name')
-        )
-
-        # Only define changes relation if it doesn't already exist in
-        # parent class.
-        if not hasattr(self.history_class, 'changes'):
-            self.history_class.changes = sa.orm.relationship(
-                tx_changes_class,
-                primaryjoin=(
-                    tx_changes_class.transaction_id == transaction_column
-                ),
-                foreign_keys=[tx_changes_class.transaction_id],
-                backref=self.manager.options['relation_naming_function'](
-                    self.model.__name__
-                )
-            )
-
     def find_closest_versioned_parent(self):
         """
         Finds the closest versioned parent for current parent model.
@@ -170,23 +144,22 @@ class ModelBuilder(object):
             }
         )
 
-    def __call__(self, table, tx_log_class, tx_changes_class):
+    def __call__(self, table, tx_log_class):
         """
         Build history model and relationships to parent model, transaction
-        log model and transaction changes model.
+        log model.
         """
         # versioned attributes need to be copied for each child class,
         # otherwise each child class would share the same __versioned__
         # option dict
         self.model.__versioned__ = copy(self.model.__versioned__)
         self.model.__versioned__['transaction_log'] = tx_log_class
-        self.model.__versioned__['transaction_changes'] = tx_changes_class
         self.model.__versioned__['manager'] = self.manager
         self.history_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(tx_log_class)
-        self.build_changes_relationship(tx_changes_class)
         self.model.__versioned__['class'] = self.history_class
         self.history_class.__parent_class__ = self.model
         self.history_class.__versioning_manager__ = self.manager
         self.manager.history_class_map[self.model] = self.history_class
+        return self.history_class
