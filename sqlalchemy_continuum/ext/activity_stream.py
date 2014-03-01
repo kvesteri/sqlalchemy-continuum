@@ -1,19 +1,15 @@
 import sqlalchemy as sa
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import generic_relationship, JSONType
 
 
-class Activity(object):
-    @declared_attr
-    def actor_id(self):
-        return sa.Column(
-            sa.Integer,
-            sa.ForeignKey('user.id'),
-            index=True
-        )
+class ActivityBase(object):
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
-    @declared_attr
-    def actor(self):
-        return sa.orm.relationship('User')
+    transaction_id = sa.Column(
+        sa.BigInteger,
+        primary_key=True
+    )
 
     verb = sa.Column(sa.Unicode(255))
 
@@ -34,3 +30,7 @@ class Activity(object):
     target_id = sa.Column(sa.Integer)
 
     target = generic_relationship(target_type, target_id)
+
+    @hybrid_property
+    def actor(self):
+        self.transaction.user
