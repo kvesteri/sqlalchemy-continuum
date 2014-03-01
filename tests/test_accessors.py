@@ -185,7 +185,6 @@ class VersionModelAccessorsTestCase(TestCase):
         assert article.versions[0].index == 0
 
 
-
 class VersionModelAccessorsWithCompositePkTestCase(TestCase):
     def create_models(self):
         class User(self.Model):

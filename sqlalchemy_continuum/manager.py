@@ -8,6 +8,7 @@ from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
 from sqlalchemy_utils.types import TSVectorType
+from .ext.activity_stream import ActivityBase
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
@@ -103,6 +104,28 @@ class VersioningManager(object):
         self.uow.tx_meta = tx_meta
         yield
         self.uow.tx_meta = old_tx_meta
+
+    def activity_factory(self):
+        """
+        Create Activity class.
+        """
+        class Activity(
+            self.declarative_base,
+            ActivityBase
+        ):
+            __tablename__ = 'activity'
+            manager = self
+
+        return Activity
+
+    def create_activity(self):
+        """
+        Create Activity class but only if it doesn't already exist in
+        declarative model registry.
+        """
+        if 'Activity' not in self.declarative_base._decl_class_registry:
+            return self.transaction_log_factory()
+        return self.declarative_base._decl_class_registry['Activity2']
 
     def transaction_log_factory(self):
         """
@@ -253,6 +276,7 @@ class VersioningManager(object):
         if self.pending_classes:
             cls = self.pending_classes[0]
             self.declarative_base = declarative_base(cls)
+            self.activity_cls = self.create_activity()
             self.transaction_log_cls = self.create_transaction_log()
             self.transaction_changes_cls = self.create_transaction_changes()
             self.transaction_meta_cls = self.create_transaction_meta()
