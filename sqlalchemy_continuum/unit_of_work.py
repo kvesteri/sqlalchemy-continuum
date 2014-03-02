@@ -231,8 +231,6 @@ class UnitOfWork(object):
                     )
                 )
             )
-            from sqlalchemy_utils import render_statement
-            print render_statement(query)
             query.update(
                 {
                     end_tx_column_name(version_obj):
