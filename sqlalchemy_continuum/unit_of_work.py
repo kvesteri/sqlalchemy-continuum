@@ -17,10 +17,6 @@ from .utils import (
 )
 
 
-def current_transaction_id():
-    pass
-
-
 def tracked_operation(func):
     @wraps(func)
     def wrapper(self, mapper, connection, target):
@@ -28,8 +24,8 @@ def tracked_operation(func):
             return
         if not is_versioned(target):
             return
-        # we cannot use target._sa_instance_state.identity here since object's
-        # is not yet updated at this phase
+        # We cannot use target._sa_instance_state.identity here since object's
+        # identity is not yet updated at this phase
         key = (target.__class__, identity(target))
 
         return func(self, key, target)
@@ -46,7 +42,7 @@ class UnitOfWork(object):
         Reset the internal state of this UnitOfWork object. Normally this is
         called after transaction has been committed or rolled back.
         """
-        self.current_transaction_id = None
+        self.current_transaction = None
         self.operations = OrderedDict()
         self._committing = False
         self.tx_context = {}
@@ -78,11 +74,8 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session to track the operations from
         """
-        # sa.event.listen(
-        #     session, 'before_flush', self.before_flush
-        # )
         sa.event.listen(
-            session, 'after_flush', self.after_flush
+            session, 'before_flush', self.before_flush
         )
         sa.event.listen(
             session, 'before_commit', self.before_commit
@@ -97,9 +90,11 @@ class UnitOfWork(object):
     @tracked_operation
     def track_inserts(self, key, target):
         """
-        Tracks object insert operations. Whenever object is inserted it is
+        Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if not is_modified(target):
+            return
         if key in self.operations:
             # If the object is deleted and then inserted within the same
             # transaction we are actually dealing with an update.
@@ -114,9 +109,11 @@ class UnitOfWork(object):
     @tracked_operation
     def track_updates(self, key, target):
         """
-        Tracks object update operations. Whenever object is updated it is
+        Track object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if not is_modified(target):
+            return
         state_copy = copy(sa.inspect(target).committed_state)
         relationships = sa.inspect(target.__class__).relationships
         # Remove all ONETOMANY and MANYTOMANY relationships
@@ -134,7 +131,7 @@ class UnitOfWork(object):
     @tracked_operation
     def track_deletes(self, key, target):
         """
-        Tracks object deletion operations. Whenever object is deleted it is
+        Track object deletion operations. Whenever object is deleted it is
         added to this UnitOfWork's internal operations dictionary.
         """
         self.operations[key] = {
@@ -155,16 +152,12 @@ class UnitOfWork(object):
         version_objs = []
 
         for key, value in copy(self.operations).items():
-            # if not is_modified_or_deleted(value['target']):
-            #     assert 0
-            #     continue
-
             version_obj = value['target'].__versioned__['class']()
             version_obj.operation_type = value['operation_type']
 
-            if not self.current_transaction_id:
+            if not self.current_transaction:
                 raise Exception(
-                    'Current transaction id not available.'
+                    'Current transaction not available.'
                 )
             setattr(
                 version_obj,
@@ -172,8 +165,9 @@ class UnitOfWork(object):
                     value['target'],
                     'transaction_column_name'
                 ),
-                self.current_transaction_id
+                self.current_transaction.id
             )
+            version_obj.transaction = self.current_transaction
             self.assign_attributes(value['target'], version_obj)
             # The operation needs to be deleted before modifying the session
             del self.operations[key]
@@ -200,10 +194,7 @@ class UnitOfWork(object):
         )
         if session.connection().engine.dialect.name == 'mysql':
             return sa.select(
-                [self.manager.option(
-                    parent,
-                    'transaction_column_name'
-                )],
+                ['max_1'],
                 from_obj=[
                     sa.sql.expression.alias(subquery, name='subquery')
                 ]
@@ -228,7 +219,7 @@ class UnitOfWork(object):
             session = sa.orm.object_session(version_obj)
 
             subquery = self.version_validity_subquery(parent, version_obj)
-            return (
+            query = (
                 session.query(version_obj.__class__)
                 .filter(
                     sa.and_(
@@ -239,13 +230,15 @@ class UnitOfWork(object):
                         *fetcher.parent_identity_correlation(version_obj)
                     )
                 )
-                .update(
-                    {
-                        end_tx_column_name(version_obj):
-                        self.current_transaction_id
-                    },
-                    synchronize_session=False
-                )
+            )
+            from sqlalchemy_utils import render_statement
+            print render_statement(query)
+            query.update(
+                {
+                    end_tx_column_name(version_obj):
+                    self.current_transaction.id
+                },
+                synchronize_session=False
             )
 
     def create_association_versions(self, session):
@@ -255,7 +248,7 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         for stmt in self.pending_statements:
-            stmt = stmt.values(transaction_id=self.current_transaction_id)
+            stmt = stmt.values(transaction_id=self.current_transaction.id)
             session.execute(stmt)
 
     def make_history(self, session):
@@ -266,11 +259,12 @@ class UnitOfWork(object):
         """
         if not self.manager.options['versioning']:
             return
-        if not self.current_transaction_id:
-            self.create_transaction_log_entry(session)
+
+        if self.current_transaction.id:
             self.create_association_versions(session)
             for plugin in self.manager.plugins:
                 plugin.before_flush(self, session)
+
         self.create_history_objects(session)
 
     def should_create_transaction(self, session):
@@ -282,40 +276,6 @@ class UnitOfWork(object):
         """
         return self.operations or self.pending_statements
 
-    def create_transaction_log_entry(self, session):
-        """
-        Creates TransactionLog object for current transaction. We use raw
-        insert here to be able to get current transaction id.
-
-        :param session: SQLAlchemy session
-        """
-        if self.current_transaction_id:
-            return self.current_transaction_id
-
-        if (
-            self.manager.transaction_log_cls and
-            self.should_create_transaction(session)
-        ):
-            table = self.manager.transaction_log_cls.__table__
-
-            options = {'issued_at': sa.func.now()}
-            options.update(self.tx_context)
-            values = self.manager.before_create_transaction(options)
-
-            stmt = (
-                table
-                .insert()
-                .values(values)
-            )
-            if session.connection().engine.driver == 'psycopg2':
-                stmt = stmt.returning(table.c.id)
-                self.current_transaction_id = (
-                    session.execute(stmt).fetchone()[0]
-                )
-            else:
-                self.current_transaction_id = session.execute(stmt).lastrowid
-            return self.current_transaction_id
-
     def changed_entities(self, session):
         """
         Return a set of changed versioned entities for given session.
@@ -323,35 +283,21 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         changed_entities = set()
-
         for key, value in six.iteritems(self.operations):
-            if (
-                is_modified(value['target']) or
-                value['target'] in session.deleted
-            ):
-                changed_entities.add(key[0])
+            changed_entities.add(key[0])
         return changed_entities
 
-    # def after_flush(self, session, flush_context):
-    #    self.create_history_objects(session)
+    def before_flush(self, session, flush_context, instances):
+        if not self.manager.options['versioning']:
+            return
 
-    def after_flush(self, session, flush_context):
-        """
-        SQLAlchemy after_flush event listener that handles all the logic for
-        creating necessary TransactionLog, TransactionChanges and History
-        objects.
-
-        :param session: SQLAlchemy session object
-        :param flush_context: flush_context dictionary
-        """
-        if self._committing:
-            self.make_history(session)
-
-        if self.current_transaction_id:
-            for obj in session:
-                for key in sa.inspect(obj).attrs.keys():
-                    if getattr(obj, key) == current_transaction_id:
-                        setattr(obj, key, self.current_transaction_id)
+        if not self.current_transaction:
+            attrs = {'issued_at': sa.func.now()}
+            attrs.update(self.tx_context)
+            self.current_transaction = self.manager.transaction_log_cls(
+                **attrs
+            )
+            session.add(self.current_transaction)
 
     def before_commit(self, session):
         """
@@ -362,6 +308,9 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
+        if not self.manager.options['versioning']:
+            return
+
         self._committing = True
         # Flush is needed before updating history.
         session.flush()
@@ -380,7 +329,7 @@ class UnitOfWork(object):
 
     def append_association_operation(self, conn, table_name, params, op):
         """
-        Appends history association operation to pending_statements list.
+        Append history association operation to pending_statements list.
         """
         params['operation_type'] = op
         stmt = (
@@ -394,7 +343,7 @@ class UnitOfWork(object):
         self, conn, cursor, statement, parameters, context, executemany
     ):
         """
-        Tracks association operations and adds the generated history
+        Track association operations and adds the generated history
         association operations to pending_statements list.
         """
         if not self.manager.options['versioning']:
@@ -479,12 +428,9 @@ class UnitOfWork(object):
         """
         parent = version_obj.__parent_class__
         return (
-            not self.manager.option(
-                parent,
-                'store_data_at_delete'
-            ) and
+            not self.manager.option(parent, 'store_data_at_delete') and
             version_obj.operation_type == Operation.DELETE and
-            attr.property.columns[0].primary_key is not True and
+            not attr.property.columns[0].primary_key and
             attr.key !=
             self.manager.option(
                 parent,
@@ -532,10 +478,8 @@ class UnitOfWork(object):
             Name of the attribute to check the modification state
         """
         if (
-            self.manager.option(
-                parent_obj,
-                'track_property_modifications'
-            ) and
+            self.manager.option(parent_obj, 'track_property_modifications')
+            and
             has_changes(parent_obj, attr_name)
         ):
             setattr(

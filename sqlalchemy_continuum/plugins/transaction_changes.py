@@ -44,28 +44,14 @@ class TransactionChangesPlugin(Plugin):
         self.model_class = TransactionChangesFactory(self.manager)()
 
     def before_flush(self, uow, session):
-        """
-        Create transaction changes entries based on all operations that
-        occurred during this UnitOfWork. For each entity that has been affected
-        by an operation during this UnitOfWork this method creates a new
-        TransactionChanges object.
-
-        :param session: SQLAlchemy session object
-        """
         for entity in uow.changed_entities(session):
             changes = self.model_class(
-                transaction_id=uow.current_transaction_id,
+                transaction_id=uow.current_transaction.id,
                 entity_name=six.text_type(entity.__name__)
             )
             session.add(changes)
 
     def after_history_class_built(self, parent_cls, history_cls):
-        """
-        Builds a relationship between currently built history class and
-        TransactionChanges class.
-
-        :param tx_changes_class: TransactionChanges class
-        """
         transaction_column = getattr(
             history_cls,
             self.manager.option(parent_cls, 'transaction_column_name')

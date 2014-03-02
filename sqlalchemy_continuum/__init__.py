@@ -2,7 +2,6 @@ import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
 from .utils import changeset, vacuum
-from .unit_of_work import current_transaction_id
 
 
 __version__ = '0.10.3'
@@ -10,7 +9,6 @@ __version__ = '0.10.3'
 
 __all__ = (
     changeset,
-    current_transaction_id,
     vacuum,
     Operation,
     VersioningManager

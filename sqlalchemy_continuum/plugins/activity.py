@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import JSONType, generic_relationship
 
-from .base import ModelFactory
+from .base import ModelFactory, Plugin
 
 
 class ActivityBase(object):
@@ -54,3 +54,14 @@ class ActivityFactory(ModelFactory):
             )
 
         return Activity
+
+
+class ActivityPlugin(Plugin):
+    def before_instrument(self):
+        self.model_class = ActivityFactory(self.manager)()
+
+    def before_flush(self, uow, session):
+        pass
+
+    def after_history_class_built(self, parent_cls, history_cls):
+        pass

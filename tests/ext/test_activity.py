@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import versioning_manager, current_transaction_id
+from sqlalchemy_continuum import versioning_manager
 from tests import TestCase
 
 

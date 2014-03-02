@@ -6,7 +6,6 @@ from sqlalchemy_utils.functions import (
     declarative_base, is_auto_assigned_date_column
 )
 from sqlalchemy_utils.types import TSVectorType
-from .ext.activity_stream import ActivityBase
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
