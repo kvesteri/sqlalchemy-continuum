@@ -45,11 +45,20 @@ class TransactionChangesPlugin(Plugin):
 
     def before_flush(self, uow, session):
         for entity in uow.changed_entities(session):
-            changes = self.model_class(
-                transaction_id=uow.current_transaction.id,
-                entity_name=six.text_type(entity.__name__)
-            )
-            session.add(changes)
+            params = uow.current_transaction.id, six.text_type(entity.__name__)
+            changes = session.query(self.model_class).get(params)
+            if not changes:
+                changes = self.model_class(
+                    transaction_id=uow.current_transaction.id,
+                    entity_name=six.text_type(entity.__name__)
+                )
+                session.add(changes)
+
+    def after_rollback(self, uow, session):
+        pass
+
+    def ater_commit(Self, uow, session):
+        pass
 
     def after_history_class_built(self, parent_cls, history_cls):
         transaction_column = getattr(

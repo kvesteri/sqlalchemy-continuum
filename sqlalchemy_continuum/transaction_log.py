@@ -1,5 +1,5 @@
+from datetime import datetime
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.compiler import compiles
 
 
@@ -10,7 +10,7 @@ def compile_big_integer(element, compiler, **kw):
 
 class TransactionLogBase(object):
     id = sa.Column(sa.types.BigInteger, primary_key=True, autoincrement=True)
-    issued_at = sa.Column(sa.DateTime)
+    issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
     @property
     def entity_names(self):

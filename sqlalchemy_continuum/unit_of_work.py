@@ -1,19 +1,16 @@
 from copy import copy
 import re
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 from functools import wraps
 import six
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import identity, has_changes
-from .operation import Operation
+from sqlalchemy_utils.functions import has_changes
+from .operation import Operation, Operations
 from .utils import (
     is_versioned,
     is_modified,
     tx_column_name,
-    end_tx_column_name
+    end_tx_column_name,
+    versioned_column_properties
 )
 
 
@@ -24,11 +21,7 @@ def tracked_operation(func):
             return
         if not is_versioned(target):
             return
-        # We cannot use target._sa_instance_state.identity here since object's
-        # identity is not yet updated at this phase
-        key = (target.__class__, identity(target))
-
-        return func(self, key, target)
+        return func(self, target)
     return wrapper
 
 
@@ -43,8 +36,7 @@ class UnitOfWork(object):
         called after transaction has been committed or rolled back.
         """
         self.current_transaction = None
-        self.operations = OrderedDict()
-        self._committing = False
+        self.operations = Operations()
         self.tx_context = {}
         self.tx_meta = {}
         self.pending_statements = []
@@ -78,7 +70,7 @@ class UnitOfWork(object):
             session, 'before_flush', self.before_flush
         )
         sa.event.listen(
-            session, 'before_commit', self.before_commit
+            session, 'after_flush', self.after_flush
         )
         sa.event.listen(
             session, 'after_commit', self.clear
@@ -88,56 +80,32 @@ class UnitOfWork(object):
         )
 
     @tracked_operation
-    def track_inserts(self, key, target):
+    def track_inserts(self, target):
         """
         Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
         if not is_modified(target):
             return
-        if key in self.operations:
-            # If the object is deleted and then inserted within the same
-            # transaction we are actually dealing with an update.
-            self.operations[key]['target'] = target
-            self.operations[key]['operation_type'] = Operation.UPDATE
-        else:
-            self.operations[key] = {
-                'target': target,
-                'operation_type': Operation.INSERT
-            }
+        self.operations.add_insert(target)
 
     @tracked_operation
-    def track_updates(self, key, target):
+    def track_updates(self, target):
         """
         Track object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
         if not is_modified(target):
             return
-        state_copy = copy(sa.inspect(target).committed_state)
-        relationships = sa.inspect(target.__class__).relationships
-        # Remove all ONETOMANY and MANYTOMANY relationships
-        for rel_key, relationship in relationships.items():
-            if relationship.direction.name in ['ONETOMANY', 'MANYTOMANY']:
-                if rel_key in state_copy:
-                    del state_copy[rel_key]
-
-        if state_copy:
-            self.operations[key] = {
-                'target': target,
-                'operation_type': Operation.UPDATE
-            }
+        self.operations.add_update(target)
 
     @tracked_operation
-    def track_deletes(self, key, target):
+    def track_deletes(self, target):
         """
         Track object deletion operations. Whenever object is deleted it is
         added to this UnitOfWork's internal operations dictionary.
         """
-        self.operations[key] = {
-            'target': target,
-            'operation_type': Operation.DELETE
-        }
+        self.operations.add_delete(target)
 
     def create_history_objects(self, session):
         """
@@ -151,31 +119,39 @@ class UnitOfWork(object):
 
         version_objs = []
 
-        for key, value in copy(self.operations).items():
-            version_obj = value['target'].__versioned__['class']()
-            version_obj.operation_type = value['operation_type']
+        for key, operation in copy(self.operations).items():
+            if operation.processed:
+                continue
+            target = operation.target
 
             if not self.current_transaction:
                 raise Exception(
                     'Current transaction not available.'
                 )
+
+            version_obj = target.__versioned__['class']()
+            version_obj.operation_type = operation.type
             setattr(
                 version_obj,
                 self.manager.option(
-                    value['target'],
+                    target,
                     'transaction_column_name'
                 ),
                 self.current_transaction.id
             )
             version_obj.transaction = self.current_transaction
-            self.assign_attributes(value['target'], version_obj)
+            self.assign_attributes(target, version_obj)
             # The operation needs to be deleted before modifying the session
-            del self.operations[key]
+            # del self.operations[key]
+            operation.processed = True
             version_objs.append(version_obj)
 
         for version_obj in version_objs:
             session.add(version_obj)
-            self.update_version_validity(value['target'], version_obj)
+            self.update_version_validity(
+                version_obj.version_parent,
+                version_obj
+            )
 
     def version_validity_subquery(self, parent, version_obj):
         """
@@ -290,28 +266,15 @@ class UnitOfWork(object):
             return
 
         if not self.current_transaction:
-            attrs = {'issued_at': sa.func.now()}
-            attrs.update(self.tx_context)
             self.current_transaction = self.manager.transaction_log_cls(
-                **attrs
+                **self.tx_context
             )
             session.add(self.current_transaction)
 
-    def before_commit(self, session):
-        """
-        SQLAlchemy before commit listener that marks the internal state of this
-        UnitOfWork as committing. This state is later on used by after_flush
-        listener which checks if the session is actually committing or if the
-        flush occurs before session commit.
-
-        :param session: SQLAlchemy session object
-        """
+    def after_flush(self, session, flush_context):
         if not self.manager.options['versioning']:
             return
 
-        self._committing = True
-        # Flush is needed before updating history.
-        session.flush()
         self.make_history(session)
 
     def clear(self, session):
@@ -414,22 +377,22 @@ class UnitOfWork(object):
             return parameters
         return params
 
-    def should_nullify_attr(self, version_obj, attr):
+    def should_nullify_column(self, version_obj, prop):
         """
-        Return whether or not given attribute of given version object should
+        Return whether or not given column of given version object should
         be nullified (set to None) at the end of the transaction.
 
         :param version_obj:
             Version object to check the attribute nullification
         :paremt attr:
-            SQLAlchemy InstrumentedAttribute object
+            SQLAlchemy ColumnProperty object
         """
         parent = version_obj.__parent_class__
         return (
             not self.manager.option(parent, 'store_data_at_delete') and
             version_obj.operation_type == Operation.DELETE and
-            not attr.property.columns[0].primary_key and
-            attr.key !=
+            not prop.columns[0].primary_key and
+            prop.key !=
             self.manager.option(
                 parent,
                 'transaction_column_name'
@@ -448,19 +411,18 @@ class UnitOfWork(object):
             Version object to assign the attribute values to
         """
         excluded_attributes = self.manager.option(parent_obj, 'exclude')
-        for attr_name, attr in parent_obj._sa_class_manager.items():
-            if attr_name in excluded_attributes:
+        for prop in versioned_column_properties(parent_obj):
+            if prop.key in excluded_attributes:
                 continue
-            if isinstance(attr.property, sa.orm.ColumnProperty):
-                if self.should_nullify_attr(version_obj, attr):
-                    value = None
-                else:
-                    value = getattr(parent_obj, attr_name)
-                    self.assign_modified_flag(
-                        parent_obj, version_obj, attr_name
-                    )
+            if self.should_nullify_column(version_obj, prop):
+                value = None
+            else:
+                value = getattr(parent_obj, prop.key)
+                self.assign_modified_flag(
+                    parent_obj, version_obj, prop.key
+                )
 
-                setattr(version_obj, attr_name, value)
+            setattr(version_obj, prop.key, value)
 
     def assign_modified_flag(self, parent_obj, version_obj, attr_name):
         """
