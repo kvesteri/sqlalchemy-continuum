@@ -8,6 +8,7 @@ class ExoticOperationCombosTestCase(TestCase):
         article.name = u'Some article'
         article.content = u'Some content'
         self.session.add(article)
+        self.session.flush()
         self.session.commit()
 
         self.session.delete(article)
@@ -28,6 +29,7 @@ class ExoticOperationCombosTestCase(TestCase):
 
         self.session.delete(article)
         self.session.flush()
+        assert article.versions.count() == 2
         article2 = self.Article(id=article.id, name=u'Some other article')
         self.session.add(article2)
         self.session.commit()

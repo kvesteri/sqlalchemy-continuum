@@ -4,6 +4,7 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from .base import ModelFactory, Plugin
+from ..operation import IdentitySet
 
 
 class TransactionMetaBase(object):
@@ -51,8 +52,20 @@ class TransactionMetaFactory(ModelFactory):
 
 
 class TransactionMetaPlugin(Plugin):
+    objects = None
+
     def before_instrument(self):
         self.model_class = TransactionMetaFactory(self.manager)()
+        self.manager.transaction_meta_cls = self.model_class
+
+    def clear(self):
+        self.objects = None
+
+    def after_rollback(self, uow, session):
+        self.clear()
+
+    def after_commit(self, uow, session):
+        self.clear()
 
     def before_flush(self, uow, session):
         """
@@ -61,6 +74,8 @@ class TransactionMetaPlugin(Plugin):
 
         :param session: SQLAlchemy session object
         """
+        if self.objects is None:
+            self.objects = IdentitySet()
         if (
             uow.tx_meta and
             (
@@ -71,9 +86,11 @@ class TransactionMetaPlugin(Plugin):
             for key, value in uow.tx_meta.items():
                 if callable(value):
                     value = six.text_type(value())
-                meta = uow.manager.transaction_meta_cls(
-                    transaction_id=self.current_transaction_id,
+                meta = self.model_class(
+                    transaction_id=uow.current_transaction.id,
                     key=key,
                     value=value
                 )
-                session.add(meta)
+                if meta not in self.objects:
+                    self.objects.add(meta)
+                    session.add(meta)

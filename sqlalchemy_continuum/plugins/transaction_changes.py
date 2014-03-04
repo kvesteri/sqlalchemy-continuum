@@ -40,6 +40,8 @@ class TransactionChangesFactory(ModelFactory):
 
 
 class TransactionChangesPlugin(Plugin):
+    objects = None
+
     def before_instrument(self):
         self.model_class = TransactionChangesFactory(self.manager)()
 
@@ -54,11 +56,14 @@ class TransactionChangesPlugin(Plugin):
                 )
                 session.add(changes)
 
-    def after_rollback(self, uow, session):
-        pass
+    def clear(self):
+        self.objects = None
 
-    def ater_commit(Self, uow, session):
-        pass
+    def after_rollback(self, uow, session):
+        self.clear()
+
+    def ater_commit(self, uow, session):
+        self.clear()
 
     def after_history_class_built(self, parent_cls, history_cls):
         transaction_column = getattr(

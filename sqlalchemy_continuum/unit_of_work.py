@@ -4,6 +4,7 @@ from functools import wraps
 import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import has_changes
+from sqlalchemy_utils import identity
 from .operation import Operation, Operations
 from .utils import (
     is_versioned,
@@ -40,6 +41,7 @@ class UnitOfWork(object):
         self.tx_context = {}
         self.tx_meta = {}
         self.pending_statements = []
+        self.version_objs = {}
 
     def track_operations(self, mapper):
         """
@@ -71,6 +73,12 @@ class UnitOfWork(object):
         )
         sa.event.listen(
             session, 'after_flush', self.after_flush
+        )
+        sa.event.listen(
+            session, 'after_flush_postexec', self.after_flush_postexec
+        )
+        sa.event.listen(
+            session, 'before_commit', self.before_commit
         )
         sa.event.listen(
             session, 'after_commit', self.clear
@@ -107,6 +115,48 @@ class UnitOfWork(object):
         """
         self.operations.add_delete(target)
 
+    def before_flush(self, session, flush_context, instances):
+        if not self.manager.options['versioning']:
+            return
+
+        if not self.current_transaction:
+            self.current_transaction = self.manager.transaction_log_cls(
+                **self.tx_context
+            )
+            session.add(self.current_transaction)
+
+    def after_flush(self, session, flush_context):
+        if not self.manager.options['versioning']:
+            return
+
+        # self.make_history(session)
+
+    def after_flush_postexec(self, session, flush_context):
+        if not self.manager.options['versioning']:
+            return
+
+        self.make_history(session)
+        # for version_obj in self.version_objs.values():
+        #     self.update_version_validity(
+        #         version_obj.version_parent,
+        #         version_obj
+        #     )
+
+    def before_commit(self, session):
+        #session.flush()
+        pass
+
+    def clear(self, session):
+        """
+        Simple SQLAlchemy listener that is being invoked after succesful
+        transaction commit or when transaction rollback occurs. The purpose of
+        this listener is to reset this UnitOfWork back to its initialization
+        state.
+
+        :param session: SQLAlchemy session object
+        """
+        self.reset()
+
     def create_history_objects(self, session):
         """
         Create history objects for given session based on operations collected
@@ -116,8 +166,6 @@ class UnitOfWork(object):
         """
         if not self.manager.options['versioning']:
             return
-
-        version_objs = []
 
         for key, operation in copy(self.operations).items():
             if operation.processed:
@@ -129,27 +177,37 @@ class UnitOfWork(object):
                     'Current transaction not available.'
                 )
 
-            version_obj = target.__versioned__['class']()
-            version_obj.operation_type = operation.type
-            setattr(
-                version_obj,
-                self.manager.option(
-                    target,
-                    'transaction_column_name'
-                ),
-                self.current_transaction.id
+            version_cls = target.__versioned__['class']
+            tx_column = self.manager.option(
+                target,
+                'transaction_column_name'
             )
-            version_obj.transaction = self.current_transaction
-            self.assign_attributes(target, version_obj)
-            # The operation needs to be deleted before modifying the session
-            # del self.operations[key]
-            operation.processed = True
-            version_objs.append(version_obj)
 
-        for version_obj in version_objs:
-            session.add(version_obj)
+            version_id = identity(target) + (self.current_transaction.id, )
+
+            version_key = (version_cls, version_id)
+            if version_key not in self.version_objs:
+                version_obj = version_cls()
+                self.version_objs[version_key] = version_obj
+                session.add(version_obj)
+            else:
+                version_obj = self.version_objs[version_key]
+
+            version_obj.operation_type = operation.type
+
+            if not getattr(version_obj, tx_column):
+                setattr(
+                    version_obj,
+                    tx_column,
+                    self.current_transaction.id
+                )
+                version_obj.transaction = self.current_transaction
+
+            self.assign_attributes(target, version_obj)
+            operation.processed = True
+
             self.update_version_validity(
-                version_obj.version_parent,
+                target,
                 version_obj
             )
 
@@ -221,9 +279,11 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        for stmt in self.pending_statements:
+        statements = copy(self.pending_statements)
+        for stmt in statements:
             stmt = stmt.values(transaction_id=self.current_transaction.id)
             session.execute(stmt)
+        self.pending_statements = []
 
     def make_history(self, session):
         """
@@ -260,33 +320,6 @@ class UnitOfWork(object):
         for key, value in six.iteritems(self.operations):
             changed_entities.add(key[0])
         return changed_entities
-
-    def before_flush(self, session, flush_context, instances):
-        if not self.manager.options['versioning']:
-            return
-
-        if not self.current_transaction:
-            self.current_transaction = self.manager.transaction_log_cls(
-                **self.tx_context
-            )
-            session.add(self.current_transaction)
-
-    def after_flush(self, session, flush_context):
-        if not self.manager.options['versioning']:
-            return
-
-        self.make_history(session)
-
-    def clear(self, session):
-        """
-        Simple SQLAlchemy listener that is being invoked after succesful
-        transaction commit or when transaction rollback occurs. The purpose of
-        this listener is to reset this UnitOfWork back to its initialization
-        state.
-
-        :param session: SQLAlchemy session object
-        """
-        self.reset()
 
     def append_association_operation(self, conn, table_name, params, op):
         """
