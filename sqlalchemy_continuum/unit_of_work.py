@@ -35,6 +35,7 @@ class UnitOfWork(object):
         Reset the internal state of this UnitOfWork object. Normally this is
         called after transaction has been committed or rolled back.
         """
+        self.history_session = None
         self.current_transaction = None
         self.operations = Operations()
         self.tx_context = {}
@@ -112,7 +113,13 @@ class UnitOfWork(object):
         if not self.manager.options['versioning']:
             return
 
+        if session == self.history_session:
+            return
+
         if not self.current_transaction:
+            self.history_session = sa.orm.session.Session(
+                bind=session.connection()
+            )
             self.current_transaction = self.manager.transaction_log_cls(
                 **self.tx_context
             )
@@ -120,6 +127,9 @@ class UnitOfWork(object):
 
     def after_flush(self, session, flush_context):
         if not self.manager.options['versioning']:
+            return
+
+        if session == self.history_session:
             return
 
         self.make_history(session)
@@ -167,7 +177,7 @@ class UnitOfWork(object):
             if version_key not in self.version_objs:
                 version_obj = version_cls()
                 self.version_objs[version_key] = version_obj
-                session.add(version_obj)
+                self.history_session.add(version_obj)
             else:
                 version_obj = self.version_objs[version_key]
 
@@ -179,7 +189,6 @@ class UnitOfWork(object):
                     tx_column,
                     self.current_transaction.id
                 )
-                version_obj.transaction = self.current_transaction
 
             self.assign_attributes(target, version_obj)
 
@@ -189,6 +198,8 @@ class UnitOfWork(object):
                 target,
                 version_obj
             )
+
+        self.history_session.flush()
 
     def version_validity_subquery(self, parent, version_obj):
         """

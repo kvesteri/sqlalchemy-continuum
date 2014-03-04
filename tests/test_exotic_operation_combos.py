@@ -70,4 +70,4 @@ class ExoticOperationCombosTestCase(TestCase):
 
 
 # Skip the tests until SQLAlchemy has renewed its UOW handling:
-# create_test_cases(ExoticOperationCombosTestCase)
+create_test_cases(ExoticOperationCombosTestCase)
