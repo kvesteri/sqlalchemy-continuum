@@ -46,7 +46,7 @@ class TransactionChangesPlugin(Plugin):
         self.model_class = TransactionChangesFactory(self.manager)()
 
     def before_flush(self, uow, session):
-        for entity in uow.changed_entities(session):
+        for entity in uow.operations.entities:
             params = uow.current_transaction.id, six.text_type(entity.__name__)
             changes = session.query(self.model_class).get(params)
             if not changes:

@@ -76,13 +76,7 @@ class TransactionMetaPlugin(Plugin):
         """
         if self.objects is None:
             self.objects = IdentitySet()
-        if (
-            uow.tx_meta and
-            (
-                uow.changed_entities(session) or
-                uow.pending_statements
-            )
-        ):
+        if uow.tx_meta and uow.has_changes:
             for key, value in uow.tx_meta.items():
                 if callable(value):
                     value = six.text_type(value())

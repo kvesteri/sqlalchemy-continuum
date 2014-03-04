@@ -55,6 +55,15 @@ class Operations(object):
     def __delitem__(self, key):
         del self.objects[key]
 
+    @property
+    def entities(self):
+        """
+        Return a set of changed versioned entities for given session.
+
+        :param session: SQLAlchemy session object
+        """
+        return set(key[0] for key, _ in self.iteritems())
+
     def iteritems(self):
         return self.objects.iteritems()
 

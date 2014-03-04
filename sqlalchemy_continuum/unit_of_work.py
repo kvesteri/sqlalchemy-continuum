@@ -1,7 +1,6 @@
 from copy import copy
 import re
 from functools import wraps
-import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import has_changes
 from sqlalchemy_utils import identity
@@ -75,12 +74,6 @@ class UnitOfWork(object):
             session, 'after_flush', self.after_flush
         )
         sa.event.listen(
-            session, 'after_flush_postexec', self.after_flush_postexec
-        )
-        sa.event.listen(
-            session, 'before_commit', self.before_commit
-        )
-        sa.event.listen(
             session, 'after_commit', self.clear
         )
         sa.event.listen(
@@ -129,22 +122,7 @@ class UnitOfWork(object):
         if not self.manager.options['versioning']:
             return
 
-        # self.make_history(session)
-
-    def after_flush_postexec(self, session, flush_context):
-        if not self.manager.options['versioning']:
-            return
-
         self.make_history(session)
-        # for version_obj in self.version_objs.values():
-        #     self.update_version_validity(
-        #         version_obj.version_parent,
-        #         version_obj
-        #     )
-
-    def before_commit(self, session):
-        #session.flush()
-        pass
 
     def clear(self, session):
         """
@@ -204,6 +182,7 @@ class UnitOfWork(object):
                 version_obj.transaction = self.current_transaction
 
             self.assign_attributes(target, version_obj)
+
             operation.processed = True
 
             self.update_version_validity(
@@ -301,7 +280,8 @@ class UnitOfWork(object):
 
         self.create_history_objects(session)
 
-    def should_create_transaction(self, session):
+    @property
+    def has_changes(self):
         """
         Return whether or not transaction entry should be created for given
         SQLAlchemy session object.
@@ -309,17 +289,6 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session
         """
         return self.operations or self.pending_statements
-
-    def changed_entities(self, session):
-        """
-        Return a set of changed versioned entities for given session.
-
-        :param session: SQLAlchemy session object
-        """
-        changed_entities = set()
-        for key, value in six.iteritems(self.operations):
-            changed_entities.add(key[0])
-        return changed_entities
 
     def append_association_operation(self, conn, table_name, params, op):
         """
