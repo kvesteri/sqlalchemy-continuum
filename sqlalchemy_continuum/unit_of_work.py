@@ -116,6 +116,9 @@ class UnitOfWork(object):
         if session == self.history_session:
             return
 
+        if not any(is_versioned(obj) and is_modified(obj) for obj in session):
+            return
+
         if not self.current_transaction:
             self.history_session = sa.orm.session.Session(
                 bind=session.connection()
@@ -140,6 +143,9 @@ class UnitOfWork(object):
             return
 
         if session == self.history_session:
+            return
+
+        if not self.current_transaction:
             return
 
         self.make_history(session)
@@ -303,7 +309,7 @@ class UnitOfWork(object):
         if not self.manager.options['versioning']:
             return
 
-        if self.current_transaction.id:
+        if self.pending_statements:
             self.create_association_versions(session)
 
         if self.operations:
