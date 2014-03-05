@@ -56,6 +56,12 @@ class Operations(object):
     def __delitem__(self, key):
         del self.objects[key]
 
+    def __bool__(self):
+        return bool(self.objects)
+
+    def __nonzero__(self):
+        return self.__bool__()
+
     @property
     def entities(self):
         """

@@ -67,7 +67,7 @@ class TransactionMetaPlugin(Plugin):
     def after_commit(self, uow, session):
         self.clear()
 
-    def before_flush(self, uow, session):
+    def before_create_history_objects(self, uow, session):
         """
         Create transaction meta entries based on transaction meta context
         key-value pairs.

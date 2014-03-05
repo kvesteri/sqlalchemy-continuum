@@ -2,10 +2,7 @@ class Plugin(object):
     def __init__(self, manager):
         self.manager = manager
 
-    def before_instrument(self):
-        pass
-
-    def after_build_tx_class(self, manager):
+    def after_build_tx_class(self):
         pass
 
     def before_flush(self, uow, session):

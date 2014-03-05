@@ -128,6 +128,7 @@ class UnitOfWork(object):
                 plugin.before_create_tx_object(self, session)
 
             session.add(self.current_transaction)
+
             for plugin in self.manager.plugins:
                 plugin.after_create_tx_object(self, session)
 
@@ -305,7 +306,8 @@ class UnitOfWork(object):
         if self.current_transaction.id:
             self.create_association_versions(session)
 
-        self.call_and_invoke_listeners('create_history_objects', session)
+        if self.operations:
+            self.call_and_invoke_listeners('create_history_objects', session)
 
     @property
     def has_changes(self):

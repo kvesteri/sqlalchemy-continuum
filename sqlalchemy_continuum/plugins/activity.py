@@ -92,7 +92,7 @@ class ActivityFactory(ModelFactory):
 
 
 class ActivityPlugin(Plugin):
-    def before_instrument(self):
+    def after_build_tx_class(self):
         self.model_class = ActivityFactory(self.manager)()
         self.manager.activity_cls = self.model_class
 

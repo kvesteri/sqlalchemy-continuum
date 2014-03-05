@@ -186,10 +186,7 @@ class VersioningManager(object):
             self.transaction_log_cls = self.create_transaction_log()
 
             for plugin in self.plugins:
-                plugin.after_build_tx_class(self)
-
-            for plugin in self.plugins:
-                plugin.before_instrument()
+                plugin.after_build_tx_class()
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):

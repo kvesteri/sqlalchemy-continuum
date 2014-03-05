@@ -45,7 +45,7 @@ class TransactionChangesPlugin(Plugin):
     def after_build_tx_class(self):
         self.model_class = TransactionChangesFactory(self.manager)()
 
-    def before_flush(self, uow, session):
+    def before_create_history_objects(self, uow, session):
         for entity in uow.operations.entities:
             params = uow.current_transaction.id, six.text_type(entity.__name__)
             changes = session.query(self.model_class).get(params)
