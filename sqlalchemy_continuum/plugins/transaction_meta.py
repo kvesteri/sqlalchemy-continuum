@@ -29,7 +29,7 @@ class TransactionMetaFactory(ModelFactory):
         ):
             __tablename__ = 'transaction_meta'
 
-        TransactionMeta.transaction_log = sa.orm.relationship(
+        TransactionMeta.transaction = sa.orm.relationship(
             self.manager.transaction_log_cls,
             backref=sa.orm.backref(
                 'meta_relation',
@@ -88,3 +88,6 @@ class TransactionMetaPlugin(Plugin):
                 if meta not in self.objects:
                     self.objects.add(meta)
                     session.add(meta)
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__

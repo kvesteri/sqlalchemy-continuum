@@ -9,7 +9,14 @@ from pytest import mark
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy_continuum import make_versioned, versioning_manager
+from sqlalchemy_continuum import (
+    make_versioned,
+    versioning_manager,
+)
+from sqlalchemy_continuum.plugins import (
+    TransactionMetaPlugin,
+    TransactionChangesPlugin
+)
 from sqlalchemy_continuum.ext.flask import (
     versioning_manager as flask_versioning_manager
 )
@@ -45,6 +52,7 @@ class TestCase(object):
     track_property_modifications = False
     store_data_at_delete = False
     composite_pk = False
+    plugins = [TransactionChangesPlugin, TransactionMetaPlugin]
 
     @property
     def options(self):
@@ -54,7 +62,7 @@ class TestCase(object):
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
             'track_property_modifications': self.track_property_modifications,
-            'store_data_at_delete': self.store_data_at_delete
+            'store_data_at_delete': self.store_data_at_delete,
         }
 
     def setup_class(cls):
@@ -71,6 +79,8 @@ class TestCase(object):
             dns = 'sqlite:///:memory:'
         else:
             raise Exception('Unknown driver given: %r' % adapter)
+
+        versioning_manager.options['plugins'] = self.plugins
 
         self.engine = create_engine(dns)
         # self.engine.echo = True

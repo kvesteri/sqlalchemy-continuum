@@ -25,7 +25,7 @@ class TransactionChangesFactory(ModelFactory):
         ):
             __tablename__ = 'transaction_changes'
 
-        TransactionChanges.transaction_log = sa.orm.relationship(
+        TransactionChanges.transaction = sa.orm.relationship(
             self.manager.transaction_log_cls,
             backref=sa.orm.backref(
                 'changes',
@@ -85,3 +85,6 @@ class TransactionChangesPlugin(Plugin):
                 )
             )
         parent_cls.__versioned__['transaction_changes'] = self.model_class
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__

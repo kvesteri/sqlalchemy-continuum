@@ -120,10 +120,20 @@ class UnitOfWork(object):
             self.history_session = sa.orm.session.Session(
                 bind=session.connection()
             )
+
+            for plugin in self.manager.plugins:
+                plugin.before_create_tx_object(self, session)
+
             self.current_transaction = self.manager.transaction_log_cls(
                 **self.tx_context
             )
+
+            for plugin in self.manager.plugins:
+                plugin.after_create_tx_object(self, session)
             session.add(self.current_transaction)
+
+        for plugin in self.manager.plugins:
+            plugin.before_flush(self, session)
 
     def after_flush(self, session, flush_context):
         if not self.manager.options['versioning']:
@@ -275,6 +285,15 @@ class UnitOfWork(object):
             session.execute(stmt)
         self.pending_statements = []
 
+    def call_and_invoke_listeners(self, func, *args):
+        for plugin in self.manager.plugins:
+            getattr(plugin, 'before_%s' % func)(self, *args)
+
+        getattr(self, func)(*args)
+
+        for plugin in self.manager.plugins:
+            getattr(plugin, 'after_%s' % func)(self, *args)
+
     def make_history(self, session):
         """
         Create transaction, transaction changes records, history objects.
@@ -286,10 +305,8 @@ class UnitOfWork(object):
 
         if self.current_transaction.id:
             self.create_association_versions(session)
-            for plugin in self.manager.plugins:
-                plugin.before_flush(self, session)
 
-        self.create_history_objects(session)
+        self.call_and_invoke_listeners('create_history_objects', session)
 
     @property
     def has_changes(self):

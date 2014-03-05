@@ -1,9 +1,12 @@
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
+from sqlalchemy_continuum.plugins import ActivityPlugin
 from tests import TestCase
 
 
 class TestActivity(TestCase):
+    plugins = [ActivityPlugin]
+
     def create_models(self):
         TestCase.create_models(self)
 
@@ -27,7 +30,11 @@ class TestActivity(TestCase):
         activity = versioning_manager.activity_cls(
             object=article,
             verb=u'create',
-            transaction_id=current_transaction_id
         )
         self.session.add(activity)
         self.session.commit()
+        activity = self.session.query(versioning_manager.activity_cls).first()
+        assert activity
+        assert activity.transaction_id
+        assert activity.object == article
+        assert activity.object_version == article.versions[-1]

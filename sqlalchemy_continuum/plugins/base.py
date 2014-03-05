@@ -8,6 +8,18 @@ class Plugin(object):
     def before_flush(self, uow, session):
         pass
 
+    def before_create_history_objects(self, uow, session):
+        pass
+
+    def after_create_history_objects(self, uow, session):
+        pass
+
+    def before_create_tx_object(self, uow, session):
+        pass
+
+    def after_create_tx_object(self, uow, session):
+        pass
+
     def after_history_class_built(self, parent_cls, history_cls):
         pass
 
