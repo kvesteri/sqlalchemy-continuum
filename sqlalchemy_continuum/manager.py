@@ -21,9 +21,6 @@ class VersioningManager(object):
     classes and the actual versioning to UnitOfWork class. Manager contains
     configuration options that act as defaults for all versioned classes.
     """
-
-    remote_addr = False
-    user = False
     _plugins = []
 
     def __init__(
@@ -126,16 +123,6 @@ class VersioningManager(object):
             __tablename__ = 'transaction_log'
             manager = self
 
-        if self.remote_addr:
-            TransactionLog.remote_addr = sa.Column(sa.String(50))
-
-        if self.user:
-            TransactionLog.user_id = sa.Column(
-                sa.Integer,
-                sa.ForeignKey('user.id'),
-                index=True
-            )
-            TransactionLog.user = sa.orm.relationship('User')
         return TransactionLog
 
     def create_transaction_log(self):
@@ -199,6 +186,9 @@ class VersioningManager(object):
             self.transaction_log_cls = self.create_transaction_log()
 
             for plugin in self.plugins:
+                plugin.after_build_tx_class(self)
+
+            for plugin in self.plugins:
                 plugin.before_instrument()
 
             for cls in self.pending_classes:
@@ -225,7 +215,7 @@ class VersioningManager(object):
             if not self.option(cls, 'versioning'):
                 continue
 
-            for prop in cls.__mapper__.iterate_properties:
+            for prop in sa.inspect(cls).iterate_properties:
                 if prop.key == 'versions':
                     continue
                 builder = RelationshipBuilder(self, cls, prop)
@@ -248,9 +238,6 @@ class VersioningManager(object):
             or
             isinstance(column.type, TSVectorType)
         )
-
-    def before_create_transaction(self, values):
-        return values
 
     def option(self, model, name):
         """

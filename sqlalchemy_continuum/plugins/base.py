@@ -5,6 +5,9 @@ class Plugin(object):
     def before_instrument(self):
         pass
 
+    def after_build_tx_class(self, manager):
+        pass
+
     def before_flush(self, uow, session):
         pass
 
@@ -22,6 +25,9 @@ class Plugin(object):
 
     def after_history_class_built(self, parent_cls, history_cls):
         pass
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
 
 
 class ModelFactory(object):

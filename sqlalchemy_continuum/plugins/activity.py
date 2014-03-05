@@ -10,8 +10,6 @@ class ActivityBase(object):
 
     verb = sa.Column(sa.Unicode(255))
 
-    data = sa.Column(JSONType)
-
     @hybrid_property
     def actor(self):
         self.transaction.user
@@ -36,6 +34,8 @@ class ActivityFactory(ModelFactory):
                 primary_key=True,
                 nullable=False
             )
+
+            data = sa.Column(JSONType)
 
             object_type = sa.Column(sa.String(255))
 

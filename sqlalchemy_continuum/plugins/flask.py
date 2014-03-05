@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from flask import request
 from flask.globals import _app_ctx_stack, _request_ctx_stack
 from flask.ext.login import current_user
-from ..manager import VersioningManager
+import sqlalchemy as sa
+from .base import Plugin
 
 
 def fetch_current_user_id():
@@ -23,13 +24,18 @@ def fetch_remote_addr():
     return request.remote_addr
 
 
-class FlaskVersioningManager(VersioningManager):
-    user = True
-    remote_addr = True
+class FlaskPlugin(Plugin):
+    def after_build_tx_class(self, manager):
+        Transaction = manager.transaction_log_cls
+        Transaction.remote_addr = sa.Column(sa.String(50))
 
-    def before_create_transaction(self, values):
-        values.setdefault('user_id', fetch_current_user_id())
-        values.setdefault('remote_addr', fetch_remote_addr())
-        return values
+        Transaction.user_id = sa.Column(
+            sa.Integer,
+            sa.ForeignKey('user.id'),
+            index=True
+        )
+        Transaction.user = sa.orm.relationship('User')
 
-versioning_manager = FlaskVersioningManager()
+    def before_create_tx_object(self, uow, session):
+        uow.current_transaction.user_id = fetch_current_user_id()
+        uow.current_transaction.remote_addr = fetch_remote_addr()

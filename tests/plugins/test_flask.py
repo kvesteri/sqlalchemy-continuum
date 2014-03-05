@@ -2,24 +2,12 @@ from six import PY3
 from flask import Flask, url_for
 from flask.ext.login import LoginManager
 import sqlalchemy as sa
-from sqlalchemy_continuum import make_versioned, versioning_manager
-from sqlalchemy_continuum.ext.flask import (
-    versioning_manager as flask_versioning_manager
-)
+from sqlalchemy_continuum.plugins import FlaskPlugin
 from tests import TestCase
 
 
-make_versioned(manager=flask_versioning_manager)
-
-
 class TestFlaskVersioningManager(TestCase):
-    def setup_class(cls):
-        versioning_manager.options['versioning'] = False
-        flask_versioning_manager.options['versioning'] = True
-
-    def teardown_class(cls):
-        versioning_manager.options['versioning'] = True
-        flask_versioning_manager.options['versioning'] = False
+    plugins = [FlaskPlugin]
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
@@ -93,13 +81,7 @@ class TestFlaskVersioningManager(TestCase):
 
 
 class TestFlaskVersioningManagerWithoutRequestContext(TestCase):
-    def setup_class(cls):
-        versioning_manager.options['versioning'] = False
-        flask_versioning_manager.options['versioning'] = True
-
-    def teardown_class(cls):
-        versioning_manager.options['versioning'] = True
-        flask_versioning_manager.options['versioning'] = False
+    plugins = [FlaskPlugin]
 
     def create_models(self):
         TestCase.create_models(self)

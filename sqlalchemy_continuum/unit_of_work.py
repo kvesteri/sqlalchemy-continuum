@@ -121,16 +121,15 @@ class UnitOfWork(object):
                 bind=session.connection()
             )
 
-            for plugin in self.manager.plugins:
-                plugin.before_create_tx_object(self, session)
-
             self.current_transaction = self.manager.transaction_log_cls(
                 **self.tx_context
             )
+            for plugin in self.manager.plugins:
+                plugin.before_create_tx_object(self, session)
 
+            session.add(self.current_transaction)
             for plugin in self.manager.plugins:
                 plugin.after_create_tx_object(self, session)
-            session.add(self.current_transaction)
 
         for plugin in self.manager.plugins:
             plugin.before_flush(self, session)

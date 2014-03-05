@@ -42,7 +42,7 @@ class TransactionChangesFactory(ModelFactory):
 class TransactionChangesPlugin(Plugin):
     objects = None
 
-    def before_instrument(self):
+    def after_build_tx_class(self):
         self.model_class = TransactionChangesFactory(self.manager)()
 
     def before_flush(self, uow, session):
@@ -85,6 +85,3 @@ class TransactionChangesPlugin(Plugin):
                 )
             )
         parent_cls.__versioned__['transaction_changes'] = self.model_class
-
-    def __repr__(self):
-        return '<%s>' % self.__class__.__name__

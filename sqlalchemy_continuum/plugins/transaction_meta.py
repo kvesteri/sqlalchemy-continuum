@@ -54,7 +54,7 @@ class TransactionMetaFactory(ModelFactory):
 class TransactionMetaPlugin(Plugin):
     objects = None
 
-    def before_instrument(self):
+    def after_build_tx_class(self):
         self.model_class = TransactionMetaFactory(self.manager)()
         self.manager.transaction_meta_cls = self.model_class
 
@@ -88,6 +88,3 @@ class TransactionMetaPlugin(Plugin):
                 if meta not in self.objects:
                     self.objects.add(meta)
                     session.add(meta)
-
-    def __repr__(self):
-        return '<%s>' % self.__class__.__name__

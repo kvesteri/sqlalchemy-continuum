@@ -17,10 +17,6 @@ from sqlalchemy_continuum.plugins import (
     TransactionMetaPlugin,
     TransactionChangesPlugin
 )
-from sqlalchemy_continuum.ext.flask import (
-    versioning_manager as flask_versioning_manager
-)
-
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
@@ -64,10 +60,6 @@ class TestCase(object):
             'track_property_modifications': self.track_property_modifications,
             'store_data_at_delete': self.store_data_at_delete,
         }
-
-    def setup_class(cls):
-        versioning_manager.options['versioning'] = True
-        flask_versioning_manager.options['versioning'] = False
 
     def setup_method(self, method):
         adapter = os.environ.get('DB', 'postgres')
