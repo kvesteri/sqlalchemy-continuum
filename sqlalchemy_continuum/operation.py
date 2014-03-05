@@ -4,6 +4,7 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 
+import six
 import sqlalchemy as sa
 from sqlalchemy_utils import identity
 
@@ -65,7 +66,7 @@ class Operations(object):
         return set(key[0] for key, _ in self.iteritems())
 
     def iteritems(self):
-        return self.objects.iteritems()
+        return six.iteritems(self.objects)
 
     def items(self):
         return self.objects.items()
