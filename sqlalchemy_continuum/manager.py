@@ -47,8 +47,6 @@ class VersioningManager(object):
             'relation_naming_function': lambda a: pluralize(underscore(a)),
             'strategy': 'validity',
             'store_data_at_delete': True,
-            'track_property_modifications': False,
-            'modified_flag_suffix': '_mod'
         }
         self.options.update(options)
 

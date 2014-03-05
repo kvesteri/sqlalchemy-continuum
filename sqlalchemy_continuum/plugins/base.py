@@ -5,6 +5,9 @@ class Plugin(object):
     def after_build_tx_class(self):
         pass
 
+    def after_build_history_table_columns(self, table_builder, columns):
+        pass
+
     def before_flush(self, uow, session):
         pass
 
@@ -12,6 +15,9 @@ class Plugin(object):
         pass
 
     def after_create_history_objects(self, uow, session):
+        pass
+
+    def after_create_history_object(self, uow, parent_obj, history_obj):
         pass
 
     def before_create_tx_object(self, uow, session):

@@ -46,22 +46,6 @@ class TableBuilder(object):
 
             column_copy = self.reflect_column(column)
             columns.append(column_copy)
-            if (
-                self.option('track_property_modifications') and
-                not column.primary_key
-            ):
-                columns.append(
-                    sa.Column(
-                        column_copy.name + self.option('modified_flag_suffix'),
-                        sa.Boolean,
-                        key=(
-                            column_copy.key +
-                            self.option('modified_flag_suffix')
-                        ),
-                        default=False,
-                        nullable=False
-                    )
-                )
 
         # When using join table inheritance each table should have own
         # transaction column.
@@ -138,16 +122,19 @@ class TableBuilder(object):
         """
         Builds history table.
         """
-        items = []
+        columns = []
         if extends is None:
-            items.extend(self.reflected_columns)
-            items.append(self.transaction_column)
+            columns.extend(self.reflected_columns)
+            columns.append(self.transaction_column)
             if self.option('strategy') == 'validity':
-                items.append(self.end_transaction_column)
-            items.append(self.operation_type_column)
+                columns.append(self.end_transaction_column)
+            columns.append(self.operation_type_column)
+
+        for plugin in self.manager.plugins:
+            plugin.after_build_history_table_columns(self, columns)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
-            *items,
+            *columns,
             extend_existing=extends is not None
         )

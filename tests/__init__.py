@@ -4,8 +4,6 @@ import itertools as it
 import os
 import warnings
 import sqlalchemy as sa
-from six import PY3
-from pytest import mark
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -40,13 +38,10 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
-# @mark.skipif("PY3 and os.environ.get('DB') == 'mysql'")
 class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
-    track_property_modifications = False
-    store_data_at_delete = False
     composite_pk = False
     plugins = [TransactionChangesPlugin, TransactionMetaPlugin]
 
@@ -57,8 +52,6 @@ class TestCase(object):
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
-            'track_property_modifications': self.track_property_modifications,
-            'store_data_at_delete': self.store_data_at_delete,
         }
 
     def setup_method(self, method):
@@ -137,8 +130,6 @@ class TestCase(object):
 
 setting_variants = {
     'versioning_strategy': ['subquery', 'validity'],
-    'store_data_at_delete': [True, False],
-    'track_property_modifications': [True, False],
     'transaction_column_name': ['transaction_id', 'tx_id'],
     'end_transaction_column_name': ['end_transaction_id', 'end_tx_id']
 }

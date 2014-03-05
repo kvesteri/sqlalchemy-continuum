@@ -2,12 +2,12 @@ from copy import copy
 import re
 from functools import wraps
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import has_changes
 from sqlalchemy_utils import identity
 from .operation import Operation, Operations
 from .utils import (
     is_versioned,
     is_modified,
+    is_modified_or_deleted,
     tx_column_name,
     end_tx_column_name,
     versioned_column_properties
@@ -116,7 +116,12 @@ class UnitOfWork(object):
         if session == self.history_session:
             return
 
-        if not any(is_versioned(obj) and is_modified(obj) for obj in session):
+        if (
+            not any(
+                is_versioned(obj) and is_modified_or_deleted(obj)
+                for obj in session
+            )
+        ):
             return
 
         if not self.current_transaction:
@@ -207,6 +212,9 @@ class UnitOfWork(object):
                 )
 
             self.assign_attributes(target, version_obj)
+
+            for plugin in self.manager.plugins:
+                plugin.after_create_history_object(self, target, version_obj)
 
             operation.processed = True
 
@@ -414,76 +422,15 @@ class UnitOfWork(object):
             return parameters
         return params
 
-    def should_nullify_column(self, version_obj, prop):
-        """
-        Return whether or not given column of given version object should
-        be nullified (set to None) at the end of the transaction.
-
-        :param version_obj:
-            Version object to check the attribute nullification
-        :paremt attr:
-            SQLAlchemy ColumnProperty object
-        """
-        parent = version_obj.__parent_class__
-        return (
-            not self.manager.option(parent, 'store_data_at_delete') and
-            version_obj.operation_type == Operation.DELETE and
-            not prop.columns[0].primary_key and
-            prop.key !=
-            self.manager.option(
-                parent,
-                'transaction_column_name'
-            )
-        )
-
     def assign_attributes(self, parent_obj, version_obj):
         """
-        Assign attributes values from parent object to version object. If the
-        parent object is deleted this method assigns None values to all version
-        object's attributes.
+        Assign attributes values from parent object to version object.
 
         :param parent_obj:
             Parent object to get the attribute values from
         :param version_obj:
             Version object to assign the attribute values to
         """
-        excluded_attributes = self.manager.option(parent_obj, 'exclude')
         for prop in versioned_column_properties(parent_obj):
-            if prop.key in excluded_attributes:
-                continue
-            if self.should_nullify_column(version_obj, prop):
-                value = None
-            else:
-                value = getattr(parent_obj, prop.key)
-                self.assign_modified_flag(
-                    parent_obj, version_obj, prop.key
-                )
-
+            value = getattr(parent_obj, prop.key)
             setattr(version_obj, prop.key, value)
-
-    def assign_modified_flag(self, parent_obj, version_obj, attr_name):
-        """
-        Assign modified flag for given attribute of given version model object
-        based on the modification state of this property in given parent model
-        object.
-
-        :param parent_obj:
-            Parent object to check the modification state of given attribute
-        :param version_obj:
-            Version object to assign the modification flag into
-        :param attr_name:
-            Name of the attribute to check the modification state
-        """
-        if (
-            self.manager.option(parent_obj, 'track_property_modifications')
-            and
-            has_changes(parent_obj, attr_name)
-        ):
-            setattr(
-                version_obj,
-                attr_name + self.manager.option(
-                    parent_obj,
-                    'modified_flag_suffix'
-                ),
-                True
-            )
