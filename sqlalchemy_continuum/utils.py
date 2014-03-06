@@ -11,7 +11,16 @@ def get_versioning_manager(obj_or_class):
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
-    return cls.__versioning_manager__
+    try:
+        return cls.__versioning_manager__
+    except AttributeError:
+        return cls.__versioned__['manager']
+
+
+def option(obj_or_class, option_name):
+    return get_versioning_manager(obj_or_class).option(
+        obj_or_class, option_name
+    )
 
 
 def tx_column_name(obj):
@@ -68,38 +77,42 @@ def versioned_objects(session):
     ]
 
 
-def is_versioned(obj):
+def is_versioned(mixed):
     """
     Return whether or not given object is versioned.
 
-    :param obj: SQLAlchemy declarative model object.
+    :param mixed:
+        SQLAlchemy declarative model object or SQLAlchemy declarative model.
     """
-    return (
-        hasattr(obj, '__versioned__') and
-        (
-            (
-                'versioning' in obj.__versioned__ and
-                obj.__versioned__['versioning']
-            ) or
-            'versioning' not in obj.__versioned__
-        )
-    )
+    try:
+        return hasattr(mixed, '__versioned__') and option(mixed, 'versioning')
+    except AttributeError:
+        return False
 
 
-def versioned_column_properties(obj):
+def versioned_columns(obj):
     """
     Return all versioned column properties for given versioned SQLAlchemy
     declarative model object.
 
     :param obj: SQLAlchemy declarative model object
     """
-    manager = obj.__versioned__['manager']
+    manager = get_versioning_manager(obj)
 
-    for prop in obj.__mapper__.iterate_properties:
-        if (
-            isinstance(prop, sa.orm.ColumnProperty) and
-            not manager.is_excluded_column(obj, prop.columns[0])
-        ):
+    for column in sa.inspect(obj.__class__).columns.values():
+        if not manager.is_excluded_column(obj, column):
+            yield column
+
+
+def versioned_relationships(obj):
+    """
+    Return all versioned relationships for given versioned SQLAlchemy
+    declarative model object.
+
+    :param obj: SQLAlchemy declarative model object
+    """
+    for prop in sa.inspect(obj.__class__).relationships:
+        if is_versioned(prop.mapper.class_):
             yield prop
 
 
@@ -180,10 +193,22 @@ def is_modified(obj):
 
     :param obj: SQLAlchemy declarative model object
     """
-    for prop in versioned_column_properties(obj):
-        attr = getattr(sa.inspect(obj).attrs, prop.key)
-        if attr.history.has_changes():
-            return True
+    column_names = sa.inspect(obj.__class__).columns.keys()
+    versioned_column_keys = [
+        prop.key for prop in versioned_columns(obj)
+    ]
+    versioned_relationship_keys = [
+        prop.key for prop in versioned_relationships(obj)
+    ]
+    for key, attr in sa.inspect(obj).attrs.items():
+        if key in column_names:
+            if key not in versioned_column_keys:
+                continue
+            if attr.history.has_changes():
+                return True
+        if key in versioned_relationship_keys:
+            if attr.history.has_changes():
+                return True
     return False
 
 

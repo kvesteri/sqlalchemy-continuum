@@ -2,7 +2,7 @@
 import sqlalchemy as sa
 #from sqlalchemy_utils.functions import primary_keys
 from .operation import Operation
-from .utils import versioned_column_properties
+from .utils import versioned_columns
 
 
 def first_level(paths):
@@ -42,11 +42,11 @@ class Reverter(object):
                 )
 
     def revert_properties(self):
-        for prop in versioned_column_properties(self.parent_class):
+        for column in versioned_columns(self.parent_class):
             setattr(
                 self.version_parent,
-                prop.key,
-                getattr(self.obj, prop.key)
+                column.key,
+                getattr(self.obj, column.key)
             )
 
     def revert_relationships(self):

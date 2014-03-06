@@ -10,7 +10,7 @@ from .utils import (
     is_modified_or_deleted,
     tx_column_name,
     end_tx_column_name,
-    versioned_column_properties
+    versioned_columns
 )
 
 
@@ -431,6 +431,6 @@ class UnitOfWork(object):
         :param version_obj:
             Version object to assign the attribute values to
         """
-        for prop in versioned_column_properties(parent_obj):
+        for prop in versioned_columns(parent_obj):
             value = getattr(parent_obj, prop.key)
             setattr(version_obj, prop.key, value)
