@@ -44,8 +44,7 @@ class VersioningManager(object):
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
-            'strategy': 'validity',
-            'store_data_at_delete': True,
+            'strategy': 'validity'
         }
         self.options.update(options)
 
