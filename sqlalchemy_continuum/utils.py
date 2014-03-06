@@ -221,12 +221,11 @@ def changeset(obj):
     data = {}
     session = sa.orm.object_session(obj)
     if session and obj in session.deleted:
-        for prop in obj.__mapper__.iterate_properties:
-            if isinstance(prop, sa.orm.ColumnProperty):
-                if not prop.columns[0].primary_key:
-                    value = getattr(obj, prop.key)
-                    if value is not None:
-                        data[prop.key] = [None, getattr(obj, prop.key)]
+        for column in sa.inspect(obj.__class__).columns.values():
+            if not column.primary_key:
+                value = getattr(obj, column.key)
+                if value is not None:
+                    data[column.key] = [None, getattr(obj, column.key)]
     else:
         for prop in obj.__mapper__.iterate_properties:
             history = get_history(obj, prop.key)
