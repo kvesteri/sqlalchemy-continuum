@@ -10,7 +10,7 @@ from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
-from .transaction_log import TransactionLogBase
+from .transaction_log import TransactionLogFactory
 from .unit_of_work import UnitOfWork
 from .plugins import TransactionChangesPlugin, TransactionMetaPlugin
 
@@ -40,7 +40,6 @@ class VersioningManager(object):
                 TransactionChangesPlugin,
                 TransactionMetaPlugin
             ],
-            'transaction_log_base': TransactionLogBase,
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
@@ -110,27 +109,12 @@ class VersioningManager(object):
         yield
         self.uow.tx_meta = old_tx_meta
 
-    def transaction_log_factory(self):
-        """
-        Create TransactionLog class.
-        """
-        class TransactionLog(
-            self.declarative_base,
-            self.options['transaction_log_base']
-        ):
-            __tablename__ = 'transaction_log'
-            manager = self
-
-        return TransactionLog
-
     def create_transaction_log(self):
         """
         Create TransactionLog class but only if it doesn't already exist in
         declarative model registry.
         """
-        if 'TransactionLog' not in self.declarative_base._decl_class_registry:
-            return self.transaction_log_factory()
-        return self.declarative_base._decl_class_registry['TransactionLog']
+        return TransactionLogFactory(self)()
 
     def build_tables(self):
         """
@@ -181,7 +165,7 @@ class VersioningManager(object):
         if self.pending_classes:
             cls = self.pending_classes[0]
             self.declarative_base = declarative_base(cls)
-            self.transaction_log_cls = self.create_transaction_log()
+            self.create_transaction_log()
 
             for plugin in self.plugins:
                 plugin.after_build_tx_class()

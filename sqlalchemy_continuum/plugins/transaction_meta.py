@@ -3,7 +3,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from .base import ModelFactory, Plugin
+from .base import Plugin
+from ..factory import ModelFactory
 from ..operation import IdentitySet
 
 

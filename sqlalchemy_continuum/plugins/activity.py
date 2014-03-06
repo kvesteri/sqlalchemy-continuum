@@ -2,7 +2,8 @@ import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import JSONType, generic_relationship
 
-from .base import ModelFactory, Plugin
+from .base import Plugin
+from ..factory import ModelFactory
 
 
 class ActivityBase(object):

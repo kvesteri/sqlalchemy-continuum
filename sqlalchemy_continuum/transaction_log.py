@@ -1,6 +1,7 @@
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
+from .factory import ModelFactory
 
 
 @compiles(sa.types.BigInteger, 'sqlite')
@@ -51,3 +52,22 @@ class TransactionLogBase(object):
                     value
                 ))
         return dict(entities)
+
+
+class TransactionLogFactory(ModelFactory):
+    model_name = 'TransactionLog'
+
+    def create_class(self):
+        """
+        Create TransactionLog class.
+        """
+        class TransactionLog(
+            self.manager.declarative_base,
+            TransactionLogBase
+        ):
+            __tablename__ = 'transaction_log'
+            manager = self.manager
+
+        self.manager.transaction_log_cls = TransactionLog
+
+        return TransactionLog

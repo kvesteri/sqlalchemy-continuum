@@ -1,7 +1,8 @@
 import six
 import sqlalchemy as sa
 
-from .base import ModelFactory, Plugin
+from .base import Plugin
+from ..factory import ModelFactory
 
 
 class TransactionChangesBase(object):
