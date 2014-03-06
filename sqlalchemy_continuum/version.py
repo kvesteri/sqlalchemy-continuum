@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from .reverter import Reverter
-from .utils import versioning_manager, is_internal_column
+from .utils import get_versioning_manager, is_internal_column
 
 
 class VersionClassBase(object):
@@ -11,7 +11,7 @@ class VersionClassBase(object):
         history. If current version is the first version this method returns
         None.
         """
-        return versioning_manager(self).fetcher(self).previous(self)
+        return get_versioning_manager(self).fetcher(self).previous(self)
 
     @property
     def next(self):
@@ -20,14 +20,14 @@ class VersionClassBase(object):
         history. If current version is the last version this method returns
         None.
         """
-        return versioning_manager(self).fetcher(self).next(self)
+        return get_versioning_manager(self).fetcher(self).next(self)
 
     @property
     def index(self):
         """
         Return the index of this version in the version history.
         """
-        return versioning_manager(self).fetcher(self).index(self)
+        return get_versioning_manager(self).fetcher(self).index(self)
 
     @property
     def changeset(self):
@@ -36,26 +36,25 @@ class VersionClassBase(object):
         field names and values as lists with first value as the old field value
         and second list value as the new value.
         """
-        data = {}
-        class_manager = self.__mapper__.class_manager
         previous_version = self.previous
         if not previous_version and self.operation_type != 0:
             return {}
 
-        for key, attr in class_manager.items():
+        data = {}
+
+        for key in sa.inspect(self.__class__).columns.keys():
             if is_internal_column(self, key):
                 continue
-            if isinstance(attr.property, sa.orm.ColumnProperty):
-                if not previous_version:
-                    old = None
-                else:
-                    old = getattr(previous_version, key)
-                new = getattr(self, key)
-                if old != new:
-                    data[key] = [
-                        old,
-                        new
-                    ]
+            if not previous_version:
+                old = None
+            else:
+                old = getattr(previous_version, key)
+            new = getattr(self, key)
+            if old != new:
+                data[key] = [old, new]
+
+        for plugin in get_versioning_manager(self).plugins:
+            plugin.after_construct_changeset(self, data)
         return data
 
     def revert(self, relations=[]):

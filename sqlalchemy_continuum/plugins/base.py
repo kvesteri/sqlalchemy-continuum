@@ -29,6 +29,9 @@ class Plugin(object):
     def after_history_class_built(self, parent_cls, history_cls):
         pass
 
+    def after_construct_changeset(self, history_obj, changeset):
+        pass
+
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
 

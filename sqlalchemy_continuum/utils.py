@@ -7,7 +7,7 @@ from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent
 
 
-def versioning_manager(obj_or_class):
+def get_versioning_manager(obj_or_class):
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
@@ -15,14 +15,14 @@ def versioning_manager(obj_or_class):
 
 
 def tx_column_name(obj):
-    return versioning_manager(obj).option(
+    return get_versioning_manager(obj).option(
         obj.__parent_class__,
         'transaction_column_name'
     )
 
 
 def end_tx_column_name(obj):
-    return versioning_manager(obj).option(
+    return get_versioning_manager(obj).option(
         obj.__parent_class__,
         'end_transaction_column_name'
     )
@@ -31,7 +31,7 @@ def end_tx_column_name(obj):
 def end_tx_attr(obj):
     return getattr(
         obj.__class__,
-        versioning_manager(obj).option(
+        get_versioning_manager(obj).option(
             obj.__parent_class__,
             'end_transaction_column_name'
         )
@@ -152,15 +152,13 @@ def is_internal_column(history_obj, column_name):
     :param history_obj: SQLAlchemy declarative history object
     :param column_name: Name of the column
     """
-    manager = versioning_manager(history_obj)
+    manager = get_versioning_manager(history_obj)
     parent_cls = history_obj.__parent_class__
 
     return column_name in (
         manager.option(parent_cls, 'transaction_column_name'),
         manager.option(parent_cls, 'end_transaction_column_name'),
         manager.option(parent_cls, 'operation_type_column_name')
-    ) or column_name.endswith(
-        manager.option(parent_cls, 'modified_flag_suffix')
     )
 
 

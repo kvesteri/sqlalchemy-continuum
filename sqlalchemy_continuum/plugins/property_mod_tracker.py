@@ -1,3 +1,4 @@
+from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import has_changes
 from .base import Plugin
@@ -30,3 +31,8 @@ class PropertyModTrackerPlugin(Plugin):
                     prop.key + self.column_suffix,
                     True
                 )
+
+    def after_construct_changeset(self, history_obj, changeset):
+        for key in copy(changeset).keys():
+            if key.endswith(self.column_suffix):
+                del changeset[key]

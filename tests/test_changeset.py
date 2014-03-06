@@ -51,10 +51,6 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         assert self.session.query(self.ArticleHistory).first().changeset == {}
 
 
-class TestChangeSetWithTrackPropertyModifications(ChangeSetBaseTestCase):
-    track_property_modifications = True
-
-
 class TestChangeSetWithValidityStrategy(ChangeSetTestCase):
     versioning_strategy = 'validity'
 
