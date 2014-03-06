@@ -2,7 +2,7 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import has_changes
 from .base import Plugin
-from ..utils import versioned_columns
+from ..utils import versioned_column_properties
 
 
 class PropertyModTrackerPlugin(Plugin):
@@ -24,11 +24,11 @@ class PropertyModTrackerPlugin(Plugin):
                 )
 
     def after_create_history_object(self, uow, parent_obj, history_obj):
-        for column in versioned_columns(parent_obj):
-            if has_changes(parent_obj, column.key):
+        for prop in versioned_column_properties(parent_obj):
+            if has_changes(parent_obj, prop.key):
                 setattr(
                     history_obj,
-                    column.key + self.column_suffix,
+                    prop.key + self.column_suffix,
                     True
                 )
 

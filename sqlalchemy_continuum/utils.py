@@ -3,6 +3,7 @@ from collections import defaultdict
 import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
+from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent
 
@@ -90,18 +91,22 @@ def is_versioned(mixed):
         return False
 
 
-def versioned_columns(obj):
+def versioned_column_properties(obj_or_class):
     """
     Return all versioned column properties for given versioned SQLAlchemy
     declarative model object.
 
     :param obj: SQLAlchemy declarative model object
     """
-    manager = get_versioning_manager(obj)
+    manager = get_versioning_manager(obj_or_class)
 
-    for column in sa.inspect(obj.__class__).columns.values():
-        if not manager.is_excluded_column(obj, column):
-            yield column
+    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+
+    for prop in sa.inspect(cls).attrs.values():
+        if not isinstance(prop, ColumnProperty):
+            continue
+        if not manager.is_excluded_column(obj_or_class, prop.columns[0]):
+            yield prop
 
 
 def versioned_relationships(obj):
@@ -195,7 +200,7 @@ def is_modified(obj):
     """
     column_names = sa.inspect(obj.__class__).columns.keys()
     versioned_column_keys = [
-        prop.key for prop in versioned_columns(obj)
+        prop.key for prop in versioned_column_properties(obj)
     ]
     versioned_relationship_keys = [
         prop.key for prop in versioned_relationships(obj)
