@@ -87,7 +87,7 @@ def is_versioned(mixed):
     """
     try:
         return hasattr(mixed, '__versioned__') and option(mixed, 'versioning')
-    except AttributeError:
+    except (AttributeError, KeyError):
         return False
 
 
