@@ -55,7 +55,7 @@ setup(
     long_description=__doc__,
     packages=[
         'sqlalchemy_continuum',
-        'sqlalchemy_continuum.ext'
+        'sqlalchemy_continuum.plugins'
     ],
     zip_safe=False,
     include_package_data=True,
