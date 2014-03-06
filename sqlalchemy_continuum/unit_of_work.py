@@ -109,6 +109,18 @@ class UnitOfWork(object):
         """
         self.operations.add_delete(target)
 
+    def create_transaction(self, session):
+        self.current_transaction = self.manager.transaction_log_cls(
+            **self.tx_context
+        )
+        for plugin in self.manager.plugins:
+            plugin.before_create_tx_object(self, session)
+
+        session.add(self.current_transaction)
+
+        for plugin in self.manager.plugins:
+            plugin.after_create_tx_object(self, session)
+
     def before_flush(self, session, flush_context, instances):
         if not self.manager.options['versioning']:
             return
@@ -128,17 +140,7 @@ class UnitOfWork(object):
             self.history_session = sa.orm.session.Session(
                 bind=session.connection()
             )
-
-            self.current_transaction = self.manager.transaction_log_cls(
-                **self.tx_context
-            )
-            for plugin in self.manager.plugins:
-                plugin.before_create_tx_object(self, session)
-
-            session.add(self.current_transaction)
-
-            for plugin in self.manager.plugins:
-                plugin.after_create_tx_object(self, session)
+            self.create_transaction(session)
 
         for plugin in self.manager.plugins:
             plugin.before_flush(self, session)
@@ -166,6 +168,43 @@ class UnitOfWork(object):
         """
         self.reset()
 
+    def get_or_create_history_object(self, target):
+        version_cls = target.__versioned__['class']
+        version_id = identity(target) + (self.current_transaction.id, )
+        version_key = (version_cls, version_id)
+
+        if version_key not in self.version_objs:
+            version_obj = version_cls()
+            self.version_objs[version_key] = version_obj
+            self.history_session.add(version_obj)
+            tx_column = self.manager.option(
+                target,
+                'transaction_column_name'
+            )
+            setattr(
+                version_obj,
+                tx_column,
+                self.current_transaction.id
+            )
+            return version_obj
+        else:
+            return self.version_objs[version_key]
+
+    def process_operation(self, operation):
+        target = operation.target
+        version_obj = self.get_or_create_history_object(target)
+        version_obj.operation_type = operation.type
+        self.assign_attributes(target, version_obj)
+
+        for plugin in self.manager.plugins:
+            plugin.after_create_history_object(self, target, version_obj)
+
+        self.update_version_validity(
+            target,
+            version_obj
+        )
+        operation.processed = True
+
     def create_history_objects(self, session):
         """
         Create history objects for given session based on operations collected
@@ -179,49 +218,12 @@ class UnitOfWork(object):
         for key, operation in copy(self.operations).items():
             if operation.processed:
                 continue
-            target = operation.target
 
             if not self.current_transaction:
                 raise Exception(
                     'Current transaction not available.'
                 )
-
-            version_cls = target.__versioned__['class']
-            tx_column = self.manager.option(
-                target,
-                'transaction_column_name'
-            )
-
-            version_id = identity(target) + (self.current_transaction.id, )
-
-            version_key = (version_cls, version_id)
-            if version_key not in self.version_objs:
-                version_obj = version_cls()
-                self.version_objs[version_key] = version_obj
-                self.history_session.add(version_obj)
-            else:
-                version_obj = self.version_objs[version_key]
-
-            version_obj.operation_type = operation.type
-
-            if not getattr(version_obj, tx_column):
-                setattr(
-                    version_obj,
-                    tx_column,
-                    self.current_transaction.id
-                )
-
-            self.assign_attributes(target, version_obj)
-
-            for plugin in self.manager.plugins:
-                plugin.after_create_history_object(self, target, version_obj)
-
-            operation.processed = True
-
-            self.update_version_validity(
-                target,
-                version_obj
-            )
+            self.process_operation(operation)
 
         self.history_session.flush()
 
