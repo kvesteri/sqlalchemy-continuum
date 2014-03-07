@@ -51,7 +51,7 @@ def parent_class(history_cls):
 
     :param model: SQLAlchemy declarative history model class
 
-    .. seealso:: :func:`history_class
+    .. seealso:: :func:`history_class`
     """
     return get_versioning_manager(history_cls).parent_class_map[history_cls]
 
@@ -93,23 +93,39 @@ def versioned_objects(session):
     Return all versioned objects in given session.
 
     :param session: SQLAlchemy session object
+
+    .. seealso:: :func:`is_versioned`
     """
     for obj in session:
         if is_versioned(obj):
             yield obj
 
 
-def is_versioned(mixed):
+def is_versioned(obj_or_class):
     """
     Return whether or not given object is versioned.
 
-    :param mixed:
-        SQLAlchemy declarative model object or SQLAlchemy declarative model.
+    ::
+
+        is_versioned(Article)  # True
+
+        article = Article()
+
+        is_versioned(article)  # True
+
+
+    :param obj_or_class:
+        SQLAlchemy declarative model object or SQLAlchemy declarative model
+        class.
+
+    .. seealso:: :func:`versioned_objects`
     """
     try:
         return (
-            hasattr(mixed, '__versioned__') and
-            get_versioning_manager(mixed).option(mixed, 'versioning')
+            hasattr(obj_or_class, '__versioned__') and
+            get_versioning_manager(obj_or_class).option(
+                obj_or_class, 'versioning'
+            )
         )
     except (AttributeError, KeyError):
         return False
@@ -252,9 +268,17 @@ def is_modified(obj):
 
 
 def is_session_modified(session):
+    """
+    Return whether or not any of the versioned objects in given session have
+    been either modified or deleted.
+
+    :param session: SQLAlchemy session object
+
+    .. seealso:: :func:`is_versioned`
+    .. seealso:: :func:`versioned_objects`
+    """
     return any(
-        is_versioned(obj) and is_modified_or_deleted(obj)
-        for obj in session
+        is_modified_or_deleted(obj) for obj in versioned_objects(session)
     )
 
 
