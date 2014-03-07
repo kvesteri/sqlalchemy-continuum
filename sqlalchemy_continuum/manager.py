@@ -184,8 +184,7 @@ class VersioningManager(object):
                         table,
                         self.transaction_log_cls
                     )
-                    for plugin in self.plugins:
-                        plugin.after_history_class_built(cls, history_cls)
+                    self.plugins.after_history_class_built(cls, history_cls)
 
         self.plugins.after_build_models()
 
@@ -242,7 +241,7 @@ class VersioningManager(object):
 
     def instrument_versioned_classes(self, mapper, cls):
         """
-        Collects all versioned classes and adds them into pending_classes list.
+        Collect versioned class and add it to pending_classes list.
 
         :mapper mapper: SQLAlchemy mapper object
         :cls cls: SQLAlchemy declarative class
@@ -309,5 +308,5 @@ class VersioningManager(object):
 
         for cls in pending_copy:
             # set the "active_history" flag
-            for prop in cls.__mapper__.iterate_properties:
+            for prop in sa.inspect(cls).iterate_properties:
                 getattr(cls, prop.key).impl.active_history = True

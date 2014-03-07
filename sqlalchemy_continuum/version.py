@@ -65,8 +65,8 @@ class VersionClassBase(object):
             if old != new:
                 data[key] = [old, new]
 
-        for plugin in get_versioning_manager(self).plugins:
-            plugin.after_construct_changeset(self, data)
+        manager = get_versioning_manager(self)
+        manager.plugins.after_construct_changeset(self, data)
         return data
 
     def revert(self, relations=[]):

@@ -142,8 +142,7 @@ class TableBuilder(object):
                 columns.append(self.end_transaction_column)
             columns.append(self.operation_type_column)
 
-        for plugin in self.manager.plugins:
-            plugin.after_build_history_table_columns(self, columns)
+        self.manager.plugins.after_build_history_table_columns(self, columns)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,

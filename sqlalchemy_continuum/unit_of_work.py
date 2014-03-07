@@ -195,11 +195,11 @@ class UnitOfWork(object):
         self.manager.plugins.after_create_history_object(
             self, target, version_obj
         )
-
-        self.update_version_validity(
-            target,
-            version_obj
-        )
+        if self.manager.option(target, 'strategy') == 'validity':
+            self.update_version_validity(
+                target,
+                version_obj
+            )
         operation.processed = True
 
     def create_history_objects(self, session):
@@ -226,12 +226,14 @@ class UnitOfWork(object):
 
     def version_validity_subquery(self, parent, version_obj):
         """
-        Return the subquery needed by update_version_validity.
+        Return the subquery needed by :func:`update_version_validity`.
 
         This method is only used when using 'validity' versioning strategy.
 
         :param parent: SQLAlchemy declarative parent object
         :parem version_obj: SQLAlchemy declarative version object
+
+        .. seealso:: :func:`update_version_validity`
         """
         fetcher = self.manager.fetcher(parent)
         session = sa.orm.object_session(version_obj)
@@ -257,34 +259,32 @@ class UnitOfWork(object):
 
         :param parent: SQLAlchemy declarative parent object
         :parem version_obj: SQLAlchemy declarative version object
-        """
-        if (
-            self.manager.option(parent, 'strategy') ==
-            'validity'
-        ):
-            fetcher = self.manager.fetcher(parent)
-            session = sa.orm.object_session(version_obj)
 
-            subquery = self.version_validity_subquery(parent, version_obj)
-            query = (
-                session.query(version_obj.__class__)
-                .filter(
-                    sa.and_(
-                        getattr(
-                            version_obj.__class__,
-                            tx_column_name(version_obj)
-                        ) == subquery,
-                        *fetcher.parent_identity_correlation(version_obj)
-                    )
+        .. seealso:: :func:`version_validity_subquery`
+        """
+        fetcher = self.manager.fetcher(parent)
+        session = sa.orm.object_session(version_obj)
+
+        subquery = self.version_validity_subquery(parent, version_obj)
+        query = (
+            session.query(version_obj.__class__)
+            .filter(
+                sa.and_(
+                    getattr(
+                        version_obj.__class__,
+                        tx_column_name(version_obj)
+                    ) == subquery,
+                    *fetcher.parent_identity_correlation(version_obj)
                 )
             )
-            query.update(
-                {
-                    end_tx_column_name(version_obj):
-                    self.current_transaction.id
-                },
-                synchronize_session=False
-            )
+        )
+        query.update(
+            {
+                end_tx_column_name(version_obj):
+                self.current_transaction.id
+            },
+            synchronize_session=False
+        )
 
     def create_association_versions(self, session):
         """
@@ -318,10 +318,7 @@ class UnitOfWork(object):
     @property
     def has_changes(self):
         """
-        Return whether or not transaction entry should be created for given
-        SQLAlchemy session object.
-
-        :param session: SQLAlchemy session
+        Return whether or not this unit of work has changes.
         """
         return self.operations or self.pending_statements
 

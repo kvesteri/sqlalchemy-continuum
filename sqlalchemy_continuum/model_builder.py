@@ -2,6 +2,7 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import primary_keys, declarative_base
 from .expression_reflector import ClassExpressionReflector
+from .utils import option
 from .version import VersionClassBase
 
 
@@ -20,9 +21,6 @@ class ModelBuilder(object):
         """
         self.manager = versioning_manager
         self.model = model
-
-    def option(self, name):
-        return self.manager.option(self.model, name)
 
     def build_parent_relationship(self):
         """
@@ -66,7 +64,7 @@ class ModelBuilder(object):
         # Only define transaction relation if it doesn't already exist in
         # parent class.
 
-        backref_name = self.manager.options['relation_naming_function'](
+        backref_name = option(self.model, 'relation_naming_function')(
             self.model.__name__
         )
 
@@ -80,9 +78,7 @@ class ModelBuilder(object):
                 tx_log_class,
                 primaryjoin=tx_log_class.id == transaction_column,
                 foreign_keys=[transaction_column],
-                backref=self.manager.options['relation_naming_function'](
-                    self.model.__name__
-                )
+                backref=backref_name
             )
         else:
             setattr(
@@ -109,7 +105,7 @@ class ModelBuilder(object):
         """
         parents = (
             self.find_closest_versioned_parent()
-            or self.manager.option(self.model, 'base_classes')
+            or option(self.model, 'base_classes')
             or (declarative_base(self.model), )
         )
         return parents + (VersionClassBase, )
