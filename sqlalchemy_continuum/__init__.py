@@ -1,7 +1,6 @@
 import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
-from .primitives import UniqueBidict
 from .utils import (
     changeset,
     get_versioning_manager,
@@ -21,7 +20,6 @@ __all__ = (
     parent_class,
     vacuum,
     Operation,
-    UniqueBidict,
     VersioningManager
 )
 
