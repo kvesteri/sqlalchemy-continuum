@@ -216,6 +216,13 @@ def is_modified(obj):
     return False
 
 
+def is_session_modified(session):
+    return any(
+        is_versioned(obj) and is_modified_or_deleted(obj)
+        for obj in session
+    )
+
+
 def changeset(obj):
     """
     Return a humanized changeset for given SQLAlchemy declarative object.

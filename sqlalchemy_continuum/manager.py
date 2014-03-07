@@ -13,7 +13,11 @@ from .primitives import UniqueBidict
 from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogFactory
 from .unit_of_work import UnitOfWork
-from .plugins import TransactionChangesPlugin, TransactionMetaPlugin
+from .plugins import (
+    PluginCollection,
+    TransactionChangesPlugin,
+    TransactionMetaPlugin
+)
 
 
 class VersioningManager(object):
@@ -52,9 +56,9 @@ class VersioningManager(object):
     @property
     def plugins(self):
         if not self._plugins:
-            self._plugins = [
+            self._plugins = PluginCollection([
                 plugin_class(self) for plugin_class in self.options['plugins']
-            ]
+            ])
         return self._plugins
 
     def fetcher(self, obj):

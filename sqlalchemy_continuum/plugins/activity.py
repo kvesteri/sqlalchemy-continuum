@@ -97,6 +97,12 @@ class ActivityPlugin(Plugin):
         self.model_class = ActivityFactory(self.manager)()
         self.manager.activity_cls = self.model_class
 
+    def is_session_modified(self, session):
+        for obj in session:
+            if isinstance(obj, self.model_class):
+                return True
+        return False
+
     def before_flush(self, uow, session):
         for obj in session:
             if isinstance(obj, self.model_class):

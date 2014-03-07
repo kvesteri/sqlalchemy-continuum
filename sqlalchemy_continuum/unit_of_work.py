@@ -9,6 +9,7 @@ from .utils import (
     history_class,
     is_modified,
     is_modified_or_deleted,
+    is_session_modified,
     is_versioned,
     tx_column_name,
     versioned_column_properties
@@ -130,10 +131,8 @@ class UnitOfWork(object):
             return
 
         if (
-            not any(
-                is_versioned(obj) and is_modified_or_deleted(obj)
-                for obj in session
-            )
+            not is_session_modified(session) and
+            not any(self.manager.plugins.is_session_modified(session))
         ):
             return
 
