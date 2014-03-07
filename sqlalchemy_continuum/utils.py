@@ -41,10 +41,34 @@ def end_tx_attr(obj):
 
 
 def parent_class(history_cls):
+    """
+    Returns the parent class for given history model class.
+
+    ::
+
+        parent_class(ArticleHistory)  # Article class
+
+
+    :param model: SQLAlchemy declarative history model class
+
+    .. seealso:: :func:`history_class
+    """
     return get_versioning_manager(history_cls).parent_class_map[history_cls]
 
 
 def history_class(model):
+    """
+    Returns the history class for given SQLAlchemy declarative model class.
+
+    ::
+
+        history_class(Article)  # ArticleHistory class
+
+
+    :param model: SQLAlchemy declarative model class
+
+    .. seealso:: :func:`parent_class`
+    """
     return get_versioning_manager(model).history_class_map[model]
 
 
@@ -192,7 +216,21 @@ def is_modified(obj):
     Return whether or not the versioned properties of given object have been
     modified.
 
+    ::
+
+        article = Article()
+
+        is_modified(article)  # False
+
+        article.name = 'Something'
+
+        is_modified(article)  # True
+
+
     :param obj: SQLAlchemy declarative model object
+
+    .. seealso:: :func:`is_modified_or_deleted`
+    .. seealso:: :func:`is_session_modified`
     """
     column_names = sa.inspect(obj.__class__).columns.keys()
     versioned_column_keys = [
