@@ -1,7 +1,7 @@
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
-from sqlalchemy_continuum.utils import is_modified
+from sqlalchemy_continuum.utils import is_modified, history_class, parent_class
 
 from tests import TestCase
 
@@ -54,3 +54,15 @@ class TestIsModified(TestCase):
     def test_auto_assigned_datetime_exclusion(self):
         article = self.Article(created_at=datetime.now())
         assert not is_modified(article)
+
+
+class TestHistoryClass(TestCase):
+    def test_history_class_for_versioned_class(self):
+        ArticleHistory = history_class(self.Article)
+        assert ArticleHistory.__name__ == 'ArticleHistory'
+
+
+class TestParentClass(TestCase):
+    def test_parent_class_for_version_class(self):
+        ArticleHistory = history_class(self.Article)
+        assert parent_class(ArticleHistory) == self.Article

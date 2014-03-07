@@ -1,6 +1,5 @@
 from inspect import isclass
 from collections import defaultdict
-import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.properties import ColumnProperty
@@ -12,10 +11,7 @@ def get_versioning_manager(obj_or_class):
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
-    try:
-        return cls.__versioning_manager__
-    except AttributeError:
-        return cls.__versioned__['manager']
+    return cls.__versioning_manager__
 
 
 def option(obj_or_class, option_name):
@@ -48,6 +44,14 @@ def end_tx_attr(obj):
     )
 
 
+def parent_class(history_cls):
+    return get_versioning_manager(history_cls).history_class_map[history_cls]
+
+
+def history_class(model):
+    return get_versioning_manager(model).history_class_map[model]
+
+
 def history_table(table):
     """
     Return associated history table for given SQLAlchemy Table object.
@@ -70,12 +74,9 @@ def versioned_objects(session):
 
     :param session: SQLAlchemy session object
     """
-    iterator = itertools.chain(session.new, session.dirty, session.deleted)
-
-    return [
-        obj for obj in iterator
-        if is_versioned(obj)
-    ]
+    for obj in session:
+        if is_versioned(obj):
+            yield obj
 
 
 def is_versioned(mixed):

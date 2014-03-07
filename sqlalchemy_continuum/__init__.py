@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
+from .primitives import UniqueBidict
 from .utils import changeset, vacuum
 
 
@@ -11,6 +12,7 @@ __all__ = (
     changeset,
     vacuum,
     Operation,
+    UniqueBidict,
     VersioningManager
 )
 

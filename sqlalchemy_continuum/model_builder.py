@@ -153,8 +153,7 @@ class ModelBuilder(object):
         # otherwise each child class would share the same __versioned__
         # option dict
         self.model.__versioned__ = copy(self.model.__versioned__)
-        self.model.__versioned__['transaction_log'] = tx_log_class
-        self.model.__versioned__['manager'] = self.manager
+        self.model.__versioning_manager__ = self.manager
         self.history_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(tx_log_class)
