@@ -144,12 +144,11 @@ def vacuum(session, model):
     :param model: SQLAlchemy declarative model class
     """
     history_cls = history_class(model)
-    manager = get_versioning_manager(model)
     versions = defaultdict(list)
 
     query = (
         session.query(history_cls)
-        .order_by(manager.option(history_class, 'transaction_column_name'))
+        .order_by(option(history_cls, 'transaction_column_name'))
     )
 
     for version in query:

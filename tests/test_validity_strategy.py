@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import history_class
 from tests import TestCase
 
 
@@ -28,7 +29,7 @@ class TestValidityStrategy(TestCase):
         self.Article = Article
 
     def test_schema_contains_end_transaction_id(self):
-        table = self.Article.__versioned__['class'].__table__
+        table = history_class(self.Article).__table__
         assert 'end_transaction_id' in table.c
         table.c.end_transaction_id
         assert table.c.end_transaction_id.nullable
@@ -95,9 +96,9 @@ class TestJoinTableInheritanceWithValidityVersioning(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = self.TextItem.__versioned__['class']
-        self.ArticleHistory = self.Article.__versioned__['class']
-        self.BlogPostHistory = self.BlogPost.__versioned__['class']
+        self.TextItemHistory = history_class(self.TextItem)
+        self.ArticleHistory = history_class(self.Article)
+        self.BlogPostHistory = history_class(self.BlogPost)
 
     def test_all_tables_contain_transaction_id_column(self):
         assert 'end_transaction_id' in self.TextItemHistory.__table__.c

@@ -17,7 +17,10 @@ class TableBuilder(object):
         self.model = model
 
     def option(self, name):
-        return self.manager.option(self.model, name)
+        try:
+            return self.manager.option(self.model, name)
+        except TypeError:
+            return self.manager.options[name]
 
     @property
     def table_name(self):
@@ -25,6 +28,18 @@ class TableBuilder(object):
         Returns the history table name for current parent table.
         """
         return self.option('table_name') % self.parent_table.name
+
+    @property
+    def parent_columns(self):
+        for column in self.parent_table.c:
+            if (
+                self.model and
+                self.manager.is_excluded_column(self.model, column)
+            ):
+                continue
+            if not self.model and column in self.manager.options['exclude']:
+                continue
+            yield column
 
     @property
     def reflected_columns(self):
@@ -40,10 +55,7 @@ class TableBuilder(object):
 
         transaction_column_name = self.option('transaction_column_name')
 
-        for column in self.parent_table.c:
-            if self.manager.is_excluded_column(self.model, column):
-                continue
-
+        for column in self.parent_columns:
             column_copy = self.reflect_column(column)
             columns.append(column_copy)
 

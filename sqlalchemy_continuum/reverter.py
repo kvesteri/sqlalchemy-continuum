@@ -2,7 +2,7 @@
 import sqlalchemy as sa
 #from sqlalchemy_utils.functions import primary_keys
 from .operation import Operation
-from .utils import versioned_column_properties
+from .utils import versioned_column_properties, parent_class
 
 
 def first_level(paths):
@@ -26,8 +26,8 @@ class Reverter(object):
         self.visited_objects = visited_objects
         self.obj = obj
         self.version_parent = self.obj.version_parent
-        self.parent_class = self.obj.__parent_class__
-        self.parent_mapper = sa.inspect(self.obj.__parent_class__)
+        self.parent_class = parent_class(self.obj.__class__)
+        self.parent_mapper = sa.inspect(self.parent_class)
 
         self.relations = list(relations)
         for path in relations:
@@ -36,7 +36,7 @@ class Reverter(object):
                 raise ReverterException(
                     "Could not initialize Reverter. Class '%s' does not have "
                     "relationship '%s'." % (
-                        self.obj.__parent_class__.__name__,
+                        parent_class(self.obj.__class__).__name__,
                         subpath
                     )
                 )
@@ -92,7 +92,7 @@ class Reverter(object):
 
         # Check if parent object has been deleted
         if self.version_parent is None:
-            self.version_parent = self.obj.__parent_class__()
+            self.version_parent = parent_class(self.obj.__class__)()
             session.add(self.version_parent)
 
         # Before reifying relations we need to reify object properties. This

@@ -2,6 +2,7 @@ from datetime import datetime
 from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_utils import TSVectorType
+from sqlalchemy_continuum import history_class
 from tests import TestCase
 
 
@@ -23,19 +24,19 @@ class TestDateTimeColumnExclusion(TestCase):
     def test_datetime_columns_with_defaults_excluded_by_default(self):
         assert (
             'created_at' not in
-            self.Article.__versioned__['class'].__table__.c
+            history_class(self.Article).__table__.c
         )
 
     def test_date_columns_with_defaults_excluded_by_default(self):
         assert (
             'creation_date' not in
-            self.Article.__versioned__['class'].__table__.c
+            history_class(self.Article).__table__.c
         )
 
     def test_datetime_exclusion_only_applies_to_datetime_types(self):
         assert (
             'is_deleted' in
-            self.Article.__versioned__['class'].__table__.c
+            history_class(self.Article).__table__.c
         )
 
 
@@ -54,7 +55,7 @@ class TestTSVectorTypeColumnExclusion(TestCase):
     def test_tsvector_typed_columns_excluded_by_default(self):
         assert (
             'search_vector' not in
-            self.Article.__versioned__['class'].__table__.c
+            history_class(self.Article).__table__.c
         )
 
 
@@ -74,7 +75,7 @@ class TestDateTimeColumnInclusion(TestCase):
     def test_datetime_columns_with_defaults_excluded_by_default(self):
         assert (
             'created_at' in
-            self.Article.__versioned__['class'].__table__.c
+            history_class(self.Article).__table__.c
         )
 
 
@@ -93,7 +94,7 @@ class TestColumnExclusion(TestCase):
         self.TextItem = TextItem
 
     def test_excluded_columns_not_included_in_history_class(self):
-        cls = self.TextItem.__versioned__['class']
+        cls = history_class(self.TextItem)
         manager = cls._sa_class_manager
         assert 'content' not in manager.keys()
 

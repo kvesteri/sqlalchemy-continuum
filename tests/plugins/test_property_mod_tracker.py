@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import history_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
 from tests import TestCase
 
@@ -22,14 +23,14 @@ class TestPropertyModificationsTracking(TestCase):
         self.User = User
 
     def test_each_column_generates_additional_mod_column(self):
-        UserHistory = self.User.__versioned__['class']
+        UserHistory = history_class(self.User)
         assert 'name_mod' in UserHistory.__table__.c
         column = UserHistory.__table__.c['name_mod']
         assert not column.nullable
         assert isinstance(column.type, sa.Boolean)
 
     def test_primary_keys_not_included(self):
-        UserHistory = self.User.__versioned__['class']
+        UserHistory = history_class(self.User)
         assert 'id_mod' not in UserHistory.__table__.c
 
     def test_mod_properties_get_updated(self):

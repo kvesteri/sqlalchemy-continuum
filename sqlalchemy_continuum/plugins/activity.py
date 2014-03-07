@@ -32,7 +32,7 @@ class ActivityFactory(ModelFactory):
 
             transaction_id = sa.Column(
                 sa.BigInteger,
-                primary_key=True,
+                index=True,
                 nullable=False
             )
 
