@@ -41,7 +41,7 @@ def end_tx_attr(obj):
 
 
 def parent_class(history_cls):
-    return get_versioning_manager(history_cls).history_class_map[history_cls]
+    return get_versioning_manager(history_cls).parent_class_map[history_cls]
 
 
 def history_class(model):

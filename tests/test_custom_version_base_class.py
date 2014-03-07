@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import history_class
 from tests import TestCase
 
 
@@ -25,8 +26,8 @@ class TestCommonBaseClass(TestCase):
         self.ArticleHistoryBase = ArticleHistoryBase
 
     def test_each_class_has_distinct_translation_class(self):
-        class_ = self.TextItem.__versioned__['class']
+        class_ = history_class(self.TextItem)
         assert class_.__name__ == 'TextItemHistory'
-        class_ = self.Article.__versioned__['class']
+        class_ = history_class(self.Article)
         assert class_.__name__ == 'ArticleHistory'
         assert issubclass(class_, self.ArticleHistoryBase)

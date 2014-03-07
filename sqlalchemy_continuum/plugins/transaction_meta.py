@@ -59,6 +59,10 @@ class TransactionMetaPlugin(Plugin):
         self.model_class = TransactionMetaFactory(self.manager)()
         self.manager.transaction_meta_cls = self.model_class
 
+    def after_build_models(self):
+        self.model_class = TransactionMetaFactory(self.manager)()
+        self.manager.transaction_meta_cls = self.model_class
+
     def clear(self):
         self.objects = None
 

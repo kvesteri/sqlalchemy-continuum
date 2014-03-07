@@ -17,10 +17,11 @@ class NullDeletePlugin(Plugin):
         return (
             version_obj.operation_type == Operation.DELETE and
             not prop.columns[0].primary_key and
-            is_internal_column(version_obj, prop.key)
+            not is_internal_column(version_obj, prop.key)
         )
 
     def after_create_history_object(self, uow, parent_obj, version_obj):
         for prop in versioned_column_properties(parent_obj):
             if self.should_nullify_column(version_obj, prop):
+
                 setattr(version_obj, prop.key, None)

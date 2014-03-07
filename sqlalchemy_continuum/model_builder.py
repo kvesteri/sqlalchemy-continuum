@@ -159,4 +159,5 @@ class ModelBuilder(object):
         self.build_transaction_relationship(tx_log_class)
         self.history_class.__versioning_manager__ = self.manager
         self.manager.history_class_map[self.model] = self.history_class
+        self.manager.parent_class_map[self.history_class] = self.model
         return self.history_class

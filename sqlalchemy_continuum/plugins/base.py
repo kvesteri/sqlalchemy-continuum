@@ -38,9 +38,6 @@ class Plugin(object):
     def after_construct_changeset(self, history_obj, changeset):
         pass
 
-    def __repr__(self):
-        return '<%s>' % self.__class__.__name__
-
 
 class PluginCollection(object):
     def __init__(self, plugins):
@@ -58,6 +55,9 @@ class PluginCollection(object):
             self.__class__.__name__,
             ', '.join(map(repr, self.plugins))
         )
+
+    def __getitem__(self, el):
+        return self.plugins[el]
 
     def __getattr__(self, attr):
         def wrapper(*args, **kwargs):

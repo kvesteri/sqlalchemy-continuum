@@ -3,16 +3,13 @@ from tests import TestCase
 
 
 class TestTransactionChagnes(TestCase):
-    def setup_method(self, method):
-        TestCase.setup_method(self, method)
+    def test_has_relation_to_changes(self):
         self.article = self.Article()
         self.article.name = u'Some article'
         self.article.content = u'Some content'
         self.article.tags.append(self.Tag(name=u'Some tag'))
         self.session.add(self.article)
         self.session.commit()
-
-    def test_has_relation_to_changes(self):
         tx = self.article.versions[0].transaction
         assert tx.changes
 

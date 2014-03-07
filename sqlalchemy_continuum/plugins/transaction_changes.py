@@ -46,6 +46,9 @@ class TransactionChangesPlugin(Plugin):
     def after_build_tx_class(self):
         self.model_class = TransactionChangesFactory(self.manager)()
 
+    def after_build_models(self):
+        self.model_class = TransactionChangesFactory(self.manager)()
+
     def before_create_history_objects(self, uow, session):
         for entity in uow.operations.entities:
             params = uow.current_transaction.id, six.text_type(entity.__name__)

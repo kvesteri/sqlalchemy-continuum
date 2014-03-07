@@ -9,7 +9,6 @@ from sqlalchemy_utils.types import TSVectorType
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .model_builder import ModelBuilder
 from .table_builder import TableBuilder
-from .primitives import UniqueBidict
 from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogFactory
 from .unit_of_work import UnitOfWork
@@ -80,7 +79,8 @@ class VersioningManager(object):
         self.association_history_tables = set([])
         self.declarative_base = None
         self.transaction_log_cls = None
-        self.history_class_map = UniqueBidict()
+        self.history_class_map = {}
+        self.parent_class_map = {}
         self.uow.reset()
 
         self.metadata = None

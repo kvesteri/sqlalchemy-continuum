@@ -1,3 +1,5 @@
+from pytest import raises
+
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
@@ -66,11 +68,19 @@ class TestHistoryClass(TestCase):
         ArticleHistory = history_class(self.Article)
         assert ArticleHistory.__name__ == 'ArticleHistory'
 
+    def test_throws_error_for_non_versioned_class(self):
+        with raises(KeyError):
+            parent_class(self.Article)
+
 
 class TestParentClass(TestCase):
     def test_parent_class_for_version_class(self):
         ArticleHistory = history_class(self.Article)
         assert parent_class(ArticleHistory) == self.Article
+
+    def test_throws_error_for_non_version_class(self):
+        with raises(KeyError):
+            parent_class(self.Article)
 
 
 setting_variants = {
