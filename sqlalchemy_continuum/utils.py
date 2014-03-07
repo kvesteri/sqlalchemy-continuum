@@ -15,32 +15,28 @@ def get_versioning_manager(obj_or_class):
 
 
 def option(obj_or_class, option_name):
-    return get_versioning_manager(obj_or_class).option(
-        obj_or_class, option_name
+    if isinstance(obj_or_class, AliasedClass):
+        obj_or_class = sa.inspect(obj_or_class).mapper.class_
+    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+    if not hasattr(cls, '__versioned__'):
+        cls = parent_class(cls)
+    return get_versioning_manager(cls).option(
+        cls, option_name
     )
 
 
 def tx_column_name(obj):
-    return get_versioning_manager(obj).option(
-        obj.__parent_class__,
-        'transaction_column_name'
-    )
+    return option(obj, 'transaction_column_name')
 
 
 def end_tx_column_name(obj):
-    return get_versioning_manager(obj).option(
-        obj.__parent_class__,
-        'end_transaction_column_name'
-    )
+    return option(obj, 'end_transaction_column_name')
 
 
 def end_tx_attr(obj):
     return getattr(
         obj.__class__,
-        get_versioning_manager(obj).option(
-            obj.__parent_class__,
-            'end_transaction_column_name'
-        )
+        end_tx_column_name(obj)
     )
 
 
@@ -87,7 +83,10 @@ def is_versioned(mixed):
         SQLAlchemy declarative model object or SQLAlchemy declarative model.
     """
     try:
-        return hasattr(mixed, '__versioned__') and option(mixed, 'versioning')
+        return (
+            hasattr(mixed, '__versioned__') and
+            get_versioning_manager(mixed).option(mixed, 'versioning')
+        )
     except (AttributeError, KeyError):
         return False
 
@@ -144,12 +143,12 @@ def vacuum(session, model):
     :param session: SQLAlchemy session object
     :param model: SQLAlchemy declarative model class
     """
-    history_class = model.__versioned__['class']
-    manager = model.__versioned__['manager']
+    history_cls = history_class(model)
+    manager = get_versioning_manager(model)
     versions = defaultdict(list)
 
     query = (
-        session.query(history_class)
+        session.query(history_cls)
         .order_by(manager.option(history_class, 'transaction_column_name'))
     )
 
@@ -172,7 +171,7 @@ def is_internal_column(history_obj, column_name):
     :param column_name: Name of the column
     """
     manager = get_versioning_manager(history_obj)
-    parent_cls = history_obj.__parent_class__
+    parent_cls = parent_class(history_obj.__class__)
 
     return column_name in (
         manager.option(parent_cls, 'transaction_column_name'),

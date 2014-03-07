@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from .reverter import Reverter
-from .utils import get_versioning_manager, is_internal_column
+from .utils import get_versioning_manager, is_internal_column, parent_class
 
 
 class VersionClassBase(object):
@@ -11,7 +11,11 @@ class VersionClassBase(object):
         history. If current version is the first version this method returns
         None.
         """
-        return get_versioning_manager(self).fetcher(self).previous(self)
+        return (
+            get_versioning_manager(self)
+            .fetcher(parent_class(self.__class__))
+            .previous(self)
+        )
 
     @property
     def next(self):
@@ -20,14 +24,22 @@ class VersionClassBase(object):
         history. If current version is the last version this method returns
         None.
         """
-        return get_versioning_manager(self).fetcher(self).next(self)
+        return (
+            get_versioning_manager(self)
+            .fetcher(parent_class(self.__class__))
+            .next(self)
+        )
 
     @property
     def index(self):
         """
         Return the index of this version in the version history.
         """
-        return get_versioning_manager(self).fetcher(self).index(self)
+        return (
+            get_versioning_manager(self)
+            .fetcher(parent_class(self.__class__))
+            .index(self)
+        )
 
     @property
     def changeset(self):

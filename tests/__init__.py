@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
+    history_class,
     make_versioned,
     versioning_manager,
 )
@@ -54,20 +55,21 @@ class TestCase(object):
             'end_transaction_column_name': self.end_transaction_column_name,
         }
 
-    def setup_method(self, method):
-        adapter = os.environ.get('DB', 'postgres')
-        if adapter == 'postgres':
-            dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
-        elif adapter == 'mysql':
-            dns = 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
-        elif adapter == 'sqlite':
-            dns = 'sqlite:///:memory:'
+    def get_dns_from_driver(self, driver):
+        if driver == 'postgres':
+            return 'postgres://postgres@localhost/sqlalchemy_continuum_test'
+        elif driver == 'mysql':
+            return 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
+        elif driver == 'sqlite':
+            return 'sqlite:///:memory:'
         else:
-            raise Exception('Unknown driver given: %r' % adapter)
+            raise Exception('Unknown driver given: %r' % driver)
 
+    def setup_method(self, method):
+        driver = os.environ.get('DB', 'sqlite')
         versioning_manager.options['plugins'] = self.plugins
 
-        self.engine = create_engine(dns)
+        self.engine = create_engine(self.get_dns_from_driver(driver))
         # self.engine.echo = True
         self.connection = self.engine.connect()
         self.Model = declarative_base()
@@ -77,10 +79,10 @@ class TestCase(object):
         sa.orm.configure_mappers()
 
         if hasattr(self, 'Article'):
-            self.ArticleHistory = self.Article.__versioned__['class']
+            self.ArticleHistory = history_class(self.Article)
         if hasattr(self, 'Tag'):
             try:
-                self.TagHistory = self.Tag.__versioned__['class']
+                self.TagHistory = history_class(self.Tag)
             except (AttributeError, KeyError):
                 pass
         self.create_tables()

@@ -1,9 +1,14 @@
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
-from sqlalchemy_continuum.utils import is_modified, history_class, parent_class
+from sqlalchemy_continuum.utils import (
+    history_class,
+    is_modified,
+    parent_class,
+    tx_column_name,
+)
 
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
 class TestChangeSet(TestCase):
@@ -66,3 +71,29 @@ class TestParentClass(TestCase):
     def test_parent_class_for_version_class(self):
         ArticleHistory = history_class(self.Article)
         assert parent_class(ArticleHistory) == self.Article
+
+
+setting_variants = {
+    'transaction_column_name': ['transaction_id', 'tx_id'],
+}
+
+
+class TxColumnNameTestCase(TestCase):
+    def test_with_version_class(self):
+        assert tx_column_name(history_class(self.Article)) == self.options[
+            'transaction_column_name'
+        ]
+
+    def test_with_version_obj(self):
+        history_obj = history_class(self.Article)()
+        assert tx_column_name(history_obj) == self.options[
+            'transaction_column_name'
+        ]
+
+    def test_with_versioned_class(self):
+        assert tx_column_name(self.Article) == self.options[
+            'transaction_column_name'
+        ]
+
+
+create_test_cases(TxColumnNameTestCase, setting_variants=setting_variants)

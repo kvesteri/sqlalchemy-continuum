@@ -228,9 +228,11 @@ class VersioningManager(object):
         :param model: SQLAlchemy declarative object
         :param name: name of the versioning option
         """
+        if not hasattr(model, '__versioned__'):
+            raise TypeError('Model %r is not versioned.' % model)
         try:
             return model.__versioned__[name]
-        except (AttributeError, KeyError):
+        except KeyError:
             return self.options[name]
 
     def instrument_versioned_classes(self, mapper, cls):

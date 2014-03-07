@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import versioning_manager
 from sqlalchemy_i18n import Translatable, make_translatable, translation_base
 from . import TestCase
 
@@ -53,7 +54,7 @@ class TestVersioningWithI18nExtension(TestCase):
         article.name = u'Some article'
         self.session.commit()
 
-        tx_log = self.Article.__versioned__['transaction_log']
+        tx_log = versioning_manager.transaction_log_cls
         tx = (
             self.session.query(tx_log)
             .order_by(sa.desc(tx_log.id))
@@ -73,7 +74,7 @@ class TestVersioningWithI18nExtension(TestCase):
 
         self.session.commit()
 
-        TransactionLog = self.Article.__versioned__['transaction_log']
+        TransactionLog = versioning_manager.transaction_log_cls
         transaction = self.session.query(TransactionLog).one()
 
         assert transaction.changes[1].entity_name == u'ArticleTranslation'

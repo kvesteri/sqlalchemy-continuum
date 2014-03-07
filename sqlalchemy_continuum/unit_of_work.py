@@ -5,11 +5,12 @@ import sqlalchemy as sa
 from sqlalchemy_utils import identity
 from .operation import Operation, Operations
 from .utils import (
-    is_versioned,
+    end_tx_column_name,
+    history_class,
     is_modified,
     is_modified_or_deleted,
+    is_versioned,
     tx_column_name,
-    end_tx_column_name,
     versioned_column_properties
 )
 
@@ -169,7 +170,7 @@ class UnitOfWork(object):
         self.reset()
 
     def get_or_create_history_object(self, target):
-        version_cls = target.__versioned__['class']
+        version_cls = history_class(target.__class__)
         version_id = identity(target) + (self.current_transaction.id, )
         version_key = (version_cls, version_id)
 

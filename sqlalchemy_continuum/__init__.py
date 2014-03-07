@@ -2,7 +2,13 @@ import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
 from .primitives import UniqueBidict
-from .utils import changeset, vacuum
+from .utils import (
+    changeset,
+    get_versioning_manager,
+    history_class,
+    parent_class,
+    vacuum,
+)
 
 
 __version__ = '0.10.3'
@@ -10,6 +16,9 @@ __version__ = '0.10.3'
 
 __all__ = (
     changeset,
+    get_versioning_manager,
+    history_class,
+    parent_class,
     vacuum,
     Operation,
     UniqueBidict,
