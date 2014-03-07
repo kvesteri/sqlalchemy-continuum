@@ -160,22 +160,19 @@ def vacuum(session, model):
             versions[version.id].append(version)
 
 
-def is_internal_column(history_obj, column_name):
+def is_internal_column(model, column_name):
     """
-    Return whether or not given column of given SQLAlchemy declarative history
-    object is considered an internal column (a column whose purpose is mainly
+    Return whether or not given column of given SQLAlchemy declarative classs
+    is considered an internal column (a column whose purpose is mainly
     for SA-Continuum's internal use).
 
-    :param history_obj: SQLAlchemy declarative history object
+    :param history_obj: SQLAlchemy declarative class
     :param column_name: Name of the column
     """
-    manager = get_versioning_manager(history_obj)
-    parent_cls = parent_class(history_obj.__class__)
-
     return column_name in (
-        manager.option(parent_cls, 'transaction_column_name'),
-        manager.option(parent_cls, 'end_transaction_column_name'),
-        manager.option(parent_cls, 'operation_type_column_name')
+        option(model, 'transaction_column_name'),
+        option(model, 'end_transaction_column_name'),
+        option(model, 'operation_type_column_name')
     )
 
 

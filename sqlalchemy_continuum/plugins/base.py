@@ -8,6 +8,9 @@ class Plugin(object):
     def after_build_tx_class(self):
         pass
 
+    def after_build_models(self):
+        pass
+
     def after_build_history_table_columns(self, table_builder, columns):
         pass
 
@@ -51,7 +54,10 @@ class PluginCollection(object):
         return len(self.plugins)
 
     def __repr__(self):
-        return '<%s>' % self.__class__.__name__
+        return '<%s [%r]>' % (
+            self.__class__.__name__,
+            ', '.join(map(repr, self.plugins))
+        )
 
     def __getattr__(self, attr):
         def wrapper(*args, **kwargs):

@@ -17,7 +17,7 @@ class NullDeletePlugin(Plugin):
         return (
             version_obj.operation_type == Operation.DELETE and
             not prop.columns[0].primary_key and
-            is_internal_column(prop.key)
+            is_internal_column(version_obj, prop.key)
         )
 
     def after_create_history_object(self, uow, parent_obj, version_obj):

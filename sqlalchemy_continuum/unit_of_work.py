@@ -8,7 +8,6 @@ from .utils import (
     end_tx_column_name,
     history_class,
     is_modified,
-    is_modified_or_deleted,
     is_session_modified,
     is_versioned,
     tx_column_name,
@@ -115,13 +114,11 @@ class UnitOfWork(object):
         self.current_transaction = self.manager.transaction_log_cls(
             **self.tx_context
         )
-        for plugin in self.manager.plugins:
-            plugin.before_create_tx_object(self, session)
+        self.manager.plugins.before_create_tx_object(self, session)
 
         session.add(self.current_transaction)
 
-        for plugin in self.manager.plugins:
-            plugin.after_create_tx_object(self, session)
+        self.manager.plugins.after_create_tx_object(self, session)
 
     def before_flush(self, session, flush_context, instances):
         if not self.manager.options['versioning']:
@@ -142,8 +139,7 @@ class UnitOfWork(object):
             )
             self.create_transaction(session)
 
-        for plugin in self.manager.plugins:
-            plugin.before_flush(self, session)
+        self.manager.plugins.before_flush(self, session)
 
     def after_flush(self, session, flush_context):
         if not self.manager.options['versioning']:
@@ -196,8 +192,9 @@ class UnitOfWork(object):
         version_obj.operation_type = operation.type
         self.assign_attributes(target, version_obj)
 
-        for plugin in self.manager.plugins:
-            plugin.after_create_history_object(self, target, version_obj)
+        self.manager.plugins.after_create_history_object(
+            self, target, version_obj
+        )
 
         self.update_version_validity(
             target,
@@ -301,15 +298,6 @@ class UnitOfWork(object):
             session.execute(stmt)
         self.pending_statements = []
 
-    def call_and_invoke_listeners(self, func, *args):
-        for plugin in self.manager.plugins:
-            getattr(plugin, 'before_%s' % func)(self, *args)
-
-        getattr(self, func)(*args)
-
-        for plugin in self.manager.plugins:
-            getattr(plugin, 'after_%s' % func)(self, *args)
-
     def make_history(self, session):
         """
         Create transaction, transaction changes records, history objects.
@@ -323,7 +311,9 @@ class UnitOfWork(object):
             self.create_association_versions(session)
 
         if self.operations:
-            self.call_and_invoke_listeners('create_history_objects', session)
+            self.manager.plugins.before_create_history_objects(self, session)
+            self.create_history_objects(session)
+            self.manager.plugins.after_create_history_objects(self, session)
 
     @property
     def has_changes(self):

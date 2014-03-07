@@ -26,8 +26,6 @@ class VersioningManager(object):
     classes and the actual versioning to UnitOfWork class. Manager contains
     configuration options that act as defaults for all versioned classes.
     """
-    _plugins = []
-
     def __init__(
         self,
         unit_of_work_cls=UnitOfWork,
@@ -51,6 +49,7 @@ class VersioningManager(object):
             'relation_naming_function': lambda a: pluralize(underscore(a)),
             'strategy': 'validity'
         }
+        self._plugins = []
         self.options.update(options)
 
     @property
@@ -79,6 +78,8 @@ class VersioningManager(object):
         self.pending_classes = []
         self.association_tables = set([])
         self.association_history_tables = set([])
+        self.declarative_base = None
+        self.transaction_log_cls = None
         self.history_class_map = UniqueBidict()
         self.uow.reset()
 
@@ -170,9 +171,7 @@ class VersioningManager(object):
             cls = self.pending_classes[0]
             self.declarative_base = declarative_base(cls)
             self.create_transaction_log()
-
-            for plugin in self.plugins:
-                plugin.after_build_tx_class()
+            self.plugins.after_build_tx_class()
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):
@@ -187,6 +186,8 @@ class VersioningManager(object):
                     )
                     for plugin in self.plugins:
                         plugin.after_history_class_built(cls, history_cls)
+
+        self.plugins.after_build_models()
 
     def build_relationships(self, history_classes):
         """
@@ -294,6 +295,8 @@ class VersioningManager(object):
         """
         if not self.options['versioning']:
             return
+
+        self._plugins = []
 
         self.build_tables()
         self.build_models()

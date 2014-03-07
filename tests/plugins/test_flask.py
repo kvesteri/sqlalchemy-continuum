@@ -1,4 +1,3 @@
-from six import PY3
 from flask import Flask, url_for
 from flask.ext.login import LoginManager
 import sqlalchemy as sa
