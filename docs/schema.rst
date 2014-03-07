@@ -22,8 +22,10 @@ The primary key of each history table is the combination of parent table's prima
 Transaction tables
 ------------------
 
-Continuum also generates 3 tables for efficient transaction storage namely transaction_log, transaction_changes and transaction_meta. The generation of transaction_changes and transaction_meta is optional. However it is recommended if transactions need to be queried efficently afterwards.
+By default Continuum creates one transaction table called `transaction`. Many continuum plugins also create additional tables for efficient transaction storage. If you wish to query
+efficiently transactions afterwards you should consider using some of these plugins.
 
+The transaction table only contains two fields by default: id and issued_at.
 
 Using vacuum
 ------------
