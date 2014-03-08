@@ -17,7 +17,10 @@ class TableBuilder(object):
         self.model = model
 
     def option(self, name):
-        return self.manager.option(self.model, name)
+        try:
+            return self.manager.option(self.model, name)
+        except TypeError:
+            return self.manager.options[name]
 
     @property
     def table_name(self):
@@ -25,6 +28,18 @@ class TableBuilder(object):
         Returns the history table name for current parent table.
         """
         return self.option('table_name') % self.parent_table.name
+
+    @property
+    def parent_columns(self):
+        for column in self.parent_table.c:
+            if (
+                self.model and
+                self.manager.is_excluded_column(self.model, column)
+            ):
+                continue
+            if not self.model and column in self.manager.options['exclude']:
+                continue
+            yield column
 
     @property
     def reflected_columns(self):
@@ -40,28 +55,9 @@ class TableBuilder(object):
 
         transaction_column_name = self.option('transaction_column_name')
 
-        for column in self.parent_table.c:
-            if self.manager.is_excluded_column(self.model, column):
-                continue
-
+        for column in self.parent_columns:
             column_copy = self.reflect_column(column)
             columns.append(column_copy)
-            if (
-                self.option('track_property_modifications') and
-                not column.primary_key
-            ):
-                columns.append(
-                    sa.Column(
-                        column_copy.name + self.option('modified_flag_suffix'),
-                        sa.Boolean,
-                        key=(
-                            column_copy.key +
-                            self.option('modified_flag_suffix')
-                        ),
-                        default=False,
-                        nullable=False
-                    )
-                )
 
         # When using join table inheritance each table should have own
         # transaction column.
@@ -138,16 +134,18 @@ class TableBuilder(object):
         """
         Builds history table.
         """
-        items = []
+        columns = []
         if extends is None:
-            items.extend(self.reflected_columns)
-            items.append(self.transaction_column)
+            columns.extend(self.reflected_columns)
+            columns.append(self.transaction_column)
             if self.option('strategy') == 'validity':
-                items.append(self.end_transaction_column)
-            items.append(self.operation_type_column)
+                columns.append(self.end_transaction_column)
+            columns.append(self.operation_type_column)
+
+        self.manager.plugins.after_build_history_table_columns(self, columns)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
-            *items,
+            *columns,
             extend_existing=extends is not None
         )

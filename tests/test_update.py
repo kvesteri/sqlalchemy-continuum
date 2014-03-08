@@ -47,7 +47,7 @@ class TestUpdate(TestCase):
         article.name = u'Some article'
 
         self.session.commit()
-        assert article.versions.count() == 2
+        assert article.versions.count() == 1
 
     def test_stores_operation_type(self):
         article = self.Article()

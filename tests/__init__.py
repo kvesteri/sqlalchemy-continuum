@@ -4,16 +4,18 @@ import itertools as it
 import os
 import warnings
 import sqlalchemy as sa
-from six import PY3
-from pytest import mark
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy_continuum import make_versioned, versioning_manager
-from sqlalchemy_continuum.ext.flask import (
-    versioning_manager as flask_versioning_manager
+from sqlalchemy_continuum import (
+    history_class,
+    make_versioned,
+    versioning_manager,
 )
-
+from sqlalchemy_continuum.plugins import (
+    TransactionMetaPlugin,
+    TransactionChangesPlugin
+)
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
@@ -37,14 +39,12 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
-# @mark.skipif("PY3 and os.environ.get('DB') == 'mysql'")
 class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
-    track_property_modifications = False
-    store_data_at_delete = False
     composite_pk = False
+    plugins = [TransactionChangesPlugin, TransactionMetaPlugin]
 
     @property
     def options(self):
@@ -53,26 +53,23 @@ class TestCase(object):
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
-            'track_property_modifications': self.track_property_modifications,
-            'store_data_at_delete': self.store_data_at_delete
         }
 
-    def setup_class(cls):
-        versioning_manager.options['versioning'] = True
-        flask_versioning_manager.options['versioning'] = False
+    def get_dns_from_driver(self, driver):
+        if driver == 'postgres':
+            return 'postgres://postgres@localhost/sqlalchemy_continuum_test'
+        elif driver == 'mysql':
+            return 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
+        elif driver == 'sqlite':
+            return 'sqlite:///:memory:'
+        else:
+            raise Exception('Unknown driver given: %r' % driver)
 
     def setup_method(self, method):
-        adapter = os.environ.get('DB', 'postgres')
-        if adapter == 'postgres':
-            dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
-        elif adapter == 'mysql':
-            dns = 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
-        elif adapter == 'sqlite':
-            dns = 'sqlite:///:memory:'
-        else:
-            raise Exception('Unknown driver given: %r' % adapter)
+        driver = os.environ.get('DB', 'sqlite')
+        versioning_manager.options['plugins'] = self.plugins
 
-        self.engine = create_engine(dns)
+        self.engine = create_engine(self.get_dns_from_driver(driver))
         # self.engine.echo = True
         self.connection = self.engine.connect()
         self.Model = declarative_base()
@@ -82,10 +79,10 @@ class TestCase(object):
         sa.orm.configure_mappers()
 
         if hasattr(self, 'Article'):
-            self.ArticleHistory = self.Article.__versioned__['class']
+            self.ArticleHistory = history_class(self.Article)
         if hasattr(self, 'Tag'):
             try:
-                self.TagHistory = self.Tag.__versioned__['class']
+                self.TagHistory = history_class(self.Tag)
             except (AttributeError, KeyError):
                 pass
         self.create_tables()
@@ -135,8 +132,6 @@ class TestCase(object):
 
 setting_variants = {
     'versioning_strategy': ['subquery', 'validity'],
-    'store_data_at_delete': [True, False],
-    'track_property_modifications': [True, False],
     'transaction_column_name': ['transaction_id', 'tx_id'],
     'end_transaction_column_name': ['end_transaction_id', 'end_tx_id']
 }

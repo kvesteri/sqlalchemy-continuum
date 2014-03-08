@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from .table_builder import TableBuilder
 from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
-from .utils import history_table
+from .utils import history_table, history_class
 
 
 class RelationshipBuilder(object):
@@ -153,11 +153,9 @@ class RelationshipBuilder(object):
         Builds reflected relationship between history classes based on given
         parent object's RelationshipProperty.
         """
-        self.local_cls = self.model.__versioned__['class']
+        self.local_cls = history_class(self.model)
         try:
-            self.remote_cls = (
-                self.property.mapper.class_.__versioned__['class']
-            )
+            self.remote_cls = history_class(self.property.mapper.class_)
         except (AttributeError, KeyError):
             return
 

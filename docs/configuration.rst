@@ -6,12 +6,12 @@ Global and class level configuration
 
 All Continuum configuration parameters can be set on global level (manager level) and on class level. Setting an option at manager level affects all classes within the scope of the manager's class instrumentation listener (by default all SQLAlchemy declarative models).
 
-In the following example we set 'store_data_at_delete' configuration option to False at the manager level.
+In the following example we set 'transaction_column_name' configuration option to False at the manager level.
 
 ::
 
 
-    make_versioned(options={'store_data_at_delete': False})
+    make_versioned(options={'transaction_column_name': 'my_tx_id'})
 
 
 
@@ -23,7 +23,7 @@ As the name suggests class level configuration only applies to given class. Clas
 
     class User(Base):
         __versioned__ = {
-            'store_data_at_delete': False
+            'transaction_column_name': 'tx_id'
         }
 
 
@@ -127,12 +127,6 @@ Here is a full list of configuration options:
     The relation naming function that is being used for generating the relationship names between various generated models.
 
     For example lets say you have versioned class called 'User'. By default Continuum builds relationship from TransactionLog with name 'users' that points to User class.
-
-* track_property_modifications (default: False)
-    Whether or not to track modifications at property level.
-
-* modified_flag_suffix (default: '_mod')
-    The suffix for modication tracking columns. For example if you have a model called User that has two versioned attributes name and email with configuration option 'track_property_modifications' set to True, Continuum would create two property modification tracking columns (name_mod and email_mod) for UserHistory model.
 
 * store_data_at_delete (default: True)
     Whether or not to store data in history records when parent object gets deleted.

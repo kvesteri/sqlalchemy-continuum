@@ -30,7 +30,6 @@ convenient constants for these values as shown below:
     article.versions[2].operation_type == Operation.DELETE
 
 
-
 Version traversal
 -----------------
 

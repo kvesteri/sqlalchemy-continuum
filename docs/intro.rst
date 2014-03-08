@@ -77,20 +77,17 @@ After this setup SQLAlchemy-Continuum does the following things:
 3. Adds couple of listeners so that each Article object insert, update and delete gets recorded
 
 
-When the models have been configured either by calling configure_mappers() or by accessing some of them the first time, the following __versioned__ attributes become available:
+When the models have been configured either by calling configure_mappers() or by accessing some of them the first time, the following things become available:
 
 
 ::
 
+    from sqlalchemy_continuum import history_class, parent_class
 
-    Article.__versioned__['class']
-    # ArticleHistory class
 
-    Article.__versioned__['transaction_changes']
-    # TransactionChanges class
+    history_class(Article)  # ArticleHistory class
 
-    Article.__versioned__['transaction_log']
-    # TransactionLog class
+    parent_class(history_class(Article))  # Article class
 
 
 Versions and transactions

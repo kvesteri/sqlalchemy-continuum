@@ -1,6 +1,6 @@
-from six import PY3
 from pytest import mark
 import sqlalchemy as sa
+from sqlalchemy_continuum import versioning_manager, history_class
 from tests import TestCase
 
 
@@ -35,16 +35,16 @@ class TestSingleTableInheritance(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = self.TextItem.__versioned__['class']
-        self.ArticleHistory = self.Article.__versioned__['class']
-        self.BlogPostHistory = self.BlogPost.__versioned__['class']
+        self.TextItemHistory = history_class(self.TextItem)
+        self.ArticleHistory = history_class(self.Article)
+        self.BlogPostHistory = history_class(self.BlogPost)
 
     def test_history_class_map(self):
-        manager = self.TextItem.__versioned__['manager']
+        manager = self.TextItem.__versioning_manager__
         assert len(manager.history_class_map.keys()) == 3
 
     def test_transaction_log_relations(self):
-        tx_log = self.TextItem.__versioned__['transaction_log']
+        tx_log = versioning_manager.transaction_log_cls
         assert tx_log.text_items
         assert tx_log.articles
         assert tx_log.blog_posts
@@ -76,9 +76,7 @@ class TestSingleTableInheritance(TestCase):
         article.name = u'Text 1'
         self.session.add(article)
         self.session.commit()
-
-        options = self.TextItem.__versioned__
-        TransactionLog = options['transaction_log']
+        TransactionLog = versioning_manager.transaction_log_cls
         transaction = (
             self.session.query(TransactionLog)
             .order_by(sa.sql.expression.desc(TransactionLog.issued_at))

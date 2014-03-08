@@ -32,6 +32,7 @@ extras_require = {
         'PyMySQL==0.6.1',
         'six>=1.4.0'
     ],
+    'anyjson': ['anyjson>=0.3.3'],
     'flask': ['Flask>=0.9'],
     'flask-login': ['Flask-Login>=0.2.9'],
     'i18n': ['SQLAlchemy-i18n >= 0.8.2'],
@@ -55,14 +56,14 @@ setup(
     long_description=__doc__,
     packages=[
         'sqlalchemy_continuum',
-        'sqlalchemy_continuum.ext'
+        'sqlalchemy_continuum.plugins'
     ],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
     install_requires=[
         'SQLAlchemy>=0.9.3',
-        'SQLAlchemy-Utils>=0.24.1',
+        'SQLAlchemy-Utils>=0.25.0',
         'inflection>=0.2.0',
         'ordereddict>=1.1'
         if sys.version_info[0] == 2 and sys.version_info[1] < 7 else ''

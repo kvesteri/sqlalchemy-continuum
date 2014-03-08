@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import get_versioning_manager
 from six import PY3
 from tests import TestCase
 
@@ -35,7 +36,7 @@ class ChangeSetBaseTestCase(TestCase):
 
 class ChangeSetTestCase(ChangeSetBaseTestCase):
     def test_changeset_for_history_that_does_not_have_first_insert(self):
-        tx_log_class = self.Article.__versioned__['transaction_log']
+        tx_log_class = get_versioning_manager(self.Article).transaction_log_cls
         tx_log = tx_log_class(issued_at=sa.func.now())
         self.session.add(tx_log)
         self.session.commit()
@@ -49,10 +50,6 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         )
 
         assert self.session.query(self.ArticleHistory).first().changeset == {}
-
-
-class TestChangeSetWithTrackPropertyModifications(ChangeSetBaseTestCase):
-    track_property_modifications = True
 
 
 class TestChangeSetWithValidityStrategy(ChangeSetTestCase):

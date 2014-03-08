@@ -160,15 +160,9 @@ class ValidityFetcher(HistoryObjectFetcher):
             session.query(obj.__class__)
             .filter(
                 sa.and_(
-                    getattr(
-                        obj.__class__,
-                        tx_column_name(obj)
-                    )
+                    getattr(obj.__class__, tx_column_name(obj))
                     ==
-                    getattr(
-                        obj,
-                        end_tx_column_name(obj)
-                    ),
+                    getattr(obj, end_tx_column_name(obj)),
                     *self.parent_identity_correlation(obj)
                 )
             )
@@ -185,10 +179,7 @@ class ValidityFetcher(HistoryObjectFetcher):
             session.query(obj.__class__)
             .filter(
                 sa.and_(
-                    getattr(
-                        obj.__class__,
-                        end_tx_column_name(obj)
-                    )
+                    getattr(obj.__class__, end_tx_column_name(obj))
                     ==
                     getattr(obj, tx_column_name(obj)),
                     *self.parent_identity_correlation(obj)

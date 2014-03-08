@@ -1,41 +1,75 @@
 from inspect import isclass
 from collections import defaultdict
-import itertools
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
+from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent
 
 
-def versioning_manager(obj_or_class):
+def get_versioning_manager(obj_or_class):
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
     return cls.__versioning_manager__
 
 
-def tx_column_name(obj):
-    return versioning_manager(obj).option(
-        obj.__parent_class__,
-        'transaction_column_name'
+def option(obj_or_class, option_name):
+    if isinstance(obj_or_class, AliasedClass):
+        obj_or_class = sa.inspect(obj_or_class).mapper.class_
+    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+    if not hasattr(cls, '__versioned__'):
+        cls = parent_class(cls)
+    return get_versioning_manager(cls).option(
+        cls, option_name
     )
+
+
+def tx_column_name(obj):
+    return option(obj, 'transaction_column_name')
 
 
 def end_tx_column_name(obj):
-    return versioning_manager(obj).option(
-        obj.__parent_class__,
-        'end_transaction_column_name'
-    )
+    return option(obj, 'end_transaction_column_name')
 
 
 def end_tx_attr(obj):
     return getattr(
         obj.__class__,
-        versioning_manager(obj).option(
-            obj.__parent_class__,
-            'end_transaction_column_name'
-        )
+        end_tx_column_name(obj)
     )
+
+
+def parent_class(history_cls):
+    """
+    Returns the parent class for given history model class.
+
+    ::
+
+        parent_class(ArticleHistory)  # Article class
+
+
+    :param model: SQLAlchemy declarative history model class
+
+    .. seealso:: :func:`history_class`
+    """
+    return get_versioning_manager(history_cls).parent_class_map[history_cls]
+
+
+def history_class(model):
+    """
+    Returns the history class for given SQLAlchemy declarative model class.
+
+    ::
+
+        history_class(Article)  # ArticleHistory class
+
+
+    :param model: SQLAlchemy declarative model class
+
+    .. seealso:: :func:`parent_class`
+    """
+    return get_versioning_manager(model).history_class_map[model]
 
 
 def history_table(table):
@@ -59,47 +93,71 @@ def versioned_objects(session):
     Return all versioned objects in given session.
 
     :param session: SQLAlchemy session object
+
+    .. seealso:: :func:`is_versioned`
     """
-    iterator = itertools.chain(session.new, session.dirty, session.deleted)
-
-    return [
-        obj for obj in iterator
-        if is_versioned(obj)
-    ]
+    for obj in session:
+        if is_versioned(obj):
+            yield obj
 
 
-def is_versioned(obj):
+def is_versioned(obj_or_class):
     """
     Return whether or not given object is versioned.
 
-    :param obj: SQLAlchemy declarative model object.
+    ::
+
+        is_versioned(Article)  # True
+
+        article = Article()
+
+        is_versioned(article)  # True
+
+
+    :param obj_or_class:
+        SQLAlchemy declarative model object or SQLAlchemy declarative model
+        class.
+
+    .. seealso:: :func:`versioned_objects`
     """
-    return (
-        hasattr(obj, '__versioned__') and
-        (
-            (
-                'versioning' in obj.__versioned__ and
-                obj.__versioned__['versioning']
-            ) or
-            'versioning' not in obj.__versioned__
+    try:
+        return (
+            hasattr(obj_or_class, '__versioned__') and
+            get_versioning_manager(obj_or_class).option(
+                obj_or_class, 'versioning'
+            )
         )
-    )
+    except (AttributeError, KeyError):
+        return False
 
 
-def versioned_column_properties(obj):
+def versioned_column_properties(obj_or_class):
     """
     Return all versioned column properties for given versioned SQLAlchemy
     declarative model object.
 
     :param obj: SQLAlchemy declarative model object
     """
-    manager = obj.__versioned__['manager']
+    manager = get_versioning_manager(obj_or_class)
 
-    for prop in obj.__mapper__.iterate_properties:
-        if (
-            isinstance(prop, sa.orm.ColumnProperty) and
-            not manager.is_excluded_column(obj, prop.columns[0])
-        ):
+    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+
+    for prop in sa.inspect(cls).attrs.values():
+        if not isinstance(prop, ColumnProperty):
+            continue
+        if not manager.is_excluded_column(obj_or_class, prop.columns[0]):
+            yield prop
+
+
+def versioned_relationships(obj):
+    """
+    Return all versioned relationships for given versioned SQLAlchemy
+    declarative model object.
+
+    :param obj: SQLAlchemy declarative model object
+    """
+    for prop in sa.inspect(obj.__class__).relationships:
+        if is_versioned(prop.mapper.class_):
             yield prop
 
 
@@ -125,13 +183,12 @@ def vacuum(session, model):
     :param session: SQLAlchemy session object
     :param model: SQLAlchemy declarative model class
     """
-    history_class = model.__versioned__['class']
-    manager = model.__versioned__['manager']
+    history_cls = history_class(model)
     versions = defaultdict(list)
 
     query = (
-        session.query(history_class)
-        .order_by(manager.option(history_class, 'transaction_column_name'))
+        session.query(history_cls)
+        .order_by(option(history_cls, 'transaction_column_name'))
     )
 
     for version in query:
@@ -143,24 +200,19 @@ def vacuum(session, model):
             versions[version.id].append(version)
 
 
-def is_internal_column(history_obj, column_name):
+def is_internal_column(model, column_name):
     """
-    Return whether or not given column of given SQLAlchemy declarative history
-    object is considered an internal column (a column whose purpose is mainly
+    Return whether or not given column of given SQLAlchemy declarative classs
+    is considered an internal column (a column whose purpose is mainly
     for SA-Continuum's internal use).
 
-    :param history_obj: SQLAlchemy declarative history object
+    :param history_obj: SQLAlchemy declarative class
     :param column_name: Name of the column
     """
-    manager = versioning_manager(history_obj)
-    parent_cls = history_obj.__parent_class__
-
     return column_name in (
-        manager.option(parent_cls, 'transaction_column_name'),
-        manager.option(parent_cls, 'end_transaction_column_name'),
-        manager.option(parent_cls, 'operation_type_column_name')
-    ) or column_name.endswith(
-        manager.option(parent_cls, 'modified_flag_suffix')
+        option(model, 'transaction_column_name'),
+        option(model, 'end_transaction_column_name'),
+        option(model, 'operation_type_column_name')
     )
 
 
@@ -180,13 +232,54 @@ def is_modified(obj):
     Return whether or not the versioned properties of given object have been
     modified.
 
+    ::
+
+        article = Article()
+
+        is_modified(article)  # False
+
+        article.name = 'Something'
+
+        is_modified(article)  # True
+
+
     :param obj: SQLAlchemy declarative model object
+
+    .. seealso:: :func:`is_modified_or_deleted`
+    .. seealso:: :func:`is_session_modified`
     """
-    for prop in versioned_column_properties(obj):
-        attr = getattr(sa.inspect(obj).attrs, prop.key)
-        if attr.history.has_changes():
-            return True
+    column_names = sa.inspect(obj.__class__).columns.keys()
+    versioned_column_keys = [
+        prop.key for prop in versioned_column_properties(obj)
+    ]
+    versioned_relationship_keys = [
+        prop.key for prop in versioned_relationships(obj)
+    ]
+    for key, attr in sa.inspect(obj).attrs.items():
+        if key in column_names:
+            if key not in versioned_column_keys:
+                continue
+            if attr.history.has_changes():
+                return True
+        if key in versioned_relationship_keys:
+            if attr.history.has_changes():
+                return True
     return False
+
+
+def is_session_modified(session):
+    """
+    Return whether or not any of the versioned objects in given session have
+    been either modified or deleted.
+
+    :param session: SQLAlchemy session object
+
+    .. seealso:: :func:`is_versioned`
+    .. seealso:: :func:`versioned_objects`
+    """
+    return any(
+        is_modified_or_deleted(obj) for obj in versioned_objects(session)
+    )
 
 
 def changeset(obj):
@@ -198,12 +291,11 @@ def changeset(obj):
     data = {}
     session = sa.orm.object_session(obj)
     if session and obj in session.deleted:
-        for prop in obj.__mapper__.iterate_properties:
-            if isinstance(prop, sa.orm.ColumnProperty):
-                if not prop.columns[0].primary_key:
-                    value = getattr(obj, prop.key)
-                    if value is not None:
-                        data[prop.key] = [None, getattr(obj, prop.key)]
+        for column in sa.inspect(obj.__class__).columns.values():
+            if not column.primary_key:
+                value = getattr(obj, column.key)
+                if value is not None:
+                    data[column.key] = [None, getattr(obj, column.key)]
     else:
         for prop in obj.__mapper__.iterate_properties:
             history = get_history(obj, prop.key)

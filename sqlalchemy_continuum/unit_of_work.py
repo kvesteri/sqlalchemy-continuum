@@ -1,20 +1,17 @@
 from copy import copy
 import re
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 from functools import wraps
-import six
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import identity, has_changes
-from .operation import Operation
+from sqlalchemy_utils import identity
+from .operation import Operation, Operations
 from .utils import (
-    is_versioned,
+    end_tx_column_name,
+    history_class,
     is_modified,
-    is_modified_or_deleted,
+    is_session_modified,
+    is_versioned,
     tx_column_name,
-    end_tx_column_name
+    versioned_column_properties
 )
 
 
@@ -25,11 +22,7 @@ def tracked_operation(func):
             return
         if not is_versioned(target):
             return
-        # we cannot use target._sa_instance_state.identity here since object's
-        # is not yet updated at this phase
-        key = (target.__class__, identity(target))
-
-        return func(self, key, target)
+        return func(self, target)
     return wrapper
 
 
@@ -43,12 +36,13 @@ class UnitOfWork(object):
         Reset the internal state of this UnitOfWork object. Normally this is
         called after transaction has been committed or rolled back.
         """
-        self.current_transaction_id = None
-        self.operations = OrderedDict()
-        self._committing = False
+        self.history_session = None
+        self.current_transaction = None
+        self.operations = Operations()
         self.tx_context = {}
         self.tx_meta = {}
         self.pending_statements = []
+        self.version_objs = {}
 
     def track_operations(self, mapper):
         """
@@ -76,10 +70,10 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session to track the operations from
         """
         sa.event.listen(
-            session, 'after_flush', self.after_flush
+            session, 'before_flush', self.before_flush
         )
         sa.event.listen(
-            session, 'before_commit', self.before_commit
+            session, 'after_flush', self.after_flush
         )
         sa.event.listen(
             session, 'after_commit', self.clear
@@ -89,52 +83,124 @@ class UnitOfWork(object):
         )
 
     @tracked_operation
-    def track_inserts(self, key, target):
+    def track_inserts(self, target):
         """
-        Tracks object insert operations. Whenever object is inserted it is
+        Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
-        if key in self.operations:
-            # If the object is deleted and then inserted within the same
-            # transaction we are actually dealing with an update.
-            self.operations[key]['target'] = target
-            self.operations[key]['operation_type'] = Operation.UPDATE
+        if not is_modified(target):
+            return
+        self.operations.add_insert(target)
+
+    @tracked_operation
+    def track_updates(self, target):
+        """
+        Track object update operations. Whenever object is updated it is
+        added to this UnitOfWork's internal operations dictionary.
+        """
+        if not is_modified(target):
+            return
+        self.operations.add_update(target)
+
+    @tracked_operation
+    def track_deletes(self, target):
+        """
+        Track object deletion operations. Whenever object is deleted it is
+        added to this UnitOfWork's internal operations dictionary.
+        """
+        self.operations.add_delete(target)
+
+    def create_transaction(self, session):
+        self.current_transaction = self.manager.transaction_log_cls(
+            **self.tx_context
+        )
+        self.manager.plugins.before_create_tx_object(self, session)
+
+        session.add(self.current_transaction)
+
+        self.manager.plugins.after_create_tx_object(self, session)
+
+    def before_flush(self, session, flush_context, instances):
+        if not self.manager.options['versioning']:
+            return
+
+        if session == self.history_session:
+            return
+
+        if (
+            not is_session_modified(session) and
+            not any(self.manager.plugins.is_session_modified(session))
+        ):
+            return
+
+        if not self.current_transaction:
+            self.history_session = sa.orm.session.Session(
+                bind=session.connection()
+            )
+            self.create_transaction(session)
+
+        self.manager.plugins.before_flush(self, session)
+
+    def after_flush(self, session, flush_context):
+        if not self.manager.options['versioning']:
+            return
+
+        if session == self.history_session:
+            return
+
+        if not self.current_transaction:
+            return
+
+        self.make_history(session)
+
+    def clear(self, session):
+        """
+        Simple SQLAlchemy listener that is being invoked after succesful
+        transaction commit or when transaction rollback occurs. The purpose of
+        this listener is to reset this UnitOfWork back to its initialization
+        state.
+
+        :param session: SQLAlchemy session object
+        """
+        self.reset()
+
+    def get_or_create_history_object(self, target):
+        version_cls = history_class(target.__class__)
+        version_id = identity(target) + (self.current_transaction.id, )
+        version_key = (version_cls, version_id)
+
+        if version_key not in self.version_objs:
+            version_obj = version_cls()
+            self.version_objs[version_key] = version_obj
+            self.history_session.add(version_obj)
+            tx_column = self.manager.option(
+                target,
+                'transaction_column_name'
+            )
+            setattr(
+                version_obj,
+                tx_column,
+                self.current_transaction.id
+            )
+            return version_obj
         else:
-            self.operations[key] = {
-                'target': target,
-                'operation_type': Operation.INSERT
-            }
+            return self.version_objs[version_key]
 
-    @tracked_operation
-    def track_updates(self, key, target):
-        """
-        Tracks object update operations. Whenever object is updated it is
-        added to this UnitOfWork's internal operations dictionary.
-        """
-        state_copy = copy(sa.inspect(target).committed_state)
-        relationships = sa.inspect(target.__class__).relationships
-        # Remove all ONETOMANY and MANYTOMANY relationships
-        for rel_key, relationship in relationships.items():
-            if relationship.direction.name in ['ONETOMANY', 'MANYTOMANY']:
-                if rel_key in state_copy:
-                    del state_copy[rel_key]
+    def process_operation(self, operation):
+        target = operation.target
+        version_obj = self.get_or_create_history_object(target)
+        version_obj.operation_type = operation.type
+        self.assign_attributes(target, version_obj)
 
-        if state_copy:
-            self.operations[key] = {
-                'target': target,
-                'operation_type': Operation.UPDATE
-            }
-
-    @tracked_operation
-    def track_deletes(self, key, target):
-        """
-        Tracks object deletion operations. Whenever object is deleted it is
-        added to this UnitOfWork's internal operations dictionary.
-        """
-        self.operations[key] = {
-            'target': target,
-            'operation_type': Operation.DELETE
-        }
+        self.manager.plugins.after_create_history_object(
+            self, target, version_obj
+        )
+        if self.manager.option(target, 'strategy') == 'validity':
+            self.update_version_validity(
+                target,
+                version_obj
+            )
+        operation.processed = True
 
     def create_history_objects(self, session):
         """
@@ -146,46 +212,28 @@ class UnitOfWork(object):
         if not self.manager.options['versioning']:
             return
 
-        version_objs = []
-        values = self.operations.values()
+        for key, operation in copy(self.operations).items():
+            if operation.processed:
+                continue
 
-        for key, value in copy(self.operations).items():
-            # if not is_modified_or_deleted(value['target']):
-            #     assert 0
-            #     continue
-
-            version_obj = value['target'].__versioned__['class']()
-            version_obj.operation_type = value['operation_type']
-
-            if not self.current_transaction_id:
+            if not self.current_transaction:
                 raise Exception(
-                    'Current transaction id not available.'
+                    'Current transaction not available.'
                 )
-            setattr(
-                version_obj,
-                self.manager.option(
-                    value['target'],
-                    'transaction_column_name'
-                ),
-                self.current_transaction_id
-            )
-            self.assign_attributes(value['target'], version_obj)
-            # The operation needs to be deleted before modifying the session
-            del self.operations[key]
-            version_objs.append(version_obj)
+            self.process_operation(operation)
 
-        for version_obj in version_objs:
-            session.add(version_obj)
-            self.update_version_validity(value['target'], version_obj)
+        self.history_session.flush()
 
     def version_validity_subquery(self, parent, version_obj):
         """
-        Return the subquery needed by update_version_validity.
+        Return the subquery needed by :func:`update_version_validity`.
 
         This method is only used when using 'validity' versioning strategy.
 
         :param parent: SQLAlchemy declarative parent object
         :parem version_obj: SQLAlchemy declarative version object
+
+        .. seealso:: :func:`update_version_validity`
         """
         fetcher = self.manager.fetcher(parent)
         session = sa.orm.object_session(version_obj)
@@ -195,10 +243,7 @@ class UnitOfWork(object):
         )
         if session.connection().engine.dialect.name == 'mysql':
             return sa.select(
-                [self.manager.option(
-                    parent,
-                    'transaction_column_name'
-                )],
+                ['max_1'],
                 from_obj=[
                     sa.sql.expression.alias(subquery, name='subquery')
                 ]
@@ -214,34 +259,32 @@ class UnitOfWork(object):
 
         :param parent: SQLAlchemy declarative parent object
         :parem version_obj: SQLAlchemy declarative version object
-        """
-        if (
-            self.manager.option(parent, 'strategy') ==
-            'validity'
-        ):
-            fetcher = self.manager.fetcher(parent)
-            session = sa.orm.object_session(version_obj)
 
-            subquery = self.version_validity_subquery(parent, version_obj)
-            return (
-                session.query(version_obj.__class__)
-                .filter(
-                    sa.and_(
-                        getattr(
-                            version_obj.__class__,
-                            tx_column_name(version_obj)
-                        ) == subquery,
-                        *fetcher.parent_identity_correlation(version_obj)
-                    )
-                )
-                .update(
-                    {
-                        end_tx_column_name(version_obj):
-                        self.current_transaction_id
-                    },
-                    synchronize_session=False
+        .. seealso:: :func:`version_validity_subquery`
+        """
+        fetcher = self.manager.fetcher(parent)
+        session = sa.orm.object_session(version_obj)
+
+        subquery = self.version_validity_subquery(parent, version_obj)
+        query = (
+            session.query(version_obj.__class__)
+            .filter(
+                sa.and_(
+                    getattr(
+                        version_obj.__class__,
+                        tx_column_name(version_obj)
+                    ) == subquery,
+                    *fetcher.parent_identity_correlation(version_obj)
                 )
             )
+        )
+        query.update(
+            {
+                end_tx_column_name(version_obj):
+                self.current_transaction.id
+            },
+            synchronize_session=False
+        )
 
     def create_association_versions(self, session):
         """
@@ -249,9 +292,11 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        for stmt in self.pending_statements:
-            stmt = stmt.values(transaction_id=self.current_transaction_id)
+        statements = copy(self.pending_statements)
+        for stmt in statements:
+            stmt = stmt.values(transaction_id=self.current_transaction.id)
             session.execute(stmt)
+        self.pending_statements = []
 
     def make_history(self, session):
         """
@@ -261,151 +306,25 @@ class UnitOfWork(object):
         """
         if not self.manager.options['versioning']:
             return
-        if not self.current_transaction_id:
-            self.create_transaction_log_entry(session)
+
+        if self.pending_statements:
             self.create_association_versions(session)
-            self.create_transaction_changes_entries(session)
-            self.create_transaction_meta_entries(session)
-        self.create_history_objects(session)
 
-    def should_create_transaction(self, session):
+        if self.operations:
+            self.manager.plugins.before_create_history_objects(self, session)
+            self.create_history_objects(session)
+            self.manager.plugins.after_create_history_objects(self, session)
+
+    @property
+    def has_changes(self):
         """
-        Return whether or not transaction entry should be created for given
-        SQLAlchemy session object.
-
-        :param session: SQLAlchemy session
+        Return whether or not this unit of work has changes.
         """
         return self.operations or self.pending_statements
 
-    def create_transaction_log_entry(self, session):
-        """
-        Creates TransactionLog object for current transaction. We use raw
-        insert here to be able to get current transaction id.
-
-        :param session: SQLAlchemy session
-        """
-        if self.current_transaction_id:
-            return self.current_transaction_id
-
-        if (
-            self.manager.transaction_log_cls and
-            self.should_create_transaction(session)
-        ):
-            table = self.manager.transaction_log_cls.__table__
-
-            stmt = (
-                table
-                .insert()
-                .values(
-                    issued_at=sa.func.now(),
-                    **self.tx_context
-                )
-            )
-            if session.connection().engine.driver == 'psycopg2':
-                stmt = stmt.returning(table.c.id)
-                self.current_transaction_id = (
-                    session.execute(stmt).fetchone()[0]
-                )
-            else:
-                self.current_transaction_id = session.execute(stmt).lastrowid
-            return self.current_transaction_id
-
-    def changed_entities(self, session):
-        """
-        Return a set of changed versioned entities for given session.
-
-        :param session: SQLAlchemy session object
-        """
-        changed_entities = set()
-
-        for key, value in six.iteritems(self.operations):
-            if (
-                is_modified(value['target']) or
-                value['target'] in session.deleted
-            ):
-                changed_entities.add(key[0])
-        return changed_entities
-
-    def create_transaction_changes_entries(self, session):
-        """
-        Create transaction changes entries based on all operations that
-        occurred during this UnitOfWork. For each entity that has been affected
-        by an operation during this UnitOfWork this method creates a new
-        TransactionChanges object.
-
-        :param session: SQLAlchemy session object
-        """
-        for entity in self.changed_entities(session):
-            changes = self.manager.transaction_changes_cls(
-                transaction_id=self.current_transaction_id,
-                entity_name=six.text_type(entity.__name__)
-            )
-            session.add(changes)
-
-    def create_transaction_meta_entries(self, session):
-        """
-        Create transaction meta entries based on transaction meta context
-        key-value pairs.
-
-        :param session: SQLAlchemy session object
-        """
-        if (
-            self.tx_meta and
-            (
-                self.changed_entities(session) or
-                self.pending_statements
-            )
-        ):
-            for key, value in self.tx_meta.items():
-                if callable(value):
-                    value = six.text_type(value())
-                meta = self.manager.transaction_meta_cls(
-                    transaction_id=self.current_transaction_id,
-                    key=key,
-                    value=value
-                )
-                session.add(meta)
-
-    def after_flush(self, session, flush_context):
-        """
-        SQLAlchemy after_flush event listener that handles all the logic for
-        creating necessary TransactionLog, TransactionChanges and History
-        objects.
-
-        :param session: SQLAlchemy session object
-        :param flush_context: flush_context dictionary
-        """
-        if self._committing:
-            self.make_history(session)
-
-    def before_commit(self, session):
-        """
-        SQLAlchemy before commit listener that marks the internal state of this
-        UnitOfWork as committing. This state is later on used by after_flush
-        listener which checks if the session is actually committing or if the
-        flush occurs before session commit.
-
-        :param session: SQLAlchemy session object
-        """
-        self._committing = True
-        # Flush is needed before updating history.
-        session.flush()
-        self.make_history(session)
-
-    def clear(self, session):
-        """
-        Simple SQLAlchemy listener that is being invoked after succesful
-        transaction commit or when transaction rollback occurs. The purpose of
-        this listener is to reset this UnitOfWork back to its initialization
-        state.
-
-        :param session: SQLAlchemy session object
-        """
-        self.reset()
-
     def append_association_operation(self, conn, table_name, params, op):
         """
-        Appends history association operation to pending_statements list.
+        Append history association operation to pending_statements list.
         """
         params['operation_type'] = op
         stmt = (
@@ -419,7 +338,7 @@ class UnitOfWork(object):
         self, conn, cursor, statement, parameters, context, executemany
     ):
         """
-        Tracks association operations and adds the generated history
+        Track association operations and adds the generated history
         association operations to pending_statements list.
         """
         if not self.manager.options['versioning']:
@@ -492,82 +411,15 @@ class UnitOfWork(object):
             return parameters
         return params
 
-    def should_nullify_attr(self, version_obj, attr):
-        """
-        Return whether or not given attribute of given version object should
-        be nullified (set to None) at the end of the transaction.
-
-        :param version_obj:
-            Version object to check the attribute nullification
-        :paremt attr:
-            SQLAlchemy InstrumentedAttribute object
-        """
-        parent = version_obj.__parent_class__
-        return (
-            not self.manager.option(
-                parent,
-                'store_data_at_delete'
-            ) and
-            version_obj.operation_type == Operation.DELETE and
-            attr.property.columns[0].primary_key is not True and
-            attr.key !=
-            self.manager.option(
-                parent,
-                'transaction_column_name'
-            )
-        )
-
     def assign_attributes(self, parent_obj, version_obj):
         """
-        Assign attributes values from parent object to version object. If the
-        parent object is deleted this method assigns None values to all version
-        object's attributes.
+        Assign attributes values from parent object to version object.
 
         :param parent_obj:
             Parent object to get the attribute values from
         :param version_obj:
             Version object to assign the attribute values to
         """
-        excluded_attributes = self.manager.option(parent_obj, 'exclude')
-        for attr_name, attr in parent_obj._sa_class_manager.items():
-            if attr_name in excluded_attributes:
-                continue
-            if isinstance(attr.property, sa.orm.ColumnProperty):
-                if self.should_nullify_attr(version_obj, attr):
-                    value = None
-                else:
-                    value = getattr(parent_obj, attr_name)
-                    self.assign_modified_flag(
-                        parent_obj, version_obj, attr_name
-                    )
-
-                setattr(version_obj, attr_name, value)
-
-    def assign_modified_flag(self, parent_obj, version_obj, attr_name):
-        """
-        Assign modified flag for given attribute of given version model object
-        based on the modification state of this property in given parent model
-        object.
-
-        :param parent_obj:
-            Parent object to check the modification state of given attribute
-        :param version_obj:
-            Version object to assign the modification flag into
-        :param attr_name:
-            Name of the attribute to check the modification state
-        """
-        if (
-            self.manager.option(
-                parent_obj,
-                'track_property_modifications'
-            ) and
-            has_changes(parent_obj, attr_name)
-        ):
-            setattr(
-                version_obj,
-                attr_name + self.manager.option(
-                    parent_obj,
-                    'modified_flag_suffix'
-                ),
-                True
-            )
+        for prop in versioned_column_properties(parent_obj):
+            value = getattr(parent_obj, prop.key)
+            setattr(version_obj, prop.key, value)

@@ -1,5 +1,7 @@
+from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
+from .factory import ModelFactory
 
 
 @compiles(sa.types.BigInteger, 'sqlite')
@@ -9,7 +11,7 @@ def compile_big_integer(element, compiler, **kw):
 
 class TransactionLogBase(object):
     id = sa.Column(sa.types.BigInteger, primary_key=True, autoincrement=True)
-    issued_at = sa.Column(sa.DateTime)
+    issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
     @property
     def entity_names(self):
@@ -52,18 +54,20 @@ class TransactionLogBase(object):
         return dict(entities)
 
 
-class TransactionMetaBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
-    key = sa.Column(sa.Unicode(255), primary_key=True)
-    value = sa.Column(sa.UnicodeText)
+class TransactionLogFactory(ModelFactory):
+    model_name = 'TransactionLog'
 
+    def create_class(self):
+        """
+        Create TransactionLog class.
+        """
+        class TransactionLog(
+            self.manager.declarative_base,
+            TransactionLogBase
+        ):
+            __tablename__ = 'transaction_log'
+            manager = self.manager
 
-class TransactionChangesBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
-    entity_name = sa.Column(sa.Unicode(255), primary_key=True)
+        self.manager.transaction_log_cls = TransactionLog
+
+        return TransactionLog
