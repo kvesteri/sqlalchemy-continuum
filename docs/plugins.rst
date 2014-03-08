@@ -1,24 +1,10 @@
 Plugins
 =======
 
-Flask
------
 
-    SQLAlchemy-Continuum comes with built-in extension for Flask. This extensions saves current user id as well as user remote address in transaction log.
+.. automodule:: sqlalchemy_utils.plugins.flask
 
-
-::
-
-    from sqlalchemy_continuum.plugins import FlaskPlugin
-    from sqlalchemy_continuum import make_versioned
-
-
-    make_versioned(plugins=[FlaskPlugin])
-
-
-PropertyModTracker
-------------------
-
+.. automodule:: sqlalchemy_utils.plugins.property_mod_tracker
 
 
 TransactionChanges

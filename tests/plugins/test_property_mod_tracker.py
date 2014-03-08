@@ -11,8 +11,7 @@ class TestPropertyModificationsTracking(TestCase):
         class User(self.Model):
             __tablename__ = 'text_item'
             __versioned__ = {
-                'base_classes': (self.Model, ),
-                'track_property_modifications': True
+                'base_classes': (self.Model, )
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
