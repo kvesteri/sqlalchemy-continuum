@@ -3,8 +3,8 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
-0.11.0 (2014-xx-xx)
-^^^^^^^^^^^^^^^^^^^
+1.0 (2014-xx-xx)
+^^^^^^^^^^^^^^^^
 
 - Added new plugin architecture
 - Added ActivityPlugin

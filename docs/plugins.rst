@@ -37,7 +37,7 @@ You can easily 'tag' transactions with certain key value pairs by giving these k
         .filter(
             db.and_(
                 TransactionLog.meta.key == 'some_key',
-                TransactionLog'some value'
+                TransactionLog.meta.value == 'some value'
             )
         )
     )
