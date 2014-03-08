@@ -1,3 +1,17 @@
+"""
+FlaskPlugin offers way of integrating Flask framework with
+S QLAlchemy-Continuum. Flask-Plugin adds two columns for Transaction model,
+namely `user_id` and `remote_addr`.
+
+These columns are automatically populated when transaction object is created.
+The `remote_addr` column is populated with the value of the remote address that
+made current request. The `user_id` column is populated with the id of the
+current_user object.
+
+::
+
+    make_versioned(plugins=[FlaskPlugin()])
+"""
 from __future__ import absolute_import
 
 from flask import request
