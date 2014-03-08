@@ -1,10 +1,7 @@
 from copy import copy
 from datetime import datetime
 import sqlalchemy as sa
-<<<<<<< HEAD
-=======
 from sqlalchemy_continuum import history_class
->>>>>>> features/activity-stream
 from tests import TestCase
 
 

@@ -8,10 +8,10 @@ Find all versions of model X where user updated the property A or property B.
 Find all versions of model X where user didn't update property A.
 
 PropertyModTrackerPlugin adds separate modified tracking column for each
-versioned column. So for example if you have a class Article with versioned
-columns `name` and `content`, this plugin would add two additional boolean
-columns `name_mod` and `content_mod`. When user commits transactions the
-plugin automatically updates these boolean columns.
+versioned column. So for example if you have versioned model called Article
+with columns `name` and `content`, this plugin would add two additional boolean
+columns `name_mod` and `content_mod` for the history model. When user commits
+transactions the plugin automatically updates these boolean columns.
 """
 
 from copy import copy
