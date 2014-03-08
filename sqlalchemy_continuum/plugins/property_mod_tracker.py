@@ -1,4 +1,6 @@
 """
+PropertyModTracker
+------------------
 The PropertyModTrackerPlugin offers a way of efficiently tracking individual
 property modifications. With PropertyModTrackerPlugin you can make efficient
 queries such as:

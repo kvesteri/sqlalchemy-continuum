@@ -1,3 +1,29 @@
+"""
+TransactionChanges
+------------------
+
+TransactionChanges provides way of keeping track efficiently which declarative
+models were changed in given transaction. This can be useful when transactions
+need to be queried afterwards for problems such as:
+
+1. Find all transactions which affected `User` model.
+
+2. Find all transactions which didn't affect models `Entity` and `Event`.
+
+The plugin works in two ways. On class instrumentation phase this plugin
+creates a special transaction model called `TransactionChanges`. This model is
+associated with table called `transaction_changes`, which has only only two
+fields: transaction_id and entity_name. If for example transaction consisted
+of saving 5 new User entities and 1 Article entity, two new rows would be
+inserted into transaction_changes table.
+
+================    =================
+transaction_id          entity_name
+----------------    -----------------
+233678                  User
+233678                  Article
+================    =================
+"""
 import six
 import sqlalchemy as sa
 

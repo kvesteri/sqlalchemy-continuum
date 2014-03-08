@@ -2,25 +2,11 @@ Plugins
 =======
 
 
-.. automodule:: sqlalchemy_utils.plugins.flask
+.. automodule:: sqlalchemy_continuum.plugins.flask
 
-.. automodule:: sqlalchemy_utils.plugins.property_mod_tracker
+.. automodule:: sqlalchemy_continuum.plugins.property_mod_tracker
 
-
-TransactionChanges
-------------------
-
-In order to be able to to fetch efficiently entities that changed in given transaction SQLAlchemy-Continuum keeps track of changed entities in transaction_changes table.
-
-This table has only two fields: transaction_id and entity_name. If for example transaction consisted of saving 5 new User entities and 1 Article entity, two new rows would be inserted into transaction_changes table.
-
-================    =================
-transaction_id          entity_name
-----------------    -----------------
-233678                  User
-233678                  Article
-================    =================
-
+.. automodule:: sqlalchemy_continuum.plugins.transaction_changes
 
 
 TransactionMeta
@@ -51,7 +37,9 @@ You can easily 'tag' transactions with certain key value pairs by giving these k
         .filter(
             db.and_(
                 TransactionLog.meta.key == 'some_key',
-                TransactionLog'some value')
+                TransactionLog'some value'
+            )
+        )
     )
 
 
