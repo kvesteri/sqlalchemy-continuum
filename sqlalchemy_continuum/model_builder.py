@@ -70,7 +70,7 @@ class ModelBuilder(object):
 
         transaction_column = getattr(
             self.history_class,
-            self.option('transaction_column_name')
+            option(self.model, 'transaction_column_name')
         )
 
         if not hasattr(self.history_class, 'transaction'):
