@@ -1,3 +1,19 @@
+"""
+The PropertyModTrackerPlugin offers a way of efficiently tracking individual
+property modifications. With PropertyModTrackerPlugin you can make efficient
+queries such as:
+
+Find all versions of model X where user updated the property A or property B.
+
+Find all versions of model X where user didn't update property A.
+
+PropertyModTrackerPlugin adds separate modified tracking column for each
+versioned column. So for example if you have a class Article with versioned
+columns `name` and `content`, this plugin would add two additional boolean
+columns `name_mod` and `content_mod`. When user commits transactions the
+plugin automatically updates these boolean columns.
+"""
+
 from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import has_changes
