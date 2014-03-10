@@ -1,15 +1,10 @@
 from contextlib import contextmanager
 from inflection import underscore, pluralize
-from copy import copy
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import (
-    declarative_base, is_auto_assigned_date_column
-)
+from sqlalchemy_utils.functions import is_auto_assigned_date_column
 from sqlalchemy_utils.types import TSVectorType
+from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
-from .model_builder import ModelBuilder
-from .table_builder import TableBuilder
-from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogFactory
 from .unit_of_work import UnitOfWork
 from .plugins import PluginCollection
@@ -25,9 +20,16 @@ class VersioningManager(object):
         self,
         unit_of_work_cls=UnitOfWork,
         options={},
-        plugins=None
+        plugins=None,
+        builder=None
     ):
         self.uow = unit_of_work_cls(self)
+        if builder is None:
+            self.builder = Builder()
+        else:
+            self.builder = builder
+        self.builder.manager = self
+
         self.reset()
         self.options = {
             'versioning': True,
@@ -117,90 +119,6 @@ class VersioningManager(object):
         """
         return TransactionLogFactory(self)()
 
-    def build_tables(self):
-        """
-        Build tables for history models based on classes that were collected
-        during class instrumentation process.
-        """
-        for cls in self.pending_classes:
-            if not self.option(cls, 'versioning'):
-                continue
-
-            inherited_table = None
-            for class_ in self.tables:
-                if (issubclass(cls, class_) and
-                        cls.__table__ == class_.__table__):
-                    inherited_table = self.tables[class_]
-                    break
-
-            builder = TableBuilder(
-                self,
-                cls.__table__,
-                model=cls
-            )
-            if inherited_table is not None:
-                self.tables[class_] = builder(inherited_table)
-            else:
-                table = builder()
-                self.tables[cls] = table
-
-    def closest_matching_table(self, model):
-        """
-        Returns the closest matching table from the generated tables dictionary
-        for given model. First tries to fetch an exact match for given model.
-        If no table was found then tries to match given model as a subclass.
-
-        :param model: SQLAlchemy declarative model class.
-        """
-        if model in self.tables:
-            return self.tables[model]
-        for cls in self.tables:
-            if issubclass(model, cls):
-                return self.tables[cls]
-
-    def build_models(self):
-        """
-        Build declarative history models based on classes that were collected
-        during class instrumentation process.
-        """
-        if self.pending_classes:
-            cls = self.pending_classes[0]
-            self.declarative_base = declarative_base(cls)
-            self.create_transaction_log()
-            self.plugins.after_build_tx_class(self)
-
-            for cls in self.pending_classes:
-                if not self.option(cls, 'versioning'):
-                    continue
-
-                table = self.closest_matching_table(cls)
-                if table is not None:
-                    builder = ModelBuilder(self, cls)
-                    history_cls = builder(
-                        table,
-                        self.transaction_log_cls
-                    )
-
-                    self.plugins.after_history_class_built(cls, history_cls)
-
-        self.plugins.after_build_models(self)
-
-    def build_relationships(self, history_classes):
-        """
-        Builds relationships for all history classes.
-
-        :param history_classes: list of generated history classes
-        """
-        for cls in history_classes:
-            if not self.option(cls, 'versioning'):
-                continue
-
-            for prop in sa.inspect(cls).iterate_properties:
-                if prop.key == 'versions':
-                    continue
-                builder = RelationshipBuilder(self, cls, prop)
-                builder()
-
     def is_excluded_column(self, model, column):
         """
         Returns whether or not given column of given model is excluded from
@@ -236,22 +154,6 @@ class VersioningManager(object):
         except KeyError:
             return self.options[name]
 
-    def instrument_versioned_classes(self, mapper, cls):
-        """
-        Collect versioned class and add it to pending_classes list.
-
-        :mapper mapper: SQLAlchemy mapper object
-        :cls cls: SQLAlchemy declarative class
-        """
-        if not self.options['versioning']:
-            return
-
-        if hasattr(cls, '__versioned__'):
-            if (not cls.__versioned__.get('class')
-                    and cls not in self.pending_classes):
-                self.pending_classes.append(cls)
-                self.metadata = cls.metadata
-
     def apply_class_configuration_listeners(self, mapper):
         """
         Applies class configuration listeners for given mapper.
@@ -271,37 +173,12 @@ class VersioningManager(object):
             SQLAlchemy mapper to apply the class configuration listeners to
         """
         sa.event.listen(
-            mapper, 'instrument_class', self.instrument_versioned_classes
+            mapper,
+            'instrument_class',
+            self.builder.instrument_versioned_classes
         )
         sa.event.listen(
-            mapper, 'after_configured', self.configure_versioned_classes
+            mapper,
+            'after_configured',
+            self.builder.configure_versioned_classes
         )
-
-    def configure_versioned_classes(self):
-        """
-        Configures all versioned classes that were collected during
-        instrumentation process. The configuration has 4 steps:
-
-        1. Build tables for history models.
-        2. Build the actual history model declarative classes.
-        3. Build relationships between these models.
-        4. Empty pending_classes list so that consecutive mapper configuration
-           does not create multiple history classes
-        5. Assign all versioned attributes to use active history.
-        """
-        if not self.options['versioning']:
-            return
-
-        self.build_tables()
-        self.build_models()
-
-        # Create copy of all pending versioned classes so that we can inspect
-        # them later when creating relationships.
-        pending_copy = copy(self.pending_classes)
-        self.pending_classes = []
-        self.build_relationships(pending_copy)
-
-        for cls in pending_copy:
-            # set the "active_history" flag
-            for prop in sa.inspect(cls).iterate_properties:
-                getattr(cls, prop.key).impl.active_history = True
