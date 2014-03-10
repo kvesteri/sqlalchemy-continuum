@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from . import TestCase, create_test_cases
+from tests import TestCase, create_test_cases
 
 
 class ManyToManyRelationshipsTestCase(TestCase):
