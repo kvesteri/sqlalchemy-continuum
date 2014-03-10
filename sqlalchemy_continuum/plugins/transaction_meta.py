@@ -82,7 +82,7 @@ class TransactionMetaPlugin(Plugin):
         if self.objects is None:
             self.objects = IdentitySet()
         if uow.tx_meta and uow.has_changes:
-            for key, value in uow.tx_meta.items():
+            for key, value in uow.tx_meta_dict.items():
                 if callable(value):
                     value = six.text_type(value())
                 meta = self.model_class(

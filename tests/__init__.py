@@ -99,7 +99,6 @@ class TestCase(object):
     def teardown_method(self, method):
         QueryPool.queries = []
         versioning_manager.reset()
-        versioning_manager.uow.reset()
 
         self.session.close_all()
         self.session.expunge_all()

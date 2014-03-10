@@ -1,27 +1,16 @@
+from contextlib import contextmanager
 from copy import copy
-import re
-from functools import wraps
+
 import sqlalchemy as sa
 from sqlalchemy_utils import identity
-from .operation import Operation, Operations
+from .operation import Operations
 from .utils import (
     end_tx_column_name,
     history_class,
-    is_modified,
     is_session_modified,
-    is_versioned,
     tx_column_name,
     versioned_column_properties
 )
-
-
-def tracked_operation(func):
-    @wraps(func)
-    def wrapper(self, mapper, connection, target):
-        if not is_versioned(target):
-            return
-        return func(self, target)
-    return wrapper
 
 
 class UnitOfWork(object):
@@ -37,98 +26,51 @@ class UnitOfWork(object):
         self.history_session = None
         self.current_transaction = None
         self.operations = Operations()
-        self.tx_context = {}
-        self.tx_meta = {}
+        self.tx_context_dict = {}
+        self.tx_meta_dict = {}
         self.pending_statements = []
         self.version_objs = {}
 
-    def track_operations(self, mapper):
+    @contextmanager
+    def tx_context(self, **tx_context):
         """
-        Attach listeners for specified mapper that track SQL inserts, updates
-        and deletes.
+        Assigns values for current transaction context. When committing
+        transaction these values are assigned to transaction object attributes.
 
-        :param mapper: mapper to track the SQL operations from
+        :param tx_context: dictionary containing TransactionLog object
+                           attribute names and values
         """
-        sa.event.listen(
-            mapper, 'after_delete', self.track_deletes
-        )
-        sa.event.listen(
-            mapper, 'after_update', self.track_updates
-        )
-        sa.event.listen(
-            mapper, 'after_insert', self.track_inserts
-        )
+        old_tx_context = self.tx_context_dict
+        self.tx_context_dict = tx_context
+        yield
+        self.tx_context_dict = old_tx_context
 
-    def track_session(self, session):
+    @contextmanager
+    def tx_meta(self, **tx_meta):
         """
-        Attach listeners that track the operations (flushing, committing and
-        rolling back) of given session. This method should be used in
-        conjuction with `track_operations`.
+        Assigns values for current transaction meta. When committing
+        transaction new TransactionMeta records are created for each key-value
+        pair.
 
-        :param session: SQLAlchemy session to track the operations from
+        :param tx_context:
+            dictionary containing key-value meta attribute pairs.
         """
-        sa.event.listen(
-            session, 'before_flush', self.before_flush
-        )
-        sa.event.listen(
-            session, 'after_flush', self.after_flush
-        )
-        sa.event.listen(
-            session, 'after_commit', self.clear
-        )
-        sa.event.listen(
-            session, 'after_rollback', self.clear
+        old_tx_meta = self.tx_meta_dict
+        self.tx_meta_dict = tx_meta
+        yield
+        self.tx_meta_dict = old_tx_meta
+
+    def is_modified(self, session):
+        return (
+            is_session_modified(session) or
+            any(self.manager.plugins.is_session_modified(session))
         )
 
-    @tracked_operation
-    def track_inserts(self, target):
-        """
-        Track object insert operations. Whenever object is inserted it is
-        added to this UnitOfWork's internal operations dictionary.
-        """
-        if not is_modified(target):
-            return
-        self.operations.add_insert(target)
-
-    @tracked_operation
-    def track_updates(self, target):
-        """
-        Track object update operations. Whenever object is updated it is
-        added to this UnitOfWork's internal operations dictionary.
-        """
-        if not is_modified(target):
-            return
-        self.operations.add_update(target)
-
-    @tracked_operation
-    def track_deletes(self, target):
-        """
-        Track object deletion operations. Whenever object is deleted it is
-        added to this UnitOfWork's internal operations dictionary.
-        """
-        self.operations.add_delete(target)
-
-    def create_transaction(self, session):
-        self.current_transaction = self.manager.transaction_log_cls(
-            **self.tx_context
-        )
-        self.manager.plugins.before_create_tx_object(self, session)
-
-        session.add(self.current_transaction)
-
-        self.manager.plugins.after_create_tx_object(self, session)
-
-    def before_flush(self, session, flush_context, instances):
-        if not self.manager.options['versioning']:
-            return
-
+    def process_before_flush(self, session):
         if session == self.history_session:
             return
 
-        if (
-            not is_session_modified(session) and
-            not any(self.manager.plugins.is_session_modified(session))
-        ):
+        if not self.is_modified(session):
             return
 
         if not self.current_transaction:
@@ -139,10 +81,7 @@ class UnitOfWork(object):
 
         self.manager.plugins.before_flush(self, session)
 
-    def after_flush(self, session, flush_context):
-        if not self.manager.options['versioning']:
-            return
-
+    def process_after_flush(self, session):
         if session == self.history_session:
             return
 
@@ -151,16 +90,15 @@ class UnitOfWork(object):
 
         self.make_history(session)
 
-    def clear(self, session):
-        """
-        Simple SQLAlchemy listener that is being invoked after succesful
-        transaction commit or when transaction rollback occurs. The purpose of
-        this listener is to reset this UnitOfWork back to its initialization
-        state.
+    def create_transaction(self, session):
+        self.current_transaction = self.manager.transaction_log_cls(
+            **self.tx_context_dict
+        )
+        self.manager.plugins.before_create_tx_object(self, session)
 
-        :param session: SQLAlchemy session object
-        """
-        self.reset()
+        session.add(self.current_transaction)
+
+        self.manager.plugins.after_create_tx_object(self, session)
 
     def get_or_create_history_object(self, target):
         version_cls = history_class(target.__class__)
@@ -319,95 +257,6 @@ class UnitOfWork(object):
         Return whether or not this unit of work has changes.
         """
         return self.operations or self.pending_statements
-
-    def append_association_operation(self, conn, table_name, params, op):
-        """
-        Append history association operation to pending_statements list.
-        """
-        params['operation_type'] = op
-        stmt = (
-            self.manager.metadata.tables[table_name + '_history']
-            .insert()
-            .values(params)
-        )
-        self.pending_statements.append(stmt)
-
-    def track_association_operations(
-        self, conn, cursor, statement, parameters, context, executemany
-    ):
-        """
-        Track association operations and adds the generated history
-        association operations to pending_statements list.
-        """
-        if not self.manager.options['versioning']:
-            return
-
-        op = None
-
-        if context.isinsert:
-            op = Operation.INSERT
-        elif context.isdelete:
-            op = Operation.DELETE
-
-        if op is not None:
-            table_name = statement.split(' ')[2]
-            table_names = [
-                table.name for table in self.manager.association_tables
-            ]
-            if table_name in table_names:
-                if executemany:
-                    # SQLAlchemy does not support function based values for
-                    # multi-inserts, hence we need to convert the orignal
-                    # multi-insert into batch of normal inserts
-                    for params in parameters:
-                        self.append_association_operation(
-                            conn,
-                            table_name,
-                            self.positional_args_to_dict(
-                                op, statement, params
-                            ),
-                            op
-                        )
-                else:
-                    self.append_association_operation(
-                        conn,
-                        table_name,
-                        self.positional_args_to_dict(
-                            op,
-                            statement,
-                            parameters
-                        ),
-                        op
-                    )
-
-    def positional_args_to_dict(self, op, statement, params):
-        """
-        On some drivers (eg sqlite) generated INSERT statements use positional
-        args instead of key value dictionary. This method converts positional
-        args to key value dict.
-
-        :param statement: SQL statement string
-        :param params: tuple or dict of statement parameters
-        """
-        if isinstance(params, tuple):
-            parameters = {}
-            if op == Operation.DELETE:
-                regexp = '^DELETE FROM (.+?) WHERE'
-                match = re.match(regexp, statement)
-                tablename = match.groups()[0].strip('"').strip("'").strip('`')
-                table = self.manager.metadata.tables[tablename]
-                columns = table.primary_key.columns.values()
-                for index, column in enumerate(columns):
-                    parameters[column.name] = params[index]
-            else:
-                columns = [
-                    column.strip() for column in
-                    statement.split('(')[1].split(')')[0].split(',')
-                ]
-                for index, column in enumerate(columns):
-                    parameters[column] = params[index]
-            return parameters
-        return params
 
     def assign_attributes(self, parent_obj, version_obj):
         """

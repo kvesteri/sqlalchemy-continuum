@@ -48,13 +48,12 @@ def make_versioned(
         SQLAlchemy-Continuum's extensions (eg. Flask extension)
     """
     manager.apply_class_configuration_listeners(mapper)
-    uow = manager.uow
-    uow.track_operations(mapper)
-    uow.track_session(session)
+    manager.track_operations(mapper)
+    manager.track_session(session)
     manager.options.update(options)
 
     sa.event.listen(
         sa.engine.Engine,
         'before_cursor_execute',
-        uow.track_association_operations
+        manager.track_association_operations
     )
