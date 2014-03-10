@@ -1,6 +1,25 @@
 Plugins
 =======
 
+Using plugins
+-------------
+
+
+::
+
+    from sqlalchemy.continuum.plugins import PropertyModTrackerPlugin
+
+
+    versioning_manager.plugins.append(PropertyModTrackerPlugin())
+
+
+    versioning_manager.plugins  # <PluginCollection [...]>
+
+    # You can also remove plugin
+
+    del versioning_manager.plugins[0]
+
+
 
 .. automodule:: sqlalchemy_continuum.plugins.flask
 

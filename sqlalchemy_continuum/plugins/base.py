@@ -53,8 +53,14 @@ class PluginCollection(object):
             ', '.join(map(repr, self.plugins))
         )
 
-    def __getitem__(self, el):
-        return self.plugins[el]
+    def __getitem__(self, index):
+        return self.plugins[index]
+
+    def __setitem__(self, index, element):
+        self.plugins[index] = element
+
+    def __delitem__(self, index):
+        del self.plugins[index]
 
     def __getattr__(self, attr):
         def wrapper(*args, **kwargs):
@@ -63,3 +69,6 @@ class PluginCollection(object):
                 for plugin in self.plugins
             ]
         return wrapper
+
+    def append(self, el):
+        self.plugins.append(el)
