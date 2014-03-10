@@ -6,7 +6,7 @@ from tests import TestCase
 
 
 class TestFlaskVersioningManager(TestCase):
-    plugins = [FlaskPlugin]
+    plugins = [FlaskPlugin()]
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
@@ -80,7 +80,7 @@ class TestFlaskVersioningManager(TestCase):
 
 
 class TestFlaskVersioningManagerWithoutRequestContext(TestCase):
-    plugins = [FlaskPlugin]
+    plugins = [FlaskPlugin()]
 
     def create_models(self):
         TestCase.create_models(self)

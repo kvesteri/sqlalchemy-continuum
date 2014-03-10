@@ -29,6 +29,7 @@ import sqlalchemy as sa
 
 from .base import Plugin
 from ..factory import ModelFactory
+from ..utils import option
 
 
 class TransactionChangesBase(object):
@@ -69,11 +70,11 @@ class TransactionChangesFactory(ModelFactory):
 class TransactionChangesPlugin(Plugin):
     objects = None
 
-    def after_build_tx_class(self):
-        self.model_class = TransactionChangesFactory(self.manager)()
+    def after_build_tx_class(self, manager):
+        self.model_class = TransactionChangesFactory(manager)()
 
-    def after_build_models(self):
-        self.model_class = TransactionChangesFactory(self.manager)()
+    def after_build_models(self, manager):
+        self.model_class = TransactionChangesFactory(manager)()
 
     def before_create_history_objects(self, uow, session):
         for entity in uow.operations.entities:
@@ -98,7 +99,7 @@ class TransactionChangesPlugin(Plugin):
     def after_history_class_built(self, parent_cls, history_cls):
         transaction_column = getattr(
             history_cls,
-            self.manager.option(parent_cls, 'transaction_column_name')
+            option(parent_cls, 'transaction_column_name')
         )
 
         # Only define changes relation if it doesn't already exist in
@@ -110,7 +111,7 @@ class TransactionChangesPlugin(Plugin):
                     self.model_class.transaction_id == transaction_column
                 ),
                 foreign_keys=[self.model_class.transaction_id],
-                backref=self.manager.options['relation_naming_function'](
+                backref=option(parent_cls, 'relation_naming_function')(
                     parent_cls.__name__
                 )
             )

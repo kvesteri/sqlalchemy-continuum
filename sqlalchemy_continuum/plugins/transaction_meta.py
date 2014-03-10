@@ -55,13 +55,13 @@ class TransactionMetaFactory(ModelFactory):
 class TransactionMetaPlugin(Plugin):
     objects = None
 
-    def after_build_tx_class(self):
-        self.model_class = TransactionMetaFactory(self.manager)()
-        self.manager.transaction_meta_cls = self.model_class
+    def after_build_tx_class(self, manager):
+        self.model_class = TransactionMetaFactory(manager)()
+        manager.transaction_meta_cls = self.model_class
 
-    def after_build_models(self):
-        self.model_class = TransactionMetaFactory(self.manager)()
-        self.manager.transaction_meta_cls = self.model_class
+    def after_build_models(self, manager):
+        self.model_class = TransactionMetaFactory(manager)()
+        manager.transaction_meta_cls = self.model_class
 
     def clear(self):
         self.objects = None

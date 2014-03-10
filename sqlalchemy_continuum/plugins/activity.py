@@ -93,9 +93,9 @@ class ActivityFactory(ModelFactory):
 
 
 class ActivityPlugin(Plugin):
-    def after_build_models(self):
-        self.model_class = ActivityFactory(self.manager)()
-        self.manager.activity_cls = self.model_class
+    def after_build_models(self, manager):
+        self.model_class = ActivityFactory(manager)()
+        manager.activity_cls = self.model_class
 
     def is_session_modified(self, session):
         for obj in session:

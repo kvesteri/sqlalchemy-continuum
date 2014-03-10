@@ -1,8 +1,11 @@
 from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum.plugins import TransactionChangesPlugin
 from tests import TestCase
 
 
 class TestTransactionChagnes(TestCase):
+    plugins = [TransactionChangesPlugin()]
+
     def test_has_relation_to_changes(self):
         self.article = self.Article()
         self.article.name = u'Some article'
@@ -15,6 +18,8 @@ class TestTransactionChagnes(TestCase):
 
 
 class TestTransactionLogChangedEntities(TestCase):
+    plugins = [TransactionChangesPlugin()]
+
     def test_change_single_entity(self):
         self.article = self.Article()
         self.article.name = u'Some article'

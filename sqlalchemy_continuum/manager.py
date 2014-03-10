@@ -12,11 +12,7 @@ from .table_builder import TableBuilder
 from .relationship_builder import RelationshipBuilder
 from .transaction_log import TransactionLogFactory
 from .unit_of_work import UnitOfWork
-from .plugins import (
-    PluginCollection,
-    TransactionChangesPlugin,
-    TransactionMetaPlugin
-)
+from .plugins import PluginCollection
 
 
 class VersioningManager(object):
@@ -28,7 +24,8 @@ class VersioningManager(object):
     def __init__(
         self,
         unit_of_work_cls=UnitOfWork,
-        options={}
+        options={},
+        plugins=None
     ):
         self.uow = unit_of_work_cls(self)
         self.reset()
@@ -38,26 +35,25 @@ class VersioningManager(object):
             'table_name': '%s_history',
             'exclude': [],
             'include': [],
-            'plugins': [
-                TransactionChangesPlugin,
-                TransactionMetaPlugin
-            ],
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'relation_naming_function': lambda a: pluralize(underscore(a)),
             'strategy': 'validity'
         }
-        self._plugins = []
+        if plugins is None:
+            self.plugins = []
+        else:
+            self.plugins = plugins
         self.options.update(options)
 
     @property
     def plugins(self):
-        if not self._plugins:
-            self._plugins = PluginCollection([
-                plugin_class(self) for plugin_class in self.options['plugins']
-            ])
         return self._plugins
+
+    @plugins.setter
+    def plugins(self, plugin_collection):
+        self._plugins = PluginCollection(plugin_collection)
 
     def fetcher(self, obj):
         if self.option(obj, 'strategy') == 'subquery':
@@ -171,7 +167,7 @@ class VersioningManager(object):
             cls = self.pending_classes[0]
             self.declarative_base = declarative_base(cls)
             self.create_transaction_log()
-            self.plugins.after_build_tx_class()
+            self.plugins.after_build_tx_class(self)
 
             for cls in self.pending_classes:
                 if not self.option(cls, 'versioning'):
@@ -184,9 +180,10 @@ class VersioningManager(object):
                         table,
                         self.transaction_log_cls
                     )
+
                     self.plugins.after_history_class_built(cls, history_cls)
 
-        self.plugins.after_build_models()
+        self.plugins.after_build_models(self)
 
     def build_relationships(self, history_classes):
         """
@@ -294,8 +291,6 @@ class VersioningManager(object):
         """
         if not self.options['versioning']:
             return
-
-        self._plugins = []
 
         self.build_tables()
         self.build_models()

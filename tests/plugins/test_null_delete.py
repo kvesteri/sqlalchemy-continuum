@@ -20,7 +20,7 @@ class DeleteTestCase(TestCase):
 
 
 class TestDeleteWithoutStoreDataAtDelete(DeleteTestCase):
-    plugins = [NullDeletePlugin]
+    plugins = [NullDeletePlugin()]
 
     def test_creates_versions_on_delete(self):
         self._delete()

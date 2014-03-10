@@ -5,7 +5,7 @@ from tests import TestCase
 
 
 class TestPropertyModificationsTracking(TestCase):
-    plugins = [PropertyModTrackerPlugin]
+    plugins = [PropertyModTrackerPlugin()]
 
     def create_models(self):
         class User(self.Model):
@@ -41,7 +41,7 @@ class TestPropertyModificationsTracking(TestCase):
 
 
 class TestChangeSetWithPropertyModPlugin(TestCase):
-    plugins = [PropertyModTrackerPlugin]
+    plugins = [PropertyModTrackerPlugin()]
 
     def test_changeset_for_insert(self):
         article = self.Article()

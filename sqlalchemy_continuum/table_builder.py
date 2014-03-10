@@ -130,17 +130,20 @@ class TableBuilder(object):
             sa.BigInteger
         )
 
+    @property
+    def columns(self):
+        data = self.reflected_columns
+        data.append(self.transaction_column)
+        if self.option('strategy') == 'validity':
+            data.append(self.end_transaction_column)
+        data.append(self.operation_type_column)
+        return data
+
     def __call__(self, extends=None):
         """
         Builds history table.
         """
-        columns = []
-        if extends is None:
-            columns.extend(self.reflected_columns)
-            columns.append(self.transaction_column)
-            if self.option('strategy') == 'validity':
-                columns.append(self.end_transaction_column)
-            columns.append(self.operation_type_column)
+        columns = self.columns if extends is None else []
 
         self.manager.plugins.after_build_history_table_columns(self, columns)
         return sa.schema.Table(

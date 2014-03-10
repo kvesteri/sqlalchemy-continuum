@@ -44,7 +44,7 @@ class TestCase(object):
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
     composite_pk = False
-    plugins = [TransactionChangesPlugin, TransactionMetaPlugin]
+    plugins = [TransactionChangesPlugin(), TransactionMetaPlugin()]
 
     @property
     def options(self):
@@ -67,7 +67,7 @@ class TestCase(object):
 
     def setup_method(self, method):
         driver = os.environ.get('DB', 'sqlite')
-        versioning_manager.options['plugins'] = self.plugins
+        versioning_manager.plugins = self.plugins
 
         self.engine = create_engine(self.get_dns_from_driver(driver))
         # self.engine.echo = True

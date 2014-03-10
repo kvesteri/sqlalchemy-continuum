@@ -1,14 +1,11 @@
 class Plugin(object):
-    def __init__(self, manager):
-        self.manager = manager
-
     def is_session_modified(self, session):
         return False
 
-    def after_build_tx_class(self):
+    def after_build_tx_class(self, manager):
         pass
 
-    def after_build_models(self):
+    def after_build_models(self, manager):
         pass
 
     def after_build_history_table_columns(self, table_builder, columns):
@@ -51,7 +48,7 @@ class PluginCollection(object):
         return len(self.plugins)
 
     def __repr__(self):
-        return '<%s [%r]>' % (
+        return '<%s [%s]>' % (
             self.__class__.__name__,
             ', '.join(map(repr, self.plugins))
         )

@@ -1,9 +1,11 @@
-from six import PY3
 from sqlalchemy_continuum import versioning_manager
+from sqlalchemy_continuum.plugins import TransactionMetaPlugin
 from tests import TestCase
 
 
 class TestTransactionLog(TestCase):
+    plugins = [TransactionMetaPlugin()]
+
     def setup_method(self, method):
         TestCase.setup_method(self, method)
         self.article = self.Article()

@@ -46,8 +46,8 @@ def fetch_remote_addr():
 
 
 class FlaskPlugin(Plugin):
-    def after_build_tx_class(self):
-        Transaction = self.manager.transaction_log_cls
+    def after_build_tx_class(self, manager):
+        Transaction = manager.transaction_log_cls
         Transaction.remote_addr = sa.Column(sa.String(50))
 
         Transaction.user_id = sa.Column(

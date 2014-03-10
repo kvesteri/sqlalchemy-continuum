@@ -18,8 +18,6 @@ from .utils import (
 def tracked_operation(func):
     @wraps(func)
     def wrapper(self, mapper, connection, target):
-        if not self.manager.options['versioning']:
-            return
         if not is_versioned(target):
             return
         return func(self, target)

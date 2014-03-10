@@ -5,7 +5,7 @@ from tests import TestCase
 
 
 class TestActivity(TestCase):
-    plugins = [ActivityPlugin]
+    plugins = [ActivityPlugin()]
 
     def create_models(self):
         TestCase.create_models(self)
