@@ -5,16 +5,16 @@ Utilities
 .. module:: sqlalchemy_continuum.utils
 
 
-history_class
+version_class
 -------------
 
-.. autofunction:: history_class
+.. autofunction:: version_class
 
 
-history_table
+version_table
 -------------
 
-.. autofunction:: history_table
+.. autofunction:: version_table
 
 
 is_modified
