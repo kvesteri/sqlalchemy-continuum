@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum import version_class
 from tests import TestCase
 
 
@@ -23,7 +23,7 @@ class TestCommonBaseClass(TestCase):
         self.Article = Article
 
     def test_each_class_has_distinct_translation_class(self):
-        class_ = history_class(self.TextItem)
+        class_ = version_class(self.TextItem)
         assert class_.__name__ == 'TextItemHistory'
-        class_ = history_class(self.Article)
+        class_ = version_class(self.Article)
         assert class_.__name__ == 'ArticleHistory'

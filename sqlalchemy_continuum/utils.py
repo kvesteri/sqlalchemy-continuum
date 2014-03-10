@@ -40,51 +40,51 @@ def end_tx_attr(obj):
     )
 
 
-def parent_class(history_cls):
+def parent_class(version_cls):
     """
-    Returns the parent class for given history model class.
+    Returns the parent class for given version model class.
 
     ::
 
-        parent_class(ArticleHistory)  # Article class
+        parent_class(ArticleVersion)  # Article class
 
 
-    :param model: SQLAlchemy declarative history model class
+    :param model: SQLAlchemy declarative version model class
 
-    .. seealso:: :func:`history_class`
+    .. seealso:: :func:`version_class`
     """
-    return get_versioning_manager(history_cls).parent_class_map[history_cls]
+    return get_versioning_manager(version_cls).parent_class_map[version_cls]
 
 
-def history_class(model):
+def version_class(model):
     """
-    Returns the history class for given SQLAlchemy declarative model class.
+    Returns the version class for given SQLAlchemy declarative model class.
 
     ::
 
-        history_class(Article)  # ArticleHistory class
+        version_class(Article)  # ArticleVersion class
 
 
     :param model: SQLAlchemy declarative model class
 
     .. seealso:: :func:`parent_class`
     """
-    return get_versioning_manager(model).history_class_map[model]
+    return get_versioning_manager(model).version_class_map[model]
 
 
-def history_table(table):
+def version_table(table):
     """
-    Return associated history table for given SQLAlchemy Table object.
+    Return associated version table for given SQLAlchemy Table object.
 
     :param table: SQLAlchemy Table object
     """
     if table.metadata.schema:
         return table.metadata.tables[
-            table.metadata.schema + '.' + table.name + '_history'
+            table.metadata.schema + '.' + table.name + '_version'
         ]
     else:
         return table.metadata.tables[
-            table.name + '_history'
+            table.name + '_version'
         ]
 
 
@@ -163,11 +163,11 @@ def versioned_relationships(obj):
 
 def vacuum(session, model):
     """
-    When making structural changes to history tables (for example dropping
-    columns) there are sometimes situations where some old history records
+    When making structural changes to version tables (for example dropping
+    columns) there are sometimes situations where some old version records
     become futile.
 
-    Vacuum deletes all futile history rows which had no changes compared to
+    Vacuum deletes all futile version rows which had no changes compared to
     previous version.
 
 
@@ -177,18 +177,18 @@ def vacuum(session, model):
         from sqlalchemy_continuum import vacuum
 
 
-        vacuum(session, User)  # vacuums user history
+        vacuum(session, User)  # vacuums user version
 
 
     :param session: SQLAlchemy session object
     :param model: SQLAlchemy declarative model class
     """
-    history_cls = history_class(model)
+    version_cls = version_class(model)
     versions = defaultdict(list)
 
     query = (
-        session.query(history_cls)
-        .order_by(option(history_cls, 'transaction_column_name'))
+        session.query(version_cls)
+        .order_by(option(version_cls, 'transaction_column_name'))
     )
 
     for version in query:
@@ -206,7 +206,7 @@ def is_internal_column(model, column_name):
     is considered an internal column (a column whose purpose is mainly
     for SA-Continuum's internal use).
 
-    :param history_obj: SQLAlchemy declarative class
+    :param version_obj: SQLAlchemy declarative class
     :param column_name: Name of the column
     """
     return column_name in (

@@ -1,6 +1,6 @@
 from pytest import mark
 import sqlalchemy as sa
-from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum import version_class
 from tests import TestCase
 
 
@@ -45,19 +45,19 @@ class TestJoinTableInheritance(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = history_class(self.TextItem)
-        self.ArticleHistory = history_class(self.Article)
-        self.BlogPostHistory = history_class(self.BlogPost)
+        self.TextItemHistory = version_class(self.TextItem)
+        self.ArticleHistory = version_class(self.Article)
+        self.BlogPostHistory = version_class(self.BlogPost)
 
-    def test_each_class_has_distinct_history_class(self):
-        assert self.TextItemHistory.__table__.name == 'text_item_history'
-        assert self.ArticleHistory.__table__.name == 'article_history'
-        assert self.BlogPostHistory.__table__.name == 'blog_post_history'
+    def test_each_class_has_distinct_version_class(self):
+        assert self.TextItemHistory.__table__.name == 'text_item_version'
+        assert self.ArticleHistory.__table__.name == 'article_version'
+        assert self.BlogPostHistory.__table__.name == 'blog_post_version'
         assert issubclass(self.ArticleHistory, self.TextItemHistory)
         assert issubclass(self.BlogPostHistory, self.TextItemHistory)
 
     @mark.skipif('True')
-    def test_each_object_has_distinct_history_class(self):
+    def test_each_object_has_distinct_version_class(self):
         article = self.Article()
         blogpost = self.BlogPost()
         textitem = self.TextItem()
@@ -88,10 +88,10 @@ class TestJoinTableInheritance(TestCase):
         self.session.add(article)
         self.session.commit()
         assert self.session.execute(
-            'SELECT transaction_id FROM article_history'
+            'SELECT transaction_id FROM article_version'
         ).fetchone()[0] == 1
         assert self.session.execute(
-            'SELECT transaction_id FROM text_item_history'
+            'SELECT transaction_id FROM text_item_version'
         ).fetchone()[0] == 1
 
     def test_primary_keys(self):

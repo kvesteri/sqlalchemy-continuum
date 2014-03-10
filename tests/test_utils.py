@@ -4,7 +4,7 @@ from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
 from sqlalchemy_continuum.utils import (
-    history_class,
+    version_class,
     is_modified,
     parent_class,
     tx_column_name,
@@ -64,8 +64,8 @@ class TestIsModified(TestCase):
 
 
 class TestHistoryClass(TestCase):
-    def test_history_class_for_versioned_class(self):
-        ArticleHistory = history_class(self.Article)
+    def test_version_class_for_versioned_class(self):
+        ArticleHistory = version_class(self.Article)
         assert ArticleHistory.__name__ == 'ArticleHistory'
 
     def test_throws_error_for_non_versioned_class(self):
@@ -75,7 +75,7 @@ class TestHistoryClass(TestCase):
 
 class TestParentClass(TestCase):
     def test_parent_class_for_version_class(self):
-        ArticleHistory = history_class(self.Article)
+        ArticleHistory = version_class(self.Article)
         assert parent_class(ArticleHistory) == self.Article
 
     def test_throws_error_for_non_version_class(self):
@@ -90,12 +90,12 @@ setting_variants = {
 
 class TxColumnNameTestCase(TestCase):
     def test_with_version_class(self):
-        assert tx_column_name(history_class(self.Article)) == self.options[
+        assert tx_column_name(version_class(self.Article)) == self.options[
             'transaction_column_name'
         ]
 
     def test_with_version_obj(self):
-        history_obj = history_class(self.Article)()
+        history_obj = version_class(self.Article)()
         assert tx_column_name(history_obj) == self.options[
             'transaction_column_name'
         ]

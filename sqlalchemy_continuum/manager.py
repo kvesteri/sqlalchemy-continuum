@@ -51,7 +51,7 @@ class VersioningManager(object):
         self.options = {
             'versioning': True,
             'base_classes': None,
-            'table_name': '%s_history',
+            'table_name': '%s_version',
             'exclude': [],
             'include': [],
             'transaction_column_name': 'transaction_id',
@@ -95,10 +95,10 @@ class VersioningManager(object):
         self.tables = {}
         self.pending_classes = []
         self.association_tables = set([])
-        self.association_history_tables = set([])
+        self.association_version_tables = set([])
         self.declarative_base = None
         self.transaction_log_cls = None
-        self.history_class_map = {}
+        self.version_class_map = {}
         self.parent_class_map = {}
 
         self.metadata = None
@@ -257,6 +257,14 @@ class VersioningManager(object):
         uow.process_before_flush(session)
 
     def after_flush(self, session, flush_context):
+        """
+        After flush listener for SQLAlchemy sessions. If this manager has
+        versioning enabled this listener gets the UnitOfWork associated with
+        session's connections and invokes the process_after_flush method
+        of that object.
+
+        :param session: SQLAlchemy session
+        """
         if not self.options['versioning']:
             return
         conn = session.connection()
@@ -282,7 +290,7 @@ class VersioningManager(object):
         """
         params['operation_type'] = op
         stmt = (
-            self.metadata.tables[table_name + '_history']
+            self.metadata.tables[self.options['table_name'] % table_name]
             .insert()
             .values(params)
         )

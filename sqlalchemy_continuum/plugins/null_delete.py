@@ -20,7 +20,7 @@ class NullDeletePlugin(Plugin):
             not is_internal_column(version_obj, prop.key)
         )
 
-    def after_create_history_object(self, uow, parent_obj, version_obj):
+    def after_create_version_object(self, uow, parent_obj, version_obj):
         for prop in versioned_column_properties(parent_obj):
             if self.should_nullify_column(version_obj, prop):
 

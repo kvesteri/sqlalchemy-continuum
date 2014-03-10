@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum import version_class
 from tests import TestCase
 
 
@@ -38,12 +38,12 @@ class TestCompositePrimaryKey(TestCase):
         self.User = User
         self.TeamMember = TeamMember
 
-    def test_composite_primary_key_on_history_tables(self):
-        TeamMemberHistory = history_class(self.TeamMember)
+    def test_composite_primary_key_on_version_tables(self):
+        TeamMemberHistory = version_class(self.TeamMember)
         assert len(TeamMemberHistory.__table__.primary_key.columns) == 3
 
     def test_does_not_make_composite_primary_keys_not_nullable(self):
-        TeamMemberHistory = history_class(self.TeamMember)
+        TeamMemberHistory = version_class(self.TeamMember)
 
         assert not TeamMemberHistory.__table__.c.user_id.nullable
 
@@ -69,6 +69,6 @@ class TestCompositePrimaryKeyWithPkConstraint(TestCase):
         self.TeamMember = TeamMember
 
     def test_does_not_make_composite_primary_keys_not_nullable(self):
-        TeamMemberHistory = history_class(self.TeamMember)
+        TeamMemberHistory = version_class(self.TeamMember)
 
         assert not TeamMemberHistory.__table__.c.user_id.nullable

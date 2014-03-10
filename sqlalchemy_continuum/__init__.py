@@ -4,7 +4,7 @@ from .operation import Operation
 from .utils import (
     changeset,
     get_versioning_manager,
-    history_class,
+    version_class,
     parent_class,
     vacuum,
 )
@@ -16,7 +16,7 @@ __version__ = '1.0-dev'
 __all__ = (
     changeset,
     get_versioning_manager,
-    history_class,
+    version_class,
     parent_class,
     vacuum,
     Operation,

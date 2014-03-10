@@ -108,5 +108,5 @@ class ActivityPlugin(Plugin):
             if isinstance(obj, self.model_class):
                 obj.transaction = uow.current_transaction
 
-    def after_history_class_built(self, parent_cls, history_cls):
+    def after_version_class_built(self, parent_cls, version_cls):
         pass

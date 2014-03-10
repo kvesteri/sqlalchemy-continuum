@@ -6,7 +6,7 @@ from sqlalchemy_utils import identity
 from .operation import Operations
 from .utils import (
     end_tx_column_name,
-    history_class,
+    version_class,
     is_session_modified,
     tx_column_name,
     versioned_column_properties
@@ -23,7 +23,7 @@ class UnitOfWork(object):
         Reset the internal state of this UnitOfWork object. Normally this is
         called after transaction has been committed or rolled back.
         """
-        self.history_session = None
+        self.version_session = None
         self.current_transaction = None
         self.operations = Operations()
         self.tx_context_dict = {}
@@ -67,14 +67,14 @@ class UnitOfWork(object):
         )
 
     def process_before_flush(self, session):
-        if session == self.history_session:
+        if session == self.version_session:
             return
 
         if not self.is_modified(session):
             return
 
         if not self.current_transaction:
-            self.history_session = sa.orm.session.Session(
+            self.version_session = sa.orm.session.Session(
                 bind=session.connection()
             )
             self.create_transaction(session)
@@ -82,15 +82,23 @@ class UnitOfWork(object):
         self.manager.plugins.before_flush(self, session)
 
     def process_after_flush(self, session):
-        if session == self.history_session:
+        """
+        After flush processor for given session.
+        """
+        if session == self.version_session:
             return
 
         if not self.current_transaction:
             return
 
-        self.make_history(session)
+        self.make_versions(session)
 
     def create_transaction(self, session):
+        """
+        Create transaction object for given SQLAlchemy session.
+
+        :param session: SQLAlchemy session object
+        """
         self.current_transaction = self.manager.transaction_log_cls(
             **self.tx_context_dict
         )
@@ -100,15 +108,21 @@ class UnitOfWork(object):
 
         self.manager.plugins.after_create_tx_object(self, session)
 
-    def get_or_create_history_object(self, target):
-        version_cls = history_class(target.__class__)
+    def get_or_create_version_object(self, target):
+        """
+        Return version object for given parent object. If no version object
+        exists for given parent object, create one.
+
+        :param target: Parent object to create the version object for
+        """
+        version_cls = version_class(target.__class__)
         version_id = identity(target) + (self.current_transaction.id, )
         version_key = (version_cls, version_id)
 
         if version_key not in self.version_objs:
             version_obj = version_cls()
             self.version_objs[version_key] = version_obj
-            self.history_session.add(version_obj)
+            self.version_session.add(version_obj)
             tx_column = self.manager.option(
                 target,
                 'transaction_column_name'
@@ -123,12 +137,23 @@ class UnitOfWork(object):
             return self.version_objs[version_key]
 
     def process_operation(self, operation):
+        """
+        Process given operation object. The operation processing has x stages:
+
+        1. Get or create a version object for given parent object
+        2. Assign the operation type for this object
+        3. Invoke listeners
+        4. Update version validity in case validity strategy is used
+        5. Mark operation as processed
+
+        :param operation: Operation object
+        """
         target = operation.target
-        version_obj = self.get_or_create_history_object(target)
+        version_obj = self.get_or_create_version_object(target)
         version_obj.operation_type = operation.type
         self.assign_attributes(target, version_obj)
 
-        self.manager.plugins.after_create_history_object(
+        self.manager.plugins.after_create_version_object(
             self, target, version_obj
         )
         if self.manager.option(target, 'strategy') == 'validity':
@@ -138,9 +163,9 @@ class UnitOfWork(object):
             )
         operation.processed = True
 
-    def create_history_objects(self, session):
+    def create_version_objects(self, session):
         """
-        Create history objects for given session based on operations collected
+        Create version objects for given session based on operations collected
         by insert, update and deleted trackers.
 
         :param session: SQLAlchemy session object
@@ -158,7 +183,7 @@ class UnitOfWork(object):
                 )
             self.process_operation(operation)
 
-        self.history_session.flush()
+        self.version_session.flush()
 
     def version_validity_subquery(self, parent, version_obj):
         """
@@ -224,7 +249,7 @@ class UnitOfWork(object):
 
     def create_association_versions(self, session):
         """
-        Creates association table history records for given session.
+        Creates association table version records for given session.
 
         :param session: SQLAlchemy session object
         """
@@ -234,9 +259,9 @@ class UnitOfWork(object):
             session.execute(stmt)
         self.pending_statements = []
 
-    def make_history(self, session):
+    def make_versions(self, session):
         """
-        Create transaction, transaction changes records, history objects.
+        Create transaction, transaction changes records, version objects.
 
         :param session: SQLAlchemy session object
         """
@@ -247,9 +272,9 @@ class UnitOfWork(object):
             self.create_association_versions(session)
 
         if self.operations:
-            self.manager.plugins.before_create_history_objects(self, session)
-            self.create_history_objects(session)
-            self.manager.plugins.after_create_history_objects(self, session)
+            self.manager.plugins.before_create_version_objects(self, session)
+            self.create_version_objects(session)
+            self.manager.plugins.after_create_version_objects(self, session)
 
     @property
     def has_changes(self):

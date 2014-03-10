@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from .table_builder import TableBuilder
 from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
-from .utils import history_table, history_class
+from .utils import version_table, version_class
 
 
 class RelationshipBuilder(object):
@@ -38,7 +38,7 @@ class RelationshipBuilder(object):
     def reflected_relationship(self):
         """
         Builds a reflected one-to-many, one-to-one and many-to-one
-        relationship between two history classes.
+        relationship between two version classes.
         """
         @property
         def relationship(obj):
@@ -94,7 +94,7 @@ class RelationshipBuilder(object):
     @property
     def reflected_association(self):
         """
-        Builds a reflected many-to-many relationship between two history
+        Builds a reflected many-to-many relationship between two version
         classes.
         """
         column_name = self.option('transaction_column_name')
@@ -124,8 +124,8 @@ class RelationshipBuilder(object):
 
     def build_association_version_tables(self):
         """
-        Builds many-to-many association history table for given property.
-        Association history tables are used for tracking change history of
+        Builds many-to-many association version table for given property.
+        Association version tables are used for tracking change history of
         many-to-many associations.
         """
         column = list(self.property.remote_side)[0]
@@ -142,20 +142,18 @@ class RelationshipBuilder(object):
             table_name = builder.table_name
 
         if table_name not in metadata.tables:
-            version_table = builder()
+            table = builder()
 
-            self.manager.association_history_tables.add(
-                version_table
-            )
+            self.manager.association_version_tables.add(table)
 
     def __call__(self):
         """
-        Builds reflected relationship between history classes based on given
+        Builds reflected relationship between version classes based on given
         parent object's RelationshipProperty.
         """
-        self.local_cls = history_class(self.model)
+        self.local_cls = version_class(self.model)
         try:
-            self.remote_cls = history_class(self.property.mapper.class_)
+            self.remote_cls = version_class(self.property.mapper.class_)
         except (AttributeError, KeyError):
             return
 
@@ -168,7 +166,7 @@ class RelationshipBuilder(object):
                     self.remote_column = column_pair[1]
                     break
 
-            self.remote_table = history_table(self.remote_column.table)
+            self.remote_table = version_table(self.remote_column.table)
             reflection_func = 'reflected_association'
         setattr(
             self.local_cls,

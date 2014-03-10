@@ -28,10 +28,10 @@ class TransactionLogBase(object):
         Entities are returned as a dict where keys are entity classes and
         values lists of entitites that changed in this transaction.
         """
-        tuples = set(self.manager.history_class_map.items())
+        tuples = set(self.manager.version_class_map.items())
         entities = []
 
-        for class_, history_class in tuples:
+        for class_, version_class in tuples:
 
             if class_.__name__ not in self.entity_names:
                 continue
@@ -48,7 +48,7 @@ class TransactionLogBase(object):
 
             if value:
                 entities.append((
-                    history_class,
+                    version_class,
                     value
                 ))
         return dict(entities)

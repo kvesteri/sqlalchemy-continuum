@@ -12,7 +12,7 @@ Find all versions of model X where user didn't update property A.
 PropertyModTrackerPlugin adds separate modified tracking column for each
 versioned column. So for example if you have versioned model called Article
 with columns `name` and `content`, this plugin would add two additional boolean
-columns `name_mod` and `content_mod` for the history model. When user commits
+columns `name_mod` and `content_mod` for the version model. When user commits
 transactions the plugin automatically updates these boolean columns.
 """
 
@@ -26,7 +26,7 @@ from ..utils import versioned_column_properties
 class PropertyModTrackerPlugin(Plugin):
     column_suffix = '_mod'
 
-    def after_build_history_table_columns(self, table_builder, columns):
+    def after_build_version_table_columns(self, table_builder, columns):
         for column in table_builder.parent_table.c:
             if not table_builder.manager.is_excluded_column(
                 table_builder.model, column
@@ -41,16 +41,16 @@ class PropertyModTrackerPlugin(Plugin):
                     )
                 )
 
-    def after_create_history_object(self, uow, parent_obj, history_obj):
+    def after_create_version_object(self, uow, parent_obj, version_obj):
         for prop in versioned_column_properties(parent_obj):
             if has_changes(parent_obj, prop.key):
                 setattr(
-                    history_obj,
+                    version_obj,
                     prop.key + self.column_suffix,
                     True
                 )
 
-    def after_construct_changeset(self, history_obj, changeset):
+    def after_construct_changeset(self, version_obj, changeset):
         for key in copy(changeset).keys():
             if key.endswith(self.column_suffix):
                 del changeset[key]

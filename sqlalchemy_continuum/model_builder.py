@@ -17,15 +17,15 @@ class ModelBuilder(object):
             VersioningManager object
         :param model:
             SQLAlchemy declarative model object that acts as a parent for the
-            built history model
+            built version model
         """
         self.manager = versioning_manager
         self.model = model
 
     def build_parent_relationship(self):
         """
-        Builds a relationship between currently built history class and
-        parent class (the model whose history the currently build history
+        Builds a relationship between currently built version class and
+        parent class (the model whose history the currently build version
         class represents).
         """
         conditions = []
@@ -34,17 +34,17 @@ class ModelBuilder(object):
             conditions.append(
                 getattr(self.model, primary_key.name)
                 ==
-                getattr(self.history_class, primary_key.name)
+                getattr(self.version_class, primary_key.name)
             )
             foreign_keys.append(
-                getattr(self.history_class, primary_key.name)
+                getattr(self.version_class, primary_key.name)
             )
 
         # We need to check if versions relation was already set for parent
         # class.
         if not hasattr(self.model, 'versions'):
             self.model.versions = sa.orm.relationship(
-                self.history_class,
+                self.version_class,
                 primaryjoin=sa.and_(*conditions),
                 foreign_keys=foreign_keys,
                 lazy='dynamic',
@@ -56,7 +56,7 @@ class ModelBuilder(object):
 
     def build_transaction_relationship(self, tx_log_class):
         """
-        Builds a relationship between currently built history class and
+        Builds a relationship between currently built version class and
         TransactionLog class.
 
         :param tx_log_class: TransactionLog class
@@ -69,12 +69,12 @@ class ModelBuilder(object):
         )
 
         transaction_column = getattr(
-            self.history_class,
+            self.version_class,
             option(self.model, 'transaction_column_name')
         )
 
-        if not hasattr(self.history_class, 'transaction'):
-            self.history_class.transaction = sa.orm.relationship(
+        if not hasattr(self.version_class, 'transaction'):
+            self.version_class.transaction = sa.orm.relationship(
                 tx_log_class,
                 primaryjoin=tx_log_class.id == transaction_column,
                 foreign_keys=[transaction_column],
@@ -85,7 +85,7 @@ class ModelBuilder(object):
                 tx_log_class,
                 backref_name,
                 sa.orm.relationship(
-                    self.history_class,
+                    self.version_class,
                     primaryjoin=tx_log_class.id == transaction_column,
                     foreign_keys=[transaction_column]
                 )
@@ -96,8 +96,8 @@ class ModelBuilder(object):
         Finds the closest versioned parent for current parent model.
         """
         for class_ in self.model.__bases__:
-            if class_ in self.manager.history_class_map:
-                return (self.manager.history_class_map[class_], )
+            if class_ in self.manager.version_class_map:
+                return (self.manager.version_class_map[class_], )
 
     def base_classes(self):
         """
@@ -150,10 +150,10 @@ class ModelBuilder(object):
         # option dict
         self.model.__versioned__ = copy(self.model.__versioned__)
         self.model.__versioning_manager__ = self.manager
-        self.history_class = self.build_model(table)
+        self.version_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(tx_log_class)
-        self.history_class.__versioning_manager__ = self.manager
-        self.manager.history_class_map[self.model] = self.history_class
-        self.manager.parent_class_map[self.history_class] = self.model
-        return self.history_class
+        self.version_class.__versioning_manager__ = self.manager
+        self.manager.version_class_map[self.model] = self.version_class
+        self.manager.parent_class_map[self.version_class] = self.model
+        return self.version_class

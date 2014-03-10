@@ -1,6 +1,6 @@
 from pytest import mark
 import sqlalchemy as sa
-from sqlalchemy_continuum import versioning_manager, history_class
+from sqlalchemy_continuum import versioning_manager, version_class
 from tests import TestCase
 
 
@@ -35,13 +35,13 @@ class TestSingleTableInheritance(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = history_class(self.TextItem)
-        self.ArticleHistory = history_class(self.Article)
-        self.BlogPostHistory = history_class(self.BlogPost)
+        self.TextItemHistory = version_class(self.TextItem)
+        self.ArticleHistory = version_class(self.Article)
+        self.BlogPostHistory = version_class(self.BlogPost)
 
-    def test_history_class_map(self):
+    def test_version_class_map(self):
         manager = self.TextItem.__versioning_manager__
-        assert len(manager.history_class_map.keys()) == 3
+        assert len(manager.version_class_map.keys()) == 3
 
     def test_transaction_log_relations(self):
         tx_log = versioning_manager.transaction_log_cls
@@ -49,15 +49,15 @@ class TestSingleTableInheritance(TestCase):
         assert tx_log.articles
         assert tx_log.blog_posts
 
-    def test_each_class_has_distinct_history_class(self):
-        assert self.TextItemHistory.__table__.name == 'text_item_history'
-        assert self.ArticleHistory.__table__.name == 'text_item_history'
-        assert self.BlogPostHistory.__table__.name == 'text_item_history'
+    def test_each_class_has_distinct_version_class(self):
+        assert self.TextItemHistory.__table__.name == 'text_item_version'
+        assert self.ArticleHistory.__table__.name == 'text_item_version'
+        assert self.BlogPostHistory.__table__.name == 'text_item_version'
         assert issubclass(self.ArticleHistory, self.TextItemHistory)
         assert issubclass(self.BlogPostHistory, self.TextItemHistory)
 
     @mark.skipif('True')
-    def test_each_object_has_distinct_history_class(self):
+    def test_each_object_has_distinct_version_class(self):
         article = self.Article()
         blogpost = self.BlogPost()
         textitem = self.TextItem()

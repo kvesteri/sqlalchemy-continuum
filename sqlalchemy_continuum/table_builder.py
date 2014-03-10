@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 class TableBuilder(object):
     """
-    TableBuilder handles the building of history tables based on parent
+    TableBuilder handles the building of version tables based on parent
     table's structure and versioning configuration options.
     """
     def __init__(
@@ -25,7 +25,7 @@ class TableBuilder(object):
     @property
     def table_name(self):
         """
-        Returns the history table name for current parent table.
+        Returns the version table name for current parent table.
         """
         return self.option('table_name') % self.parent_table.name
 
@@ -141,11 +141,11 @@ class TableBuilder(object):
 
     def __call__(self, extends=None):
         """
-        Builds history table.
+        Builds version table.
         """
         columns = self.columns if extends is None else []
 
-        self.manager.plugins.after_build_history_table_columns(self, columns)
+        self.manager.plugins.after_build_version_table_columns(self, columns)
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,

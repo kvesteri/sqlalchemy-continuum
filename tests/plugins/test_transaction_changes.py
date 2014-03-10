@@ -1,4 +1,4 @@
-from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import TransactionChangesPlugin
 from tests import TestCase
 
@@ -29,7 +29,7 @@ class TestTransactionLogChangedEntities(TestCase):
         tx = self.article.versions[0].transaction
 
         assert tx.changed_entities == {
-            history_class(self.article.__class__):
+            version_class(self.article.__class__):
             [self.article.versions[0]]
         }
 

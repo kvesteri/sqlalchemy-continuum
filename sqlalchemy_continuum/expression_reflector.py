@@ -5,7 +5,7 @@ from sqlalchemy.sql.expression import (
     BinaryExpression,
     BindParameter
 )
-from .utils import history_table
+from .utils import version_table
 
 
 class ExpressionReflector(object):
@@ -28,7 +28,7 @@ class ExpressionReflector(object):
         Parses SQLAlchemy BindParameter
         """
         if isinstance(parameter, sa.Column):
-            table = history_table(parameter.table)
+            table = version_table(parameter.table)
             if self.parent and table == self.parent.__table__:
                 return getattr(self.parent, parameter.name)
             else:

@@ -42,7 +42,7 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         self.session.commit()
 
         self.session.execute(
-            '''INSERT INTO article_history
+            '''INSERT INTO article_version
             (id, %s, name, content, operation_type)
             VALUES
             (1, %d, 'something', 'some content', 1)

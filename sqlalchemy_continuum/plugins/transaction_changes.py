@@ -76,7 +76,7 @@ class TransactionChangesPlugin(Plugin):
     def after_build_models(self, manager):
         self.model_class = TransactionChangesFactory(manager)()
 
-    def before_create_history_objects(self, uow, session):
+    def before_create_version_objects(self, uow, session):
         for entity in uow.operations.entities:
             params = uow.current_transaction.id, six.text_type(entity.__name__)
             changes = session.query(self.model_class).get(params)
@@ -96,16 +96,16 @@ class TransactionChangesPlugin(Plugin):
     def ater_commit(self, uow, session):
         self.clear()
 
-    def after_history_class_built(self, parent_cls, history_cls):
+    def after_version_class_built(self, parent_cls, version_cls):
         transaction_column = getattr(
-            history_cls,
+            version_cls,
             option(parent_cls, 'transaction_column_name')
         )
 
         # Only define changes relation if it doesn't already exist in
         # parent class.
-        if not hasattr(history_cls, 'changes'):
-            history_cls.changes = sa.orm.relationship(
+        if not hasattr(version_cls, 'changes'):
+            version_cls.changes = sa.orm.relationship(
                 self.model_class,
                 primaryjoin=(
                     self.model_class.transaction_id == transaction_column

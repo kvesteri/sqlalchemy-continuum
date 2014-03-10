@@ -2,7 +2,7 @@ from datetime import datetime
 from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_utils import TSVectorType
-from sqlalchemy_continuum import history_class
+from sqlalchemy_continuum import version_class
 from tests import TestCase
 
 
@@ -24,19 +24,19 @@ class TestDateTimeColumnExclusion(TestCase):
     def test_datetime_columns_with_defaults_excluded_by_default(self):
         assert (
             'created_at' not in
-            history_class(self.Article).__table__.c
+            version_class(self.Article).__table__.c
         )
 
     def test_date_columns_with_defaults_excluded_by_default(self):
         assert (
             'creation_date' not in
-            history_class(self.Article).__table__.c
+            version_class(self.Article).__table__.c
         )
 
     def test_datetime_exclusion_only_applies_to_datetime_types(self):
         assert (
             'is_deleted' in
-            history_class(self.Article).__table__.c
+            version_class(self.Article).__table__.c
         )
 
 
@@ -55,7 +55,7 @@ class TestTSVectorTypeColumnExclusion(TestCase):
     def test_tsvector_typed_columns_excluded_by_default(self):
         assert (
             'search_vector' not in
-            history_class(self.Article).__table__.c
+            version_class(self.Article).__table__.c
         )
 
 
@@ -75,7 +75,7 @@ class TestDateTimeColumnInclusion(TestCase):
     def test_datetime_columns_with_defaults_excluded_by_default(self):
         assert (
             'created_at' in
-            history_class(self.Article).__table__.c
+            version_class(self.Article).__table__.c
         )
 
 
@@ -93,8 +93,8 @@ class TestColumnExclusion(TestCase):
 
         self.TextItem = TextItem
 
-    def test_excluded_columns_not_included_in_history_class(self):
-        cls = history_class(self.TextItem)
+    def test_excluded_columns_not_included_in_version_class(self):
+        cls = version_class(self.TextItem)
         manager = cls._sa_class_manager
         assert 'content' not in manager.keys()
 

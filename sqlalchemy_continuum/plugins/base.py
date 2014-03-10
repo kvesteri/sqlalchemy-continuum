@@ -8,19 +8,19 @@ class Plugin(object):
     def after_build_models(self, manager):
         pass
 
-    def after_build_history_table_columns(self, table_builder, columns):
+    def after_build_version_table_columns(self, table_builder, columns):
         pass
 
     def before_flush(self, uow, session):
         pass
 
-    def before_create_history_objects(self, uow, session):
+    def before_create_version_objects(self, uow, session):
         pass
 
-    def after_create_history_objects(self, uow, session):
+    def after_create_version_objects(self, uow, session):
         pass
 
-    def after_create_history_object(self, uow, parent_obj, history_obj):
+    def after_create_version_object(self, uow, parent_obj, version_obj):
         pass
 
     def before_create_tx_object(self, uow, session):
@@ -29,10 +29,10 @@ class Plugin(object):
     def after_create_tx_object(self, uow, session):
         pass
 
-    def after_history_class_built(self, parent_cls, history_cls):
+    def after_version_class_built(self, parent_cls, version_cls):
         pass
 
-    def after_construct_changeset(self, history_obj, changeset):
+    def after_construct_changeset(self, version_obj, changeset):
         pass
 
 

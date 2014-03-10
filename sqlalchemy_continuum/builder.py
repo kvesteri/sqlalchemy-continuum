@@ -11,7 +11,7 @@ from .relationship_builder import RelationshipBuilder
 class Builder(object):
     def build_tables(self):
         """
-        Build tables for history models based on classes that were collected
+        Build tables for version models based on classes that were collected
         during class instrumentation process.
         """
         for cls in self.manager.pending_classes:
@@ -52,7 +52,7 @@ class Builder(object):
 
     def build_models(self):
         """
-        Build declarative history models based on classes that were collected
+        Build declarative version models based on classes that were collected
         during class instrumentation process.
         """
         if self.manager.pending_classes:
@@ -68,25 +68,25 @@ class Builder(object):
                 table = self.closest_matching_table(cls)
                 if table is not None:
                     builder = ModelBuilder(self.manager, cls)
-                    history_cls = builder(
+                    version_cls = builder(
                         table,
                         self.manager.transaction_log_cls
                     )
 
-                    self.manager.plugins.after_history_class_built(
+                    self.manager.plugins.after_version_class_built(
                         cls,
-                        history_cls
+                        version_cls
                     )
 
         self.manager.plugins.after_build_models(self.manager)
 
-    def build_relationships(self, history_classes):
+    def build_relationships(self, version_classes):
         """
-        Builds relationships for all history classes.
+        Builds relationships for all version classes.
 
-        :param history_classes: list of generated history classes
+        :param version_classes: list of generated version classes
         """
-        for cls in history_classes:
+        for cls in version_classes:
             if not self.manager.option(cls, 'versioning'):
                 continue
 
@@ -117,11 +117,11 @@ class Builder(object):
         Configures all versioned classes that were collected during
         instrumentation process. The configuration has 4 steps:
 
-        1. Build tables for history models.
-        2. Build the actual history model declarative classes.
+        1. Build tables for version models.
+        2. Build the actual version model declarative classes.
         3. Build relationships between these models.
         4. Empty pending_classes list so that consecutive mapper configuration
-           does not create multiple history classes
+           does not create multiple version classes
         5. Assign all versioned attributes to use active history.
         """
         if not self.manager.options['versioning']:

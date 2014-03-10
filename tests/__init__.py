@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
-    history_class,
+    version_class,
     make_versioned,
     versioning_manager,
 )
@@ -79,10 +79,10 @@ class TestCase(object):
         sa.orm.configure_mappers()
 
         if hasattr(self, 'Article'):
-            self.ArticleHistory = history_class(self.Article)
+            self.ArticleHistory = version_class(self.Article)
         if hasattr(self, 'Tag'):
             try:
-                self.TagHistory = history_class(self.Tag)
+                self.TagHistory = version_class(self.Tag)
             except (AttributeError, KeyError):
                 pass
         self.create_tables()
