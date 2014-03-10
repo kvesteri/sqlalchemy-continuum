@@ -352,7 +352,7 @@ class VersioningManager(object):
                 regexp = '^DELETE FROM (.+?) WHERE'
                 match = re.match(regexp, statement)
                 tablename = match.groups()[0].strip('"').strip("'").strip('`')
-                table = self.manager.metadata.tables[tablename]
+                table = self.metadata.tables[tablename]
                 columns = table.primary_key.columns.values()
                 for index, column in enumerate(columns):
                     parameters[column.name] = params[index]
