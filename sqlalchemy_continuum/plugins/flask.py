@@ -21,10 +21,16 @@ current_user object.
 """
 from __future__ import absolute_import
 
-from flask import request
-from flask.globals import _app_ctx_stack, _request_ctx_stack
-from flask.ext.login import current_user
+flask = None
+try:
+    import flask
+    from flask import request
+    from flask.globals import _app_ctx_stack, _request_ctx_stack
+    from flask.ext.login import current_user
+except ImportError:
+    pass
 import sqlalchemy as sa
+from sqlalchemy_utils import ImproperlyConfigured
 from .base import Plugin
 
 
@@ -46,6 +52,13 @@ def fetch_remote_addr():
 
 
 class FlaskPlugin(Plugin):
+    def __init__(self):
+        if not flask:
+            raise ImproperlyConfigured(
+                'Flask is required with FlaskPlugin. Please install Flask by'
+                ' running pip install Flask'
+            )
+
     def after_build_tx_class(self, manager):
         Transaction = manager.transaction_log_cls
         Transaction.remote_addr = sa.Column(sa.String(50))
