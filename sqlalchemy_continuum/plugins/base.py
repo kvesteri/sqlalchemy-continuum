@@ -37,8 +37,13 @@ class Plugin(object):
 
 
 class PluginCollection(object):
-    def __init__(self, plugins):
-        self.plugins = plugins
+    def __init__(self, plugins=None):
+        if plugins is None:
+            plugins = []
+        if isinstance(plugins, self.__class__):
+            self.plugins = plugins.plugins
+        else:
+            self.plugins = plugins
 
     def __iter__(self):
         for plugin in self.plugins:
