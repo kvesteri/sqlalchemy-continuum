@@ -21,7 +21,8 @@ def make_versioned(
     mapper=sa.orm.mapper,
     session=sa.orm.session.Session,
     manager=versioning_manager,
-    options={}
+    plugins=None,
+    options=None
 ):
     """
     This is the public API function of SQLAlchemy-Continuum for making certain
@@ -36,11 +37,19 @@ def make_versioned(
     :param manager:
         The versioning manager. Override this if you want to use one of
         SQLAlchemy-Continuum's extensions (eg. Flask extension)
+    :param plugins:
+        Plugins to pass for versioning manager.
+    :param options:
+        A dictionary of VersioningManager options.
     """
+    if plugins is not None:
+        manager.plugins = plugins
     manager.apply_class_configuration_listeners(mapper)
     manager.track_operations(mapper)
     manager.track_session(session)
-    manager.options.update(options)
+
+    if options is not None:
+        manager.options.update(options)
 
     sa.event.listen(
         sa.engine.Engine,
