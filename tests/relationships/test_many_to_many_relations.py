@@ -54,7 +54,7 @@ class ManyToManyRelationshipsTestCase(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags
+        assert not article.versions[0].tags
 
     def test_single_insert(self):
         article = self.Article()
@@ -64,7 +64,7 @@ class ManyToManyRelationshipsTestCase(TestCase):
         article.tags.append(tag)
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags.count() == 1
+        assert len(article.versions[0].tags) == 1
 
     def test_multi_insert(self):
         article = self.Article()
@@ -75,7 +75,7 @@ class ManyToManyRelationshipsTestCase(TestCase):
         article.tags.append(self.Tag(name=u'another tag'))
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags.count() == 2
+        assert len(article.versions[0].tags) == 2
 
     def test_delete_single_association(self):
         article = self.Article()
@@ -89,8 +89,8 @@ class ManyToManyRelationshipsTestCase(TestCase):
         article.name = u'Updated name'
         self.session.commit()
 
-        assert article.versions[0].tags.count() == 1
-        assert article.versions[1].tags.count() == 0
+        assert len(article.versions[0].tags) == 1
+        assert len(article.versions[1].tags) == 0
 
     def test_multi_delete_association(self):
         article = self.Article()
@@ -106,7 +106,7 @@ class ManyToManyRelationshipsTestCase(TestCase):
         article.tags.remove(tag2)
         article.name = u'Updated name'
         self.session.commit()
-        assert article.versions[1].tags.count() == 0
+        assert len(article.versions[1].tags) == 0
 
 
 create_test_cases(ManyToManyRelationshipsTestCase)

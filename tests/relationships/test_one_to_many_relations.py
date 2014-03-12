@@ -9,9 +9,9 @@ class OneToManyRelationshipsTestCase(TestCase):
         article.tags.append(self.Tag(name=u'some tag'))
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags.count()
+        assert article.versions[0].tags
 
-    def test_insert_related_object(self):
+    def test_insert_in_a_separate_transaction(self):
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
@@ -51,8 +51,8 @@ class OneToManyRelationshipsTestCase(TestCase):
         self.session.commit()
 
         assert article.versions.count() == 2
-        assert article.versions[0].tags.count() == 1
-        assert article.versions[1].tags.count() == 1
+        assert len(article.versions[0].tags) == 1
+        assert len(article.versions[1].tags) == 1
         assert article.versions[1].tags[0].name == u'Some other tag'
 
     def test_multiple_inserts_in_consecutive_transactions(self):
@@ -66,8 +66,8 @@ class OneToManyRelationshipsTestCase(TestCase):
         article.tags.append(self.Tag(name=u'other tag'))
         article.name = u'Updated article'
         self.session.commit()
-        assert article.versions[0].tags.count() == 1
-        assert article.versions[1].tags.count() == 2
+        assert len(article.versions[0].tags) == 1
+        assert len(article.versions[1].tags) == 2
 
     def test_delete(self):
         article = self.Article()
@@ -80,8 +80,8 @@ class OneToManyRelationshipsTestCase(TestCase):
         self.session.delete(tag)
         article.name = u'Updated article'
         self.session.commit()
-        assert article.versions[0].tags.count() == 1
-        assert article.versions[1].tags.count() == 0
+        assert len(article.versions[0].tags) == 1
+        assert len(article.versions[1].tags) == 0
 
 
 create_test_cases(OneToManyRelationshipsTestCase)

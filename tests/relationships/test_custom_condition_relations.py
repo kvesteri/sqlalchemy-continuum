@@ -57,8 +57,8 @@ class CustomConditionRelationsTestCase(TestCase):
         )
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].primary_tags.all()
-        assert article.versions[0].secondary_tags.all()
+        assert article.versions[0].primary_tags
+        assert article.versions[0].secondary_tags
 
 
 create_test_cases(CustomConditionRelationsTestCase)

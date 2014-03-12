@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from .table_builder import TableBuilder
 from .expression_reflector import ObjectExpressionReflector
 from .operation import Operation
-from .utils import version_table, version_class
+from .utils import version_table, version_class, option
 
 
 class RelationshipBuilder(object):
@@ -11,27 +11,88 @@ class RelationshipBuilder(object):
         self.property = property_
         self.model = model
 
-    def option(self, name):
-        return self.manager.option(self.model, name)
-
-    def relationship_subquery(self, obj):
+    def one_to_many_subquery(self, obj):
         primary_keys = []
 
-        column_name = self.option('transaction_column_name')
+        tx_column = option(obj, 'transaction_column_name')
 
         for column in self.remote_cls.__table__.c:
-            if column.primary_key and column.name != column_name:
+            if column.primary_key and column.name != tx_column:
                 primary_keys.append(column)
 
-        return getattr(self.remote_cls, column_name).in_(
+        return getattr(self.remote_cls, tx_column).in_(
             sa.select(
-                [sa.func.max(getattr(self.remote_cls, column_name))]
+                [sa.func.max(getattr(self.remote_cls, tx_column))]
             ).where(
-                getattr(self.remote_cls, column_name) <=
-                getattr(obj, column_name)
+                getattr(self.remote_cls, tx_column) <=
+                getattr(obj, tx_column)
             ).group_by(
                 *primary_keys
             ).correlate(self.local_cls)
+        )
+
+    def many_to_one_subquery(self, obj):
+        tx_column = option(obj, 'transaction_column_name')
+        reflector = ObjectExpressionReflector(obj)
+
+        return getattr(self.remote_cls, tx_column).in_(
+            sa.select(
+                [sa.func.max(getattr(self.remote_cls, tx_column))]
+            ).where(
+                sa.and_(
+                    getattr(self.remote_cls, tx_column) <=
+                    getattr(obj, tx_column),
+                    reflector(self.property.primaryjoin)
+                )
+            ).correlate(self.local_cls)
+        )
+
+    def query(self, obj):
+        session = sa.orm.object_session(obj)
+        return (
+            session.query(self.remote_cls)
+            .filter(
+                self.criteria(obj)
+            )
+        )
+
+    def criteria(self, obj):
+        if self.property.direction.name == 'ONETOMANY':
+            return self.one_to_many_criteria(obj)
+        elif self.property.direction.name == 'MANYTOMANY':
+            return self.many_to_many_criteria(obj)
+        elif self.property.direction.name == 'MANYTOONE':
+            return self.many_to_one_criteria(obj)
+
+    def many_to_many_criteria(self, obj):
+        tx_column = option(obj, 'transaction_column_name')
+        condition = (
+            getattr(self.remote_cls, tx_column) == sa.select(
+                [sa.func.max(getattr(self.remote_cls, tx_column))]
+            ).where(
+                getattr(self.remote_cls, tx_column) <=
+                getattr(obj, tx_column)
+            ).correlate(self.local_cls)
+        )
+        return sa.and_(
+            self.remote_cls.id.in_(self.association_subquery(obj)),
+            condition
+        )
+
+    def many_to_one_criteria(self, obj):
+        reflector = ObjectExpressionReflector(obj)
+        return sa.and_(
+            reflector(self.property.primaryjoin),
+            self.many_to_one_subquery(obj),
+            self.remote_cls.operation_type != Operation.DELETE
+        )
+
+    def one_to_many_criteria(self, obj):
+        reflector = ObjectExpressionReflector(obj)
+        return sa.and_(
+            reflector(self.property.primaryjoin),
+            self.one_to_many_subquery(obj),
+            self.remote_cls.operation_type != Operation.DELETE
         )
 
     @property
@@ -42,18 +103,13 @@ class RelationshipBuilder(object):
         """
         @property
         def relationship(obj):
-            session = sa.orm.object_session(obj)
-            reflector = ObjectExpressionReflector(obj)
-            return (
-                session.query(self.remote_cls)
-                .filter(
-                    sa.and_(
-                        reflector(self.property.primaryjoin),
-                        self.relationship_subquery(obj),
-                        self.remote_cls.operation_type != Operation.DELETE
-                    )
-                )
-            )
+            query = self.query(obj)
+
+            if self.property.lazy == 'dynamic':
+                return query
+            if self.property.uselist is False:
+                return query.first()
+            return query.all()
         return relationship
 
     def association_subquery(self, obj):
@@ -62,16 +118,16 @@ class RelationshipBuilder(object):
 
         :param obj: SQLAlchemy declarative object
         """
-        column_name = self.option('transaction_column_name')
+        tx_column = option(obj, 'transaction_column_name')
         reflector = ObjectExpressionReflector(obj)
         subquery = (
-            getattr(self.remote_table.c, column_name).in_(
+            getattr(self.remote_table.c, tx_column).in_(
                 sa.select(
-                    [sa.func.max(getattr(self.remote_table.c, column_name))],
+                    [sa.func.max(getattr(self.remote_table.c, tx_column))],
                 ).where(
                     sa.and_(
-                        getattr(self.remote_table.c, column_name) <=
-                        getattr(obj, column_name),
+                        getattr(self.remote_table.c, tx_column) <=
+                        getattr(obj, tx_column),
                         reflector(self.property.primaryjoin)
                     )
                 ).group_by(
@@ -97,29 +153,10 @@ class RelationshipBuilder(object):
         Builds a reflected many-to-many relationship between two version
         classes.
         """
-        column_name = self.option('transaction_column_name')
-
         @property
         def relationship(obj):
-            session = sa.orm.object_session(obj)
-
-            condition = (
-                getattr(self.remote_cls, column_name) == sa.select(
-                    [sa.func.max(getattr(self.remote_cls, column_name))]
-                ).where(
-                    getattr(self.remote_cls, column_name) <=
-                    getattr(obj, column_name)
-                ).correlate(self.local_cls)
-            )
-            return (
-                session.query(self.remote_cls)
-                .filter(
-                    sa.and_(
-                        self.remote_cls.id.in_(self.association_subquery(obj)),
-                        condition
-                    )
-                )
-            )
+            query = self.query(obj)
+            return query.all()
         return relationship
 
     def build_association_version_tables(self):
