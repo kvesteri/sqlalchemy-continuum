@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from tests import TestCase, create_test_cases
 
 
@@ -85,3 +86,43 @@ class OneToManyRelationshipsTestCase(TestCase):
 
 
 create_test_cases(OneToManyRelationshipsTestCase)
+
+
+class TestOneToManyWithUseListFalse(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+            content = sa.Column(sa.UnicodeText)
+            description = sa.Column(sa.UnicodeText)
+
+        class Category(self.Model):
+            __tablename__ = 'category'
+            __versioned__ = {}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+            article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
+            article = sa.orm.relationship(
+                Article,
+                backref=sa.orm.backref(
+                    'category',
+                    uselist=False
+                )
+            )
+
+        self.Article = Article
+        self.Category = Category
+
+    def test_single_insert(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        category = self.Category(name=u'some category')
+        article.category = category
+        self.session.add(article)
+        self.session.commit()
+        assert article.versions[0].category == category.versions[0]

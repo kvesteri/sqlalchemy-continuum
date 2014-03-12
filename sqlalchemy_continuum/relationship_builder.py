@@ -64,11 +64,12 @@ class RelationshipBuilder(object):
         return query.all()
 
     def criteria(self, obj):
-        if self.property.direction.name == 'ONETOMANY':
+        direction = self.property.direction
+        if direction.name == 'ONETOMANY':
             return self.one_to_many_criteria(obj)
-        elif self.property.direction.name == 'MANYTOMANY':
+        elif direction.name == 'MANYTOMANY':
             return self.many_to_many_criteria(obj)
-        elif self.property.direction.name == 'MANYTOONE':
+        elif direction.name == 'MANYTOONE':
             return self.many_to_one_criteria(obj)
 
     def many_to_many_criteria(self, obj):
