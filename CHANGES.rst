@@ -10,6 +10,8 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Added ActivityPlugin
 - Naming conventions change: History -> Version (to be consistent throughout Continuum)
 - Naming convention change: TransactionLog -> Transaction
+- Rewritten reflected relationship model for version classes. Only dynamic relationships are now reflected as dynamic relationships. Other relationships return either lists or scalars.
+- One-To-One relationship support for reflected version class relationships
 - Deprecated extensions
 
 0.10.3 (2014-02-27)
