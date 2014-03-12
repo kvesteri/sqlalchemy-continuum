@@ -105,7 +105,7 @@ class VersioningManager(object):
 
     def create_transaction_model(self):
         """
-        Create TransactionLog class but only if it doesn't already exist in
+        Create Transaction class but only if it doesn't already exist in
         declarative model registry.
         """
         return TransactionFactory(self)()

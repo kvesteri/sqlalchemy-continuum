@@ -37,7 +37,7 @@ class UnitOfWork(object):
         Assign values for current transaction context. When committing
         transaction these values are assigned to transaction object attributes.
 
-        :param tx_context: dictionary containing TransactionLog object
+        :param tx_context: dictionary containing Transaction object
                            attribute names and values
         """
         old_tx_context = self.tx_context_dict

@@ -59,7 +59,7 @@ class TransactionFactory(ModelFactory):
 
     def create_class(self):
         """
-        Create TransactionLog class.
+        Create Transaction class.
         """
         class Transaction(
             self.manager.declarative_base,

@@ -57,9 +57,9 @@ class ModelBuilder(object):
     def build_transaction_relationship(self, tx_log_class):
         """
         Builds a relationship between currently built version class and
-        TransactionLog class.
+        Transaction class.
 
-        :param tx_log_class: TransactionLog class
+        :param tx_log_class: Transaction class
         """
         # Only define transaction relation if it doesn't already exist in
         # parent class.
