@@ -168,11 +168,11 @@ If the parent class has a dynamic relationship it will be reflected as a propert
             )
         )
 
-    article = self.Article()
+    article = Article()
     article.name = u'Some article'
     article.content = u'Some content'
-    self.session.add(article)
-    self.session.commit()
+    session.add(article)
+    session.commit()
 
     tag_query = article.versions[0].tags
     tag_query.all()  # return all tags for given version
