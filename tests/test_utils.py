@@ -4,10 +4,10 @@ from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
 from sqlalchemy_continuum.utils import (
-    version_class,
     is_modified,
     parent_class,
     tx_column_name,
+    version_class,
 )
 
 from tests import TestCase, create_test_cases

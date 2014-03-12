@@ -240,20 +240,46 @@ class VersioningManager(object):
         """
         uow.operations.add_delete(target)
 
-    def get_uow(self, session):
-        return self.units_of_work[session.bind]
+    def unit_of_work(self, obj):
+        """
+        Return the associated SQLAlchemy-Continuum UnitOfWork object for given
+        SQLAlchemy connection or session or declarative model object.
+
+        If no UnitOfWork object exists for given object then this method tries
+        to create one.
+
+        :param obj:
+            Either a SQLAlchemy declarative model object or SQLAlchemy
+            connection object or SQLAlchemy session object
+        """
+        from sqlalchemy.orm.exc import UnmappedInstanceError
+
+        if hasattr(obj, 'bind'):
+            conn = obj.bind
+        else:
+            try:
+                conn = object_session(obj).bind
+            except UnmappedInstanceError:
+                conn = obj
+
+        if not isinstance(conn, sa.engine.base.Connection):
+            raise TypeError(
+                'This method accepts only Session, Connection and declarative '
+                'model objects.'
+            )
+
+        if conn in self.units_of_work:
+            return self.units_of_work[conn]
+        else:
+            uow = self.uow_class(self)
+            self.units_of_work[conn] = uow
+            return uow
 
     def before_flush(self, session, flush_context, instances):
         if not self.options['versioning']:
             return
 
-        conn = session.connection()
-        if conn in self.units_of_work:
-            uow = self.units_of_work[conn]
-        else:
-            uow = self.uow_class(self)
-            self.units_of_work[conn] = uow
-
+        uow = self.unit_of_work(session)
         uow.process_before_flush(session)
 
     def after_flush(self, session, flush_context):
@@ -267,8 +293,7 @@ class VersioningManager(object):
         """
         if not self.options['versioning']:
             return
-        conn = session.connection()
-        uow = self.units_of_work[conn]
+        uow = self.unit_of_work(session)
         uow.process_after_flush(session)
 
     def clear(self, session):

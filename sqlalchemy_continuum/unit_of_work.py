@@ -34,7 +34,7 @@ class UnitOfWork(object):
     @contextmanager
     def tx_context(self, **tx_context):
         """
-        Assigns values for current transaction context. When committing
+        Assign values for current transaction context. When committing
         transaction these values are assigned to transaction object attributes.
 
         :param tx_context: dictionary containing TransactionLog object
@@ -48,7 +48,7 @@ class UnitOfWork(object):
     @contextmanager
     def tx_meta(self, **tx_meta):
         """
-        Assigns values for current transaction meta. When committing
+        Assign values for current transaction meta. When committing
         transaction new TransactionMeta records are created for each key-value
         pair.
 
@@ -61,6 +61,14 @@ class UnitOfWork(object):
         self.tx_meta_dict = old_tx_meta
 
     def is_modified(self, session):
+        """
+        Return whether or not given session has been modified. Session has been
+        modified if any versioned property of any version object in given
+        session has been modified or if any of the plugins returns that
+        session has been modified.
+
+        :param session: SQLAlchemy session object
+        """
         return (
             is_session_modified(session) or
             any(self.manager.plugins.is_session_modified(session))
@@ -73,10 +81,12 @@ class UnitOfWork(object):
         if not self.is_modified(session):
             return
 
-        if not self.current_transaction:
+        if not self.version_session:
             self.version_session = sa.orm.session.Session(
                 bind=session.connection()
             )
+
+        if not self.current_transaction:
             self.create_transaction(session)
 
         self.manager.plugins.before_flush(self, session)
@@ -107,6 +117,8 @@ class UnitOfWork(object):
         session.add(self.current_transaction)
 
         self.manager.plugins.after_create_tx_object(self, session)
+
+        return self.current_transaction
 
     def get_or_create_version_object(self, target):
         """

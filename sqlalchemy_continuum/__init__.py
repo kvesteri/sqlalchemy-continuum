@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from .manager import VersioningManager
 from .operation import Operation
+from .unit_of_work import UnitOfWork
 from .utils import (
     changeset,
     get_versioning_manager,
@@ -11,17 +12,6 @@ from .utils import (
 
 
 __version__ = '1.0-dev'
-
-
-__all__ = (
-    changeset,
-    get_versioning_manager,
-    version_class,
-    parent_class,
-    vacuum,
-    Operation,
-    VersioningManager
-)
 
 
 versioning_manager = VersioningManager()
