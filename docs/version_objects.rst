@@ -112,7 +112,7 @@ Each version object reflects all parent object relationships. You can think vers
 
 Lets say you have two models: Article and Category. Each Article has one Category. In the following example we first add article and category objects into database.
 
-Continuum saves new ArticleHistory and CategoryHistory records in the background. After that we update the created article entity to use another category. Continuum creates new version objects accordingly.
+Continuum saves new ArticleVersion and CategoryVersion records in the background. After that we update the created article entity to use another category. Continuum creates new version objects accordingly.
 
 Lastly we check the category relations of different article versions.
 
