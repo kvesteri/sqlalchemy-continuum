@@ -1,3 +1,42 @@
+"""
+Activity
+--------
+The ActivityPlugin is the most powerful plugin for tracking changes of
+individual entities. If you use ActivityPlugin you probably don't need to use
+TransactionChanges nor TransactionMeta plugins.
+
+You can initalize the ActivityPlugin by adding it to versioning manager.
+
+::
+
+    make_versioned(plugins=[ActivityPlugin])
+
+
+ActivityPlugin uses single database table for tracking activities. This table
+follows the data structure in `activity stream specification`_, but it comes
+with a nice twist:
+
+    ==============  ===========
+    Column          Type
+    --------------  -----------
+    id              BigInteger
+    verb            Unicode
+    data            JSON
+    transaction_id  BigInteger
+    object_id       BigInteger
+    target_id       BigInteger
+    ==============  ===========
+
+
+Each Activity has relationships to actor, object and target but it also holds
+information about the transaction when it was created. This allows each
+activity to also have object_version and target_version relationships for
+introspecting what those objects and targets were in given point in time.
+
+.. _activity stream specification:
+    http://www.activitystrea.ms
+"""
+
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import JSONType, generic_relationship

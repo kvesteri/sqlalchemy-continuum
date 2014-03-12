@@ -21,6 +21,8 @@ Using plugins
 
 
 
+.. automodule:: sqlalchemy_continuum.plugins.activity
+
 .. automodule:: sqlalchemy_continuum.plugins.flask
 
 .. automodule:: sqlalchemy_continuum.plugins.property_mod_tracker
