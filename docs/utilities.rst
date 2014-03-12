@@ -5,16 +5,10 @@ Utilities
 .. module:: sqlalchemy_continuum.utils
 
 
-version_class
--------------
+changeset
+---------
 
-.. autofunction:: version_class
-
-
-version_table
--------------
-
-.. autofunction:: version_table
+.. autofunction:: changeset
 
 
 is_modified
@@ -47,7 +41,19 @@ parent_class
 .. autofunction:: parent_class
 
 
+version_class
+-------------
+
+.. autofunction:: version_class
+
+
 versioned_objects
 -----------------
 
 .. autofunction:: versioned_objects
+
+
+version_table
+-------------
+
+.. autofunction:: version_table

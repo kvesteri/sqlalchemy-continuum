@@ -8,7 +8,7 @@ SQLAlchemy-Continuum is a versioning extension for SQLAlchemy.
    :maxdepth: 2
 
    intro
-   history_objects
+   version_objects
    revert
    queries
    transactions

@@ -284,7 +284,19 @@ def is_session_modified(session):
 
 def changeset(obj):
     """
-    Return a humanized changeset for given SQLAlchemy declarative object.
+    Return a humanized changeset for given SQLAlchemy declarative object. With
+    this function you can easily check the changeset of given object in current
+    transaction.
+
+    ::
+
+
+        from sqlalchemy_continuum import changeset
+
+
+        article = Article(name=u'Some article')
+        changeset(article)
+        # {'name': [u'Some article', None]}
 
     :param obj: SQLAlchemy declarative model object
     """
