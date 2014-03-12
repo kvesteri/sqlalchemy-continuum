@@ -134,3 +134,48 @@ Lastly we check the category relations of different article versions.
 
     article.versions[0].category.name = u'Some category'
     article.versions[1].category.name = u'Some other category'
+
+
+The logic how SQLAlchemy-Continuum builds these relationships is within the RelationshipBuilder class.
+
+
+Dynamic relationships
+^^^^^^^^^^^^^^^^^^^^^
+
+If the parent class has a dynamic relationship it will be reflected as a property which returns a query in the associated version class.
+
+::
+
+    class Article(Base):
+        __tablename__ = 'article'
+        __versioned__ = {}
+
+        id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+        name = sa.Column(sa.Unicode(255), nullable=False)
+
+    class Tag(Base):
+        __tablename__ = 'tag'
+        __versioned__ = {}
+
+        id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+        name = sa.Column(sa.Unicode(255))
+        article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
+        article = sa.orm.relationship(
+            Article,
+            backref=sa.orm.backref(
+                'tags',
+                lazy='dynamic'
+            )
+        )
+
+    article = self.Article()
+    article.name = u'Some article'
+    article.content = u'Some content'
+    self.session.add(article)
+    self.session.commit()
+
+    tag_query = article.versions[0].tags
+    tag_query.all()  # return all tags for given version
+
+    tag_query.count()  # return the tag count for given versoin
+
