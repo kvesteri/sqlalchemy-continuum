@@ -2,21 +2,21 @@ Transactions
 ============
 
 
-TransactionLog
---------------
+Transaction
+-----------
 
 
-For each committed transaction SQLAlchemy-Continuum creates a new TransactionLog record.
+For each committed transaction SQLAlchemy-Continuum creates a new Transaction record.
 
-TransactionLog can be queried just like any other sqlalchemy declarative model.
+Transaction can be queried just like any other sqlalchemy declarative model.
 
 ::
 
 
-    TransactionLog = Article.__versioned__['transaction_class']
+    Transaction = Article.__versioned__['transaction_class']
 
     # find all transactions
-    session.query(TransactionLog).all()
+    session.query(Transaction).all()
 
 
 
@@ -30,7 +30,7 @@ given transaction. This dictionary contains class objects as keys and entities a
 ::
 
 
-    tx_log = self.session.query(TransactionLog).first()
+    tx_log = self.session.query(Transaction).first()
 
     tx_log.changed_entities
     # dict of changed entities
