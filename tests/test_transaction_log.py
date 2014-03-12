@@ -1,4 +1,3 @@
-from six import PY3
 from sqlalchemy_continuum import versioning_manager
 from tests import TestCase
 
