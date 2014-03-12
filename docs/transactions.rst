@@ -19,21 +19,36 @@ Transaction can be queried just like any other sqlalchemy declarative model.
     session.query(Transaction).all()
 
 
+UnitOfWork
+----------
 
-Find entities that changed in given transaction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can easily get a dictionary of all changed entities by accessing the changed_entities property of
-given transaction. This dictionary contains class objects as keys and entities as values.
-
+For each database connection SQLAlchemy-Continuum creates an internal UnitOfWork object.
+Normally these objects are created at before flush phase of session workflow. However you can also
+force create unit of work before this phase.
 
 ::
 
 
-    tx_log = self.session.query(Transaction).first()
+    uow = versioning_manager.unit_of_work(session)
 
-    tx_log.changed_entities
-    # dict of changed entities
+
+Transaction objects are normally created automatically at before flush phase. If you need access
+to transaction object before the flush phase begins you can do so by calling the create_transaction method
+of the UnitOfWork class.
+
+
+::
+
+    transaction = uow.create_transaction(session)
+
+
+The version objects are normally created during the after flush phase but you can also force create those at any time by
+calling make_versions method.
+
+
+::
+
+    uow.make_versions(session)
 
 
 Workflow internals
@@ -55,11 +70,11 @@ Consider the following code snippet where we create a new article.
 This would execute the following SQL queries (on PostgreSQL)
 
 
-* INSERT INTO article (name, content) VALUES (?, ?)
+1. INSERT INTO article (name, content) VALUES (?, ?)
     params: ('Some article', 'Some content')
-* INSERT INTO transaction_log (issued_at) VALUES (?)
+2. INSERT INTO transaction_log (issued_at) VALUES (?)
     params: (datetime.utcnow())
-* INSERT INTO article_history (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
-    params: (article id from query 1, 'Some article', 'Some content', transaction id from query 2)
-* INSERT INTO transaction_changes (transaction_id, entity_name) VALUES (?, ?)
-    params: (transaction id from query 2, 'article')
+3. INSERT INTO article_history (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
+    params: (article id from query 1, 'Some article', 'Some content', <transaction id from query 2>)
+
+
