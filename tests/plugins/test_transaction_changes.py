@@ -17,7 +17,7 @@ class TestTransactionChanges(TestCase):
         assert tx.changes
 
 
-class TestTransactionLogChangedEntities(TestCase):
+class TestTransactionChangedEntities(TestCase):
     plugins = [TransactionChangesPlugin()]
 
     def test_change_single_entity(self):

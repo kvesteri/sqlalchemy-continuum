@@ -2,7 +2,7 @@ from sqlalchemy_continuum import versioning_manager
 from tests import TestCase
 
 
-class TestTransactionLog(TestCase):
+class TestTransaction(TestCase):
     def setup_method(self, method):
         TestCase.setup_method(self, method)
         self.article = self.Article()
@@ -23,5 +23,5 @@ class TestTransactionLog(TestCase):
         self.article.name = u'Some article'
         self.session.commit()
         assert self.session.query(
-            versioning_manager.transaction_log_cls
+            versioning_manager.transaction_cls
         ).count() == 1

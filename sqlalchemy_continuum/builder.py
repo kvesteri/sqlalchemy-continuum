@@ -58,7 +58,7 @@ class Builder(object):
         if self.manager.pending_classes:
             cls = self.manager.pending_classes[0]
             self.manager.declarative_base = declarative_base(cls)
-            self.manager.create_transaction_log()
+            self.manager.create_transaction_model()
             self.manager.plugins.after_build_tx_class(self.manager)
 
             for cls in self.manager.pending_classes:
@@ -70,7 +70,7 @@ class Builder(object):
                     builder = ModelBuilder(self.manager, cls)
                     version_cls = builder(
                         table,
-                        self.manager.transaction_log_cls
+                        self.manager.transaction_cls
                     )
 
                     self.manager.plugins.after_version_class_built(

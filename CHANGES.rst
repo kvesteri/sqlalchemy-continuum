@@ -8,6 +8,8 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 - Added new plugin architecture
 - Added ActivityPlugin
+- Naming conventions change: History -> Version (to be consistent throughout Continuum)
+- Naming convention change: TransactionLog -> Transaction
 - Deprecated extensions
 
 0.10.3 (2014-02-27)

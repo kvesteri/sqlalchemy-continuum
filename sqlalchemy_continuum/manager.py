@@ -10,7 +10,7 @@ from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .operation import Operation
 from .plugins import PluginCollection
-from .transaction_log import TransactionLogFactory
+from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
 from .utils import is_modified, is_versioned
 
@@ -97,18 +97,18 @@ class VersioningManager(object):
         self.association_tables = set([])
         self.association_version_tables = set([])
         self.declarative_base = None
-        self.transaction_log_cls = None
+        self.transaction_cls = None
         self.version_class_map = {}
         self.parent_class_map = {}
 
         self.metadata = None
 
-    def create_transaction_log(self):
+    def create_transaction_model(self):
         """
         Create TransactionLog class but only if it doesn't already exist in
         declarative model registry.
         """
-        return TransactionLogFactory(self)()
+        return TransactionFactory(self)()
 
     def is_excluded_column(self, model, column):
         """

@@ -9,7 +9,7 @@ def compile_big_integer(element, compiler, **kw):
     return 'INTEGER'
 
 
-class TransactionLogBase(object):
+class TransactionBase(object):
     id = sa.Column(sa.types.BigInteger, primary_key=True, autoincrement=True)
     issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
@@ -54,20 +54,20 @@ class TransactionLogBase(object):
         return dict(entities)
 
 
-class TransactionLogFactory(ModelFactory):
-    model_name = 'TransactionLog'
+class TransactionFactory(ModelFactory):
+    model_name = 'Transaction'
 
     def create_class(self):
         """
         Create TransactionLog class.
         """
-        class TransactionLog(
+        class Transaction(
             self.manager.declarative_base,
-            TransactionLogBase
+            TransactionBase
         ):
-            __tablename__ = 'transaction_log'
+            __tablename__ = 'transaction'
             manager = self.manager
 
-        self.manager.transaction_log_cls = TransactionLog
+        self.manager.transaction_cls = Transaction
 
-        return TransactionLog
+        return Transaction

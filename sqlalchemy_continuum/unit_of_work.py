@@ -109,7 +109,7 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        self.current_transaction = self.manager.transaction_log_cls(
+        self.current_transaction = self.manager.transaction_cls(
             **self.tx_context_dict
         )
         self.manager.plugins.before_create_tx_object(self, session)

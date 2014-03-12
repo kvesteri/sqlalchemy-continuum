@@ -54,13 +54,13 @@ class TransactionChangesFactory(ModelFactory):
             __tablename__ = 'transaction_changes'
 
         TransactionChanges.transaction = sa.orm.relationship(
-            self.manager.transaction_log_cls,
+            self.manager.transaction_cls,
             backref=sa.orm.backref(
                 'changes',
             ),
             primaryjoin=(
                 '%s.id == TransactionChanges.transaction_id' %
-                self.manager.transaction_log_cls.__name__
+                self.manager.transaction_cls.__name__
             ),
             foreign_keys=[TransactionChanges.transaction_id]
         )

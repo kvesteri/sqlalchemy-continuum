@@ -3,7 +3,7 @@ from sqlalchemy_continuum.plugins import TransactionMetaPlugin
 from tests import TestCase
 
 
-class TestTransactionLog(TestCase):
+class TestTransaction(TestCase):
     plugins = [TransactionMetaPlugin()]
 
     def setup_method(self, method):
@@ -27,7 +27,7 @@ class TestTransactionLog(TestCase):
     def test_tx_meta_manager(self):
         self.article.name = u'Some update article'
         meta = {u'some_key': u'some_value'}
-        with versioning_manager.get_uow(self.session).tx_meta(**meta):
+        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
             self.session.commit()
 
         tx = self.article.versions[-1].transaction
@@ -36,7 +36,7 @@ class TestTransactionLog(TestCase):
     def test_passing_callables_for_tx_meta(self):
         self.article.name = u'Some update article'
         meta = {u'some_key': lambda: self.article.id}
-        with versioning_manager.get_uow(self.session).tx_meta(**meta):
+        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
             self.session.commit()
         tx = self.article.versions[-1].transaction
         assert tx.meta[u'some_key'] == str(self.article.id)
@@ -45,7 +45,7 @@ class TestTransactionLog(TestCase):
         self.article.name = u'Some article'
         self.session.commit()
         meta = {u'some_key': u'some_value'}
-        with versioning_manager.get_uow(self.session).tx_meta(**meta):
+        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
             self.article.name = u'Some article'
             self.session.commit()
         assert self.session.query(

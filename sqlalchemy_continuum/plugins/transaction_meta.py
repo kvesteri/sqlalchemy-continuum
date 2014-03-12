@@ -31,19 +31,19 @@ class TransactionMetaFactory(ModelFactory):
             __tablename__ = 'transaction_meta'
 
         TransactionMeta.transaction = sa.orm.relationship(
-            self.manager.transaction_log_cls,
+            self.manager.transaction_cls,
             backref=sa.orm.backref(
                 'meta_relation',
                 collection_class=attribute_mapped_collection('key')
             ),
             primaryjoin=(
                 '%s.id == TransactionMeta.transaction_id' %
-                self.manager.transaction_log_cls.__name__
+                self.manager.transaction_cls.__name__
             ),
             foreign_keys=[TransactionMeta.transaction_id]
         )
 
-        self.manager.transaction_log_cls.meta = association_proxy(
+        self.manager.transaction_cls.meta = association_proxy(
             'meta_relation',
             'value',
             creator=lambda key, value: TransactionMeta(key=key, value=value)

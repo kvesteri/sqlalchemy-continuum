@@ -43,8 +43,8 @@ class TestSingleTableInheritance(TestCase):
         manager = self.TextItem.__versioning_manager__
         assert len(manager.version_class_map.keys()) == 3
 
-    def test_transaction_log_relations(self):
-        tx_log = versioning_manager.transaction_log_cls
+    def test_transaction_relations(self):
+        tx_log = versioning_manager.transaction_cls
         assert tx_log.text_items
         assert tx_log.articles
         assert tx_log.blog_posts
@@ -71,15 +71,15 @@ class TestSingleTableInheritance(TestCase):
         assert type(article.versions[0]) == self.ArticleHistory
         assert type(blogpost.versions[0]) == self.BlogPostHistory
 
-    def test_transaction_log_changed_entities(self):
+    def test_transaction_changed_entities(self):
         article = self.Article()
         article.name = u'Text 1'
         self.session.add(article)
         self.session.commit()
-        TransactionLog = versioning_manager.transaction_log_cls
+        Transaction = versioning_manager.transaction_cls
         transaction = (
-            self.session.query(TransactionLog)
-            .order_by(sa.sql.expression.desc(TransactionLog.issued_at))
+            self.session.query(Transaction)
+            .order_by(sa.sql.expression.desc(Transaction.issued_at))
         ).first()
         assert transaction.entity_names == [u'Article']
         assert transaction.changed_entities
