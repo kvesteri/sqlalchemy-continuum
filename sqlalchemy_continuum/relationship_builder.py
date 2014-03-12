@@ -56,6 +56,13 @@ class RelationshipBuilder(object):
             )
         )
 
+    def process_query(self, query):
+        if self.property.lazy == 'dynamic':
+            return query
+        if self.property.uselist is False:
+            return query.first()
+        return query.all()
+
     def criteria(self, obj):
         if self.property.direction.name == 'ONETOMANY':
             return self.one_to_many_criteria(obj)
@@ -104,12 +111,7 @@ class RelationshipBuilder(object):
         @property
         def relationship(obj):
             query = self.query(obj)
-
-            if self.property.lazy == 'dynamic':
-                return query
-            if self.property.uselist is False:
-                return query.first()
-            return query.all()
+            return self.process_query(query)
         return relationship
 
     def association_subquery(self, obj):
@@ -147,18 +149,6 @@ class RelationshipBuilder(object):
             )
         )
 
-    @property
-    def reflected_association(self):
-        """
-        Builds a reflected many-to-many relationship between two version
-        classes.
-        """
-        @property
-        def relationship(obj):
-            query = self.query(obj)
-            return query.all()
-        return relationship
-
     def build_association_version_tables(self):
         """
         Builds many-to-many association version table for given property.
@@ -194,7 +184,6 @@ class RelationshipBuilder(object):
         except (AttributeError, KeyError):
             return
 
-        reflection_func = 'reflected_relationship'
         if self.property.secondary is not None:
             self.build_association_version_tables()
 
@@ -204,9 +193,8 @@ class RelationshipBuilder(object):
                     break
 
             self.remote_table = version_table(self.remote_column.table)
-            reflection_func = 'reflected_association'
         setattr(
             self.local_cls,
             self.property.key,
-            getattr(self, reflection_func)
+            self.reflected_relationship
         )
