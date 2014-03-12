@@ -49,6 +49,27 @@ class Reverter(object):
                 getattr(self.obj, prop.key)
             )
 
+    def revert_relationship(self, prop):
+        if prop.secondary is not None:
+            setattr(self.version_parent, prop.key, [])
+            for value in getattr(self.obj, prop.key):
+                value = Reverter(
+                    value,
+                    visited_objects=self.visited_objects,
+                    relations=subpaths(self.relations, prop.key)
+                )()
+                if value:
+                    getattr(self.version_parent, prop.key).append(
+                        value
+                    )
+        else:
+            for value in getattr(self.obj, prop.key):
+                Reverter(
+                    value,
+                    visited_objects=self.visited_objects,
+                    relations=subpaths(self.relations, prop.key)
+                )()
+
     def revert_relationships(self):
         for prop in self.parent_mapper.iterate_properties:
             if isinstance(prop, sa.orm.RelationshipProperty):
@@ -58,25 +79,7 @@ class Reverter(object):
                 if prop.key not in first_level(self.relations):
                     continue
 
-                if prop.secondary is not None:
-                    setattr(self.version_parent, prop.key, [])
-                    for value in getattr(self.obj, prop.key):
-                        value = Reverter(
-                            value,
-                            visited_objects=self.visited_objects,
-                            relations=subpaths(self.relations, prop.key)
-                        )()
-                        if value:
-                            getattr(self.version_parent, prop.key).append(
-                                value
-                            )
-                else:
-                    for value in getattr(self.obj, prop.key):
-                        Reverter(
-                            value,
-                            visited_objects=self.visited_objects,
-                            relations=subpaths(self.relations, prop.key)
-                        )()
+                self.revert_relationship(prop)
 
     def __call__(self):
         if self.obj in self.visited_objects:
