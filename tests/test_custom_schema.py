@@ -66,4 +66,4 @@ class TestCustomSchema(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].tags
+        assert article.versions[0].tags == []
