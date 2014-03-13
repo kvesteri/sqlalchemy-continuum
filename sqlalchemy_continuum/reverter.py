@@ -50,12 +50,8 @@ class Reverter(object):
     def revert_association(self, prop):
         if prop.uselist:
             setattr(self.version_parent, prop.key, [])
-            for value in getattr(self.obj, prop.key):
-                value = Reverter(
-                    value,
-                    visited_objects=self.visited_objects,
-                    relations=subpaths(self.relations, prop.key)
-                )()
+            for child_obj in getattr(self.obj, prop.key):
+                value = self.revert_child(child_obj, prop)
                 if value:
                     getattr(self.version_parent, prop.key).append(
                         value
@@ -63,11 +59,9 @@ class Reverter(object):
         else:
             setattr(self.version_parent, prop.key, None)
             value = getattr(self.obj, prop.key)
-            value = Reverter(
-                value,
-                visited_objects=self.visited_objects,
-                relations=subpaths(self.relations, prop.key)
-            )()
+            value = self.revert_child(
+                value, prop
+            )
             if value:
                 setattr(self.version_parent, prop.key, value)
 
@@ -77,17 +71,16 @@ class Reverter(object):
         else:
             if prop.uselist:
                 for value in getattr(self.obj, prop.key):
-                    Reverter(
-                        value,
-                        visited_objects=self.visited_objects,
-                        relations=subpaths(self.relations, prop.key)
-                    )()
+                    self.revert_child(value, prop)
             else:
-                Reverter(
-                    getattr(self.obj, prop.key),
-                    visited_objects=self.visited_objects,
-                    relations=subpaths(self.relations, prop.key)
-                )()
+                self.revert_child(getattr(self.obj, prop.key), prop)
+
+    def revert_child(self, child, prop):
+        return self.__class__(
+            child,
+            visited_objects=self.visited_objects,
+            relations=subpaths(self.relations, prop.key)
+        )()
 
     def revert_relationships(self):
         for prop in self.parent_mapper.iterate_properties:
