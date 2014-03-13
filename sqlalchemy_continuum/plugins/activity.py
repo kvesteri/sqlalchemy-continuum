@@ -39,10 +39,11 @@ introspecting what those objects and targets were in given point in time.
 
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy_utils import JSONType, generic_relationship
+from sqlalchemy_utils import JSONType, generates, generic_relationship
 
 from .base import Plugin
 from ..factory import ModelFactory
+from ..utils import version_class
 
 
 class ActivityBase(object):
@@ -79,11 +80,33 @@ class ActivityFactory(ModelFactory):
 
             object_type = sa.Column(sa.String(255))
 
-            object_id = sa.Column(sa.Integer)
+            object_id = sa.Column(sa.BigInteger)
+
+            object_transaction_id = sa.Column(sa.BigInteger)
 
             target_type = sa.Column(sa.String(255))
 
-            target_id = sa.Column(sa.Integer)
+            target_id = sa.Column(sa.BigInteger)
+
+            target_transaction_id = sa.Column(sa.BigInteger)
+
+            @generates(object_transaction_id)
+            def generate_object_transaction_id(self):
+                session = sa.orm.object_session(self)
+                if self.object:
+                    version_cls = version_class(self.object.__class__)
+                    return session.query(
+                        sa.func.max(version_cls.transaction_id)
+                    ).scalar()
+
+            @generates(target_transaction_id)
+            def generate_target_transaction_id(self):
+                session = sa.orm.object_session(self)
+                if self.target:
+                    version_cls = version_class(self.target.__class__)
+                    return session.query(
+                        sa.func.max(version_cls.transaction_id)
+                    ).scalar()
 
             object = generic_relationship(
                 object_type, object_id
@@ -91,14 +114,14 @@ class ActivityFactory(ModelFactory):
 
             @hybrid_property
             def object_version_type(self):
-                return self.object_type + 'History'
+                return self.object_type + 'Version'
 
             @object_version_type.expression
             def object_version_type(cls):
-                return sa.func.concat(cls.object_type, 'History')
+                return sa.func.concat(cls.object_type, 'Version')
 
             object_version = generic_relationship(
-                object_version_type, (object_id, transaction_id)
+                object_version_type, (object_id, object_transaction_id)
             )
 
             target = generic_relationship(
@@ -107,20 +130,20 @@ class ActivityFactory(ModelFactory):
 
             @hybrid_property
             def target_version_type(self):
-                return self.target_type + 'History'
+                return self.target_type + 'Version'
 
             @target_version_type.expression
             def target_version_type(cls):
-                return sa.func.concat(cls.target_type, 'History')
+                return sa.func.concat(cls.target_type, 'Version')
 
             target_version = generic_relationship(
-                target_version_type, (target_id, transaction_id)
+                target_version_type, (target_id, target_transaction_id)
             )
 
         Activity.transaction = sa.orm.relationship(
             self.manager.transaction_cls,
             backref=sa.orm.backref(
-                'changes',
+                'activities',
             ),
             primaryjoin=(
                 '%s.id == Activity.transaction_id' %
@@ -137,10 +160,13 @@ class ActivityPlugin(Plugin):
         manager.activity_cls = self.model_class
 
     def is_session_modified(self, session):
-        for obj in session:
-            if isinstance(obj, self.model_class):
-                return True
-        return False
+        """
+        Return that the session has been modified if the session contains an
+        activity class.
+
+        :param session: SQLAlchemy session object
+        """
+        return any(isinstance(obj, self.model_class) for obj in session)
 
     def before_flush(self, uow, session):
         for obj in session:

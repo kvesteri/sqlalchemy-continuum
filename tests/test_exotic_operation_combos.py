@@ -1,4 +1,3 @@
-from six import PY3
 from tests import TestCase, create_test_cases
 
 

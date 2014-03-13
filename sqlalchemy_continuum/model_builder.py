@@ -132,7 +132,7 @@ class ModelBuilder(object):
         mapper_args.update(self.inheritance_args())
 
         return type(
-            '%sHistory' % self.model.__name__,
+            '%sVersion' % self.model.__name__,
             self.base_classes(),
             {
                 '__table__': table,
