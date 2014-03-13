@@ -89,3 +89,27 @@ class TestActivity(TestCase):
         assert activity.object_version == tag.versions[-1]
         assert activity.target == article
         assert activity.target_version == article.versions[-1]
+
+    def test_activity_queries(self):
+        article = self.create_article()
+        self.create_activity(article)
+        tag = self.Tag(name=u'some tag', article=article)
+        self.session.add(tag)
+        self.session.flush()
+        Activity = versioning_manager.activity_cls
+        activity = Activity(
+            object=tag,
+            target=article,
+            verb=u'create',
+        )
+        self.session.add(activity)
+        self.session.commit()
+        activities = self.session.query(
+            Activity
+        ).filter(
+            sa.or_(
+                Activity.object == article,
+                Activity.target == article
+            )
+        )
+        assert activities.count() == 2

@@ -113,9 +113,41 @@ object the user deleted is by accessing the object_version property.
     third_activity.object_version.name  # u'Some article updated!'
 
 
-Local version histories with targets
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Local version histories using targets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The target property of the Activity model offers a way of tracking changes of
+given related object. In the example below we create a new activity when adding
+a category for article and then mark the article as the target of this
+activity.
+
+
+
+::
+
+
+    session.add(Category(name=u'Fist category', article=article))
+    activity = Activity(verb=u'create', object=category)
+    session.add(activity)
+    session.commit()
+
+
+Now if we wanted to find all the changes that affected given article we could
+do so by searching trhough all the activities where either the object or
+target is the given article.
+
+
+::
+
+    import sqlalchemy as sa
+
+
+    activities = session.query(Activity).filter(
+        sa.or_(
+            Activity.object == article,
+            Activity.target == article
+        )
+    )
 
 
 
