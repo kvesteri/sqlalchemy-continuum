@@ -26,24 +26,9 @@ class UnitOfWork(object):
         self.version_session = None
         self.current_transaction = None
         self.operations = Operations()
-        self.tx_context_dict = {}
         self.tx_meta_dict = {}
         self.pending_statements = []
         self.version_objs = {}
-
-    @contextmanager
-    def tx_context(self, **tx_context):
-        """
-        Assign values for current transaction context. When committing
-        transaction these values are assigned to transaction object attributes.
-
-        :param tx_context: dictionary containing Transaction object
-                           attribute names and values
-        """
-        old_tx_context = self.tx_context_dict
-        self.tx_context_dict = tx_context
-        yield
-        self.tx_context_dict = old_tx_context
 
     @contextmanager
     def tx_meta(self, **tx_meta):
@@ -52,7 +37,7 @@ class UnitOfWork(object):
         transaction new TransactionMeta records are created for each key-value
         pair.
 
-        :param tx_context:
+        :param tx_meta:
             dictionary containing key-value meta attribute pairs.
         """
         old_tx_meta = self.tx_meta_dict
@@ -109,13 +94,9 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        self.current_transaction = self.manager.transaction_cls(
-            **self.tx_context_dict
-        )
+        self.current_transaction = self.manager.transaction_cls()
         self.manager.plugins.before_create_tx_object(self, session)
-
         session.add(self.current_transaction)
-
         self.manager.plugins.after_create_tx_object(self, session)
 
         return self.current_transaction

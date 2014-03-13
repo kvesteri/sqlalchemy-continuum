@@ -12,6 +12,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Naming convention change: TransactionLog -> Transaction
 - Rewritten reflected relationship model for version classes. Only dynamic relationships are now reflected as dynamic relationships. Other relationships return either lists or scalars.
 - One-To-One relationship support for reflected version class relationships
+- Removed tx_context context manager. Transaction objects can now be created manually and user has direct access to the parameters of this object.
 - Deprecated extensions
 
 0.10.3 (2014-02-27)
