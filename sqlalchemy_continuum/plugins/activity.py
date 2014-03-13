@@ -16,16 +16,34 @@ ActivityPlugin uses single database table for tracking activities. This table
 follows the data structure in `activity stream specification`_, but it comes
 with a nice twist:
 
-    ==============  ===========
-    Column          Type
-    --------------  -----------
-    id              BigInteger
-    verb            Unicode
-    data            JSON
-    transaction_id  BigInteger
-    object_id       BigInteger
-    target_id       BigInteger
-    ==============  ===========
+    ==============  =========== ========================================
+    Column          Type        Description
+    --------------  ----------- ----------------------------------------
+    id              BigInteger  The primary key of the activity
+    verb            Unicode     Verb defines the action of the activity
+    data            JSON        Additional data for the activity in JSON format
+    transaction_id  BigInteger  The transaction this activity was associated
+                                with
+    object_id       BigInteger  The primary key of the object. Object can be
+                                any entity which has an integer as primary key.
+    object_type     Unicode     The type of the object (class name as string)
+
+    object_transaction_id
+
+                    BigInteger  The last transaction_id associated with the
+                                object. This is used for efficiently fetching
+                                the object version associated with this
+                                activity.
+
+    target_id       BigInteger  The primary key of the target. Target can be
+                                any entity which has an integer as primary key.
+    target_type     Unicode     The of the target (class name as string)
+
+    target_transaction_id
+
+                    BigInteger  The last transaction_id associated with the
+                                target.
+    ==============  =========== ========================================
 
 
 Each Activity has relationships to actor, object and target but it also holds
