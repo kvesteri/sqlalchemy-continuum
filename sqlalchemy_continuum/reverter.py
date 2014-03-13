@@ -49,8 +49,8 @@ class Reverter(object):
                 getattr(self.obj, prop.key)
             )
 
-    def revert_relationship(self, prop):
-        if prop.secondary is not None:
+    def revert_association(self, prop):
+        if prop.uselist:
             setattr(self.version_parent, prop.key, [])
             for value in getattr(self.obj, prop.key):
                 value = Reverter(
@@ -62,6 +62,20 @@ class Reverter(object):
                     getattr(self.version_parent, prop.key).append(
                         value
                     )
+        else:
+            setattr(self.version_parent, prop.key, None)
+            value = getattr(self.obj, prop.key)
+            value = Reverter(
+                value,
+                visited_objects=self.visited_objects,
+                relations=subpaths(self.relations, prop.key)
+            )()
+            if value:
+                setattr(self.version_parent, prop.key, value)
+
+    def revert_relationship(self, prop):
+        if prop.secondary is not None:
+            self.revert_association(prop)
         else:
             for value in getattr(self.obj, prop.key):
                 Reverter(
