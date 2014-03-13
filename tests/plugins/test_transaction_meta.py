@@ -24,30 +24,13 @@ class TestTransaction(TestCase):
         self.session.refresh(tx)
         assert tx.meta == {u'some key': u'some value'}
 
-    def test_tx_meta_manager(self):
+    def test_assign_meta_to_transaction(self):
         self.article.name = u'Some update article'
         meta = {u'some_key': u'some_value'}
-        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
-            self.session.commit()
+        uow = versioning_manager.unit_of_work(self.session)
+        tx = uow.create_transaction(self.session)
+        tx.meta = meta
+        self.session.commit()
 
         tx = self.article.versions[-1].transaction
         assert tx.meta[u'some_key'] == u'some_value'
-
-    def test_passing_callables_for_tx_meta(self):
-        self.article.name = u'Some update article'
-        meta = {u'some_key': lambda: self.article.id}
-        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
-            self.session.commit()
-        tx = self.article.versions[-1].transaction
-        assert tx.meta[u'some_key'] == str(self.article.id)
-
-    def test_only_saves_meta_if_actual_moficication(self):
-        self.article.name = u'Some article'
-        self.session.commit()
-        meta = {u'some_key': u'some_value'}
-        with versioning_manager.unit_of_work(self.session).tx_meta(**meta):
-            self.article.name = u'Some article'
-            self.session.commit()
-        assert self.session.query(
-            versioning_manager.transaction_meta_cls
-        ).count() == 0

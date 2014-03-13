@@ -1,11 +1,9 @@
-import six
 import sqlalchemy as sa
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from .base import Plugin
 from ..factory import ModelFactory
-from ..operation import IdentitySet
 
 
 class TransactionMetaBase(object):
@@ -53,8 +51,6 @@ class TransactionMetaFactory(ModelFactory):
 
 
 class TransactionMetaPlugin(Plugin):
-    objects = None
-
     def after_build_tx_class(self, manager):
         self.model_class = TransactionMetaFactory(manager)()
         manager.transaction_meta_cls = self.model_class
@@ -62,34 +58,3 @@ class TransactionMetaPlugin(Plugin):
     def after_build_models(self, manager):
         self.model_class = TransactionMetaFactory(manager)()
         manager.transaction_meta_cls = self.model_class
-
-    def clear(self):
-        self.objects = None
-
-    def after_rollback(self, uow, session):
-        self.clear()
-
-    def after_commit(self, uow, session):
-        self.clear()
-
-    def before_create_version_objects(self, uow, session):
-        """
-        Create transaction meta entries based on transaction meta context
-        key-value pairs.
-
-        :param session: SQLAlchemy session object
-        """
-        if self.objects is None:
-            self.objects = IdentitySet()
-        if uow.tx_meta and uow.has_changes:
-            for key, value in uow.tx_meta_dict.items():
-                if callable(value):
-                    value = six.text_type(value())
-                meta = self.model_class(
-                    transaction_id=uow.current_transaction.id,
-                    key=key,
-                    value=value
-                )
-                if meta not in self.objects:
-                    self.objects.add(meta)
-                    session.add(meta)

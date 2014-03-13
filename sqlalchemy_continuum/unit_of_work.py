@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from copy import copy
 
 import sqlalchemy as sa
@@ -26,24 +25,8 @@ class UnitOfWork(object):
         self.version_session = None
         self.current_transaction = None
         self.operations = Operations()
-        self.tx_meta_dict = {}
         self.pending_statements = []
         self.version_objs = {}
-
-    @contextmanager
-    def tx_meta(self, **tx_meta):
-        """
-        Assign values for current transaction meta. When committing
-        transaction new TransactionMeta records are created for each key-value
-        pair.
-
-        :param tx_meta:
-            dictionary containing key-value meta attribute pairs.
-        """
-        old_tx_meta = self.tx_meta_dict
-        self.tx_meta_dict = tx_meta
-        yield
-        self.tx_meta_dict = old_tx_meta
 
     def is_modified(self, session):
         """
@@ -79,6 +62,11 @@ class UnitOfWork(object):
     def process_after_flush(self, session):
         """
         After flush processor for given session.
+
+        Creates version objects for all modified versioned parent objects that
+        were affected during the flush phase.
+
+        :param session: SQLAlchemy session object
         """
         if session == self.version_session:
             return
