@@ -28,9 +28,7 @@ with a nice twist:
                                 any entity which has an integer as primary key.
     object_type     Unicode     The type of the object (class name as string)
 
-    object_transaction_id
-
-                    BigInteger  The last transaction_id associated with the
+    object_tx_id    BigInteger  The last transaction_id associated with the
                                 object. This is used for efficiently fetching
                                 the object version associated with this
                                 activity.
@@ -39,9 +37,7 @@ with a nice twist:
                                 any entity which has an integer as primary key.
     target_type     Unicode     The of the target (class name as string)
 
-    target_transaction_id
-
-                    BigInteger  The last transaction_id associated with the
+    target_tx_id    BigInteger  The last transaction_id associated with the
                                 target.
     ==============  =========== ========================================
 
@@ -100,15 +96,15 @@ class ActivityFactory(ModelFactory):
 
             object_id = sa.Column(sa.BigInteger)
 
-            object_transaction_id = sa.Column(sa.BigInteger)
+            object_tx_id = sa.Column(sa.BigInteger)
 
             target_type = sa.Column(sa.String(255))
 
             target_id = sa.Column(sa.BigInteger)
 
-            target_transaction_id = sa.Column(sa.BigInteger)
+            target_tx_id = sa.Column(sa.BigInteger)
 
-            @generates(object_transaction_id)
+            @generates(object_tx_id)
             def generate_object_transaction_id(self):
                 session = sa.orm.object_session(self)
                 if self.object:
@@ -117,7 +113,7 @@ class ActivityFactory(ModelFactory):
                         sa.func.max(version_cls.transaction_id)
                     ).scalar()
 
-            @generates(target_transaction_id)
+            @generates(target_tx_id)
             def generate_target_transaction_id(self):
                 session = sa.orm.object_session(self)
                 if self.target:
@@ -139,7 +135,7 @@ class ActivityFactory(ModelFactory):
                 return sa.func.concat(cls.object_type, 'Version')
 
             object_version = generic_relationship(
-                object_version_type, (object_id, object_transaction_id)
+                object_version_type, (object_id, object_tx_id)
             )
 
             target = generic_relationship(
@@ -155,7 +151,7 @@ class ActivityFactory(ModelFactory):
                 return sa.func.concat(cls.target_type, 'Version')
 
             target_version = generic_relationship(
-                target_version_type, (target_id, target_transaction_id)
+                target_version_type, (target_id, target_tx_id)
             )
 
         Activity.transaction = sa.orm.relationship(
