@@ -1,6 +1,4 @@
-#from itertools import chain
 import sqlalchemy as sa
-#from sqlalchemy_utils.functions import primary_keys
 from .operation import Operation
 from .utils import versioned_column_properties, parent_class
 
