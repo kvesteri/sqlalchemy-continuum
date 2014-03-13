@@ -75,6 +75,6 @@ This would execute the following SQL queries (on PostgreSQL)
 2. INSERT INTO transaction_log (issued_at) VALUES (?)
     params: (datetime.utcnow())
 3. INSERT INTO article_history (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
-    params: (article id from query 1, 'Some article', 'Some content', <transaction id from query 2>)
+    params: (<article id from query 1>, 'Some article', 'Some content', <transaction id from query 2>)
 
 

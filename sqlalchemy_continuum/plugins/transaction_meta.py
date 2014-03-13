@@ -1,3 +1,51 @@
+"""
+TransactionMetaPlugin offers a way of saving key-value data for transations.
+You can use the plugin in same way as other plugins::
+
+
+    meta_plugin = TransactionMetaPlugin()
+
+    versioning_manager.plugins.add(meta_plugin)
+
+
+TransactionMetaPlugin creates a simple model called TransactionMeta. This class
+has three columns: transaction_id, key and value. TransactionMeta plugin also
+creates an association proxy between TransactionMeta and Transaction classes
+for easy dictionary based access of key-value pairs.
+
+You can easily 'tag' transactions with certain key value pairs by giving these
+keys and values to the meta property of Transaction class.
+
+
+::
+
+
+    from sqlalchemy_continuum import versioning_manager
+
+
+    article = Article()
+    session.add(article)
+
+    uow = unit_of_work(session)
+    tx = uow.create_transaction()
+    tx.meta = {u'some_key': u'some value'}
+    session.commit()
+
+    TransactionMeta = meta_plugin.model_class
+
+    # find all transactions with 'article' tags
+    query = (
+        session.query(  )
+        .join(TransactionLog.meta_relation)
+        .filter(
+            db.and_(
+                TransactionMeta.key == 'some_key',
+                TransactionMeta.value == 'some value'
+            )
+        )
+    )
+"""
+
 import sqlalchemy as sa
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy

@@ -1,7 +1,4 @@
 """
-Flask
------
-
 FlaskPlugin offers way of integrating Flask framework with
 SQLAlchemy-Continuum. Flask-Plugin adds two columns for Transaction model,
 namely `user_id` and `remote_addr`.
