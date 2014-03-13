@@ -4,6 +4,7 @@ from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import changeset
 from sqlalchemy_continuum.utils import (
+    get_bind,
     is_modified,
     parent_class,
     tx_column_name,
@@ -71,6 +72,23 @@ class TestVersionClass(TestCase):
     def test_throws_error_for_non_versioned_class(self):
         with raises(KeyError):
             parent_class(self.Article)
+
+
+class TestGetBind(TestCase):
+    def test_with_session(self):
+        assert get_bind(self.session) == self.connection
+
+    def test_with_connection(self):
+        assert get_bind(self.connection) == self.connection
+
+    def test_with_model_object(self):
+        article = self.Article()
+        self.session.add(article)
+        assert get_bind(article) == self.connection
+
+    def test_with_unknown_type(self):
+        with raises(TypeError):
+            get_bind(None)
 
 
 class TestParentClass(TestCase):
