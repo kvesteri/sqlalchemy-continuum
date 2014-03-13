@@ -120,6 +120,9 @@ Here is a full list of configuration options:
 * transaction_column_name (default: 'transaction_id')
     The name of the transaction column (used by history tables).
 
+* end_transaction_column_name (default: 'end_transaction_id')
+    The name of the end transaction column in history table when using the validity versioning strategy.
+
 * operation_type_column_name (default: 'operation_type')
     The name of the operation type column (used by history tables).
 
@@ -127,9 +130,6 @@ Here is a full list of configuration options:
     The relation naming function that is being used for generating the relationship names between various generated models.
 
     For example lets say you have versioned class called 'User'. By default Continuum builds relationship from TransactionLog with name 'users' that points to User class.
-
-* store_data_at_delete (default: True)
-    Whether or not to store data in history records when parent object gets deleted.
 
 
 Example

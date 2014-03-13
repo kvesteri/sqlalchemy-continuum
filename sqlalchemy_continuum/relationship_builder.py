@@ -57,6 +57,12 @@ class RelationshipBuilder(object):
         )
 
     def process_query(self, query):
+        """
+        Process given SQLAlchemy Query object depending on the associated
+        RelationshipProperty object.
+
+        :param query: SQLAlchemy Query object
+        """
         if self.property.lazy == 'dynamic':
             return query
         if self.property.uselist is False:
