@@ -10,9 +10,6 @@ from sqlalchemy_utils import identity
 
 
 class Operation(object):
-    """
-    Simple class holding constants for SQL operations.
-    """
     INSERT = 0
     UPDATE = 1
     DELETE = 2
@@ -102,34 +99,3 @@ class Operations(object):
 
     def add_delete(self, target):
         self.add(Operation(target, Operation.DELETE))
-
-
-class IdentitySet(object):
-    """
-    A set of entities
-
-    ::
-
-        identity_set = IdentitySet()
-        identity_set.add(User(id=1))
-
-        User(id=1) in identity_set
-    """
-    def __init__(self):
-        self.objects = OrderedDict()
-
-    def format_key(self, obj):
-        return (obj.__class__, identity(obj))
-
-    def __contains__(self, obj):
-        return self.format_key(obj) in self.objects
-
-    def remove(self, obj):
-        del self.objects[self.format_key(obj)]
-
-    def add(self, obj):
-        self.objects[self.format_key(obj)] = obj
-
-    def __iter__(self):
-        for obj in self.objects:
-            yield self.obj
