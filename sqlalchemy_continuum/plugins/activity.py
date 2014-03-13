@@ -52,6 +52,9 @@ objects and targets were in given point in time. All these relationship
 properties use `generic relationships`_ of the SQLAlchemy-Utils package.
 
 
+Creating activities
+^^^^^^^^^^^^^^^^^^^
+
 
 Once your models have been configured you can get the Activity model from the
 ActivityPlugin class with activity_cls property::
@@ -62,7 +65,7 @@ ActivityPlugin class with activity_cls property::
 
 Now let's say we have model called Article and Category. Each Article has one
 Category. Activities should be created along with the changes you make on
-these models::
+these models. ::
 
     article = Article(name=u'Some article')
     session.add(article)
@@ -73,7 +76,7 @@ these models::
 
 The object property of the Activity object holds the current object and the
 object_version holds the object version at the time when the activity was
-created.
+created. ::
 
 
     article.name = u'Some article updated!'
@@ -85,6 +88,17 @@ created.
     first_activity.object.name  # u'Some article updated!'
 
     first_activity.object_version.name  # u'Some article'
+
+
+The version properties are especially useful for delete activities.
+
+
+    session.delete(article)
+    third_activity = Activity(verb=u'delete', object=article)
+    session.add(third_activity)
+    session.commit()
+
+    third_activity.object_version.name  # u'Some article updated!'
 
 
 .. _activity stream specification:
