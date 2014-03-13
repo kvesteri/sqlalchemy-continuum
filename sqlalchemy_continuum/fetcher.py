@@ -16,7 +16,7 @@ def parent_identity(obj_or_class):
     )
 
 
-class HistoryObjectFetcher(object):
+class VersionObjectFetcher(object):
     def __init__(self, manager):
         self.manager = manager
 
@@ -132,7 +132,7 @@ class HistoryObjectFetcher(object):
         return query
 
 
-class SubqueryFetcher(HistoryObjectFetcher):
+class SubqueryFetcher(VersionObjectFetcher):
     def previous_query(self, obj):
         """
         Returns the query that fetches the previous version relative to this
@@ -148,7 +148,7 @@ class SubqueryFetcher(HistoryObjectFetcher):
         return self._next_prev_query(obj, 'next')
 
 
-class ValidityFetcher(HistoryObjectFetcher):
+class ValidityFetcher(VersionObjectFetcher):
     def next_query(self, obj):
         """
         Returns the query that fetches the next version relative to this

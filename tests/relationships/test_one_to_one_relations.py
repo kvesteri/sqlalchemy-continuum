@@ -1,11 +1,9 @@
 from copy import copy
-from tests import TestCase  # create_test_cases
+from tests import TestCase, create_test_cases
 import sqlalchemy as sa
 
 
-class TestOneToOneRelationships(TestCase):
-    versioning_strategy = 'validity'
-
+class OneToOneRelationshipsTestCase(TestCase):
     def create_models(self):
         class User(self.Model):
             __tablename__ = 'user'
@@ -102,39 +100,6 @@ class TestOneToOneRelationships(TestCase):
         self.session.commit()
 
         assert article.versions[1].author == other_user.versions[0]
-#create_test_cases(OneToOneRelationshipsTestCase)
 
 
-# UserHistory = version_class(self.User)
-
-# from sqlalchemy.orm import foreign
-
-# subquery = (
-#     sa.select(
-#         [sa.func.max(UserHistory.transaction_id)]
-#     ).where(
-#         sa.and_(
-#             UserHistory.transaction_id <=
-#             self.ArticleHistory.transaction_id
-#         )
-#     ).correlate(self.ArticleHistory)
-# )
-
-# self.ArticleHistory.author2 = sa.orm.relationship(
-#     version_class(self.User),
-#     primaryjoin=sa.or_(
-#         sa.and_(
-#             self.ArticleHistory.author_id == UserHistory.id,
-#             UserHistory.transaction_id == subquery,
-#         ),
-#         sa.and_(
-#             UserHistory.transaction_id == self.ArticleHistory.transaction_id,
-#             UserHistory.id == self.ArticleHistory.author_id
-#         )
-#     ),
-#     foreign_keys=[
-#         self.ArticleHistory.author_id,
-#         #self.ArticleHistory.transaction_id
-#     ],
-#     viewonly=True
-# )
+create_test_cases(OneToOneRelationshipsTestCase)

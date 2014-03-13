@@ -39,13 +39,13 @@ class TestCompositePrimaryKey(TestCase):
         self.TeamMember = TeamMember
 
     def test_composite_primary_key_on_version_tables(self):
-        TeamMemberHistory = version_class(self.TeamMember)
-        assert len(TeamMemberHistory.__table__.primary_key.columns) == 3
+        TeamMemberVersion = version_class(self.TeamMember)
+        assert len(TeamMemberVersion.__table__.primary_key.columns) == 3
 
     def test_does_not_make_composite_primary_keys_not_nullable(self):
-        TeamMemberHistory = version_class(self.TeamMember)
+        TeamMemberVersion = version_class(self.TeamMember)
 
-        assert not TeamMemberHistory.__table__.c.user_id.nullable
+        assert not TeamMemberVersion.__table__.c.user_id.nullable
 
 
 class TestCompositePrimaryKeyWithPkConstraint(TestCase):
@@ -69,6 +69,6 @@ class TestCompositePrimaryKeyWithPkConstraint(TestCase):
         self.TeamMember = TeamMember
 
     def test_does_not_make_composite_primary_keys_not_nullable(self):
-        TeamMemberHistory = version_class(self.TeamMember)
+        TeamMemberVersion = version_class(self.TeamMember)
 
-        assert not TeamMemberHistory.__table__.c.user_id.nullable
+        assert not TeamMemberVersion.__table__.c.user_id.nullable

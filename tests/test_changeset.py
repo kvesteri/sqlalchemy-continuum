@@ -49,7 +49,7 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
             ''' % (self.transaction_column_name, tx_log.id)
         )
 
-        assert self.session.query(self.ArticleHistory).first().changeset == {}
+        assert self.session.query(self.ArticleVersion).first().changeset == {}
 
 
 class TestChangeSetWithValidityStrategy(ChangeSetTestCase):

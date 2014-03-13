@@ -43,10 +43,10 @@ class TestTransactionChangedEntities(TestCase):
         tx = self.article.versions[0].transaction
 
         assert self.article.versions[0] in tx.changed_entities[
-            self.ArticleHistory
+            self.ArticleVersion
         ]
         assert self.article.tags[0].versions[0] in tx.changed_entities[
-            self.TagHistory
+            self.TagVersion
         ]
 
     def test_saves_changed_entity_names(self):

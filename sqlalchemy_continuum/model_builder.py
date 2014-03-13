@@ -8,7 +8,7 @@ from .version import VersionClassBase
 
 class ModelBuilder(object):
     """
-    VersionedModelBuilder handles the building of History models based on
+    VersionedModelBuilder handles the building of Version models based on
     parent table attributes and versioning configuration.
     """
     def __init__(self, versioning_manager, model):

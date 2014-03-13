@@ -63,10 +63,10 @@ class TestIsModified(TestCase):
         assert not is_modified(article)
 
 
-class TestHistoryClass(TestCase):
+class TestVersionClass(TestCase):
     def test_version_class_for_versioned_class(self):
-        ArticleHistory = version_class(self.Article)
-        assert ArticleHistory.__name__ == 'ArticleHistory'
+        ArticleVersion = version_class(self.Article)
+        assert ArticleVersion.__name__ == 'ArticleVersion'
 
     def test_throws_error_for_non_versioned_class(self):
         with raises(KeyError):
@@ -75,8 +75,8 @@ class TestHistoryClass(TestCase):
 
 class TestParentClass(TestCase):
     def test_parent_class_for_version_class(self):
-        ArticleHistory = version_class(self.Article)
-        assert parent_class(ArticleHistory) == self.Article
+        ArticleVersion = version_class(self.Article)
+        assert parent_class(ArticleVersion) == self.Article
 
     def test_throws_error_for_non_version_class(self):
         with raises(KeyError):

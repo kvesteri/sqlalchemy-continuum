@@ -45,16 +45,16 @@ class TestJoinTableInheritance(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = version_class(self.TextItem)
-        self.ArticleHistory = version_class(self.Article)
-        self.BlogPostHistory = version_class(self.BlogPost)
+        self.TextItemVersion = version_class(self.TextItem)
+        self.ArticleVersion = version_class(self.Article)
+        self.BlogPostVersion = version_class(self.BlogPost)
 
     def test_each_class_has_distinct_version_class(self):
-        assert self.TextItemHistory.__table__.name == 'text_item_version'
-        assert self.ArticleHistory.__table__.name == 'article_version'
-        assert self.BlogPostHistory.__table__.name == 'blog_post_version'
-        assert issubclass(self.ArticleHistory, self.TextItemHistory)
-        assert issubclass(self.BlogPostHistory, self.TextItemHistory)
+        assert self.TextItemVersion.__table__.name == 'text_item_version'
+        assert self.ArticleVersion.__table__.name == 'article_version'
+        assert self.BlogPostVersion.__table__.name == 'blog_post_version'
+        assert issubclass(self.ArticleVersion, self.TextItemVersion)
+        assert issubclass(self.BlogPostVersion, self.TextItemVersion)
 
     @mark.skipif('True')
     def test_each_object_has_distinct_version_class(self):
@@ -67,14 +67,14 @@ class TestJoinTableInheritance(TestCase):
         self.session.add(textitem)
         self.session.commit()
 
-        assert type(textitem.versions[0]) == self.TextItemHistory
-        assert type(article.versions[0]) == self.ArticleHistory
-        assert type(blogpost.versions[0]) == self.BlogPostHistory
+        assert type(textitem.versions[0]) == self.TextItemVersion
+        assert type(article.versions[0]) == self.ArticleVersion
+        assert type(blogpost.versions[0]) == self.BlogPostVersion
 
     def test_all_tables_contain_transaction_id_column(self):
-        assert 'transaction_id' in self.TextItemHistory.__table__.c
-        assert 'transaction_id' in self.ArticleHistory.__table__.c
-        assert 'transaction_id' in self.BlogPostHistory.__table__.c
+        assert 'transaction_id' in self.TextItemVersion.__table__.c
+        assert 'transaction_id' in self.ArticleVersion.__table__.c
+        assert 'transaction_id' in self.BlogPostVersion.__table__.c
 
     def test_consecutive_insert_and_delete(self):
         article = self.Article()
@@ -95,11 +95,11 @@ class TestJoinTableInheritance(TestCase):
         ).fetchone()[0] == 1
 
     def test_primary_keys(self):
-        table = self.TextItemHistory.__table__
+        table = self.TextItemVersion.__table__
         assert len(table.primary_key.columns)
         assert 'id' in table.primary_key.columns
         assert 'transaction_id' in table.primary_key.columns
-        table = self.ArticleHistory.__table__
+        table = self.ArticleVersion.__table__
         assert len(table.primary_key.columns)
         assert 'id' in table.primary_key.columns
         assert 'transaction_id' in table.primary_key.columns

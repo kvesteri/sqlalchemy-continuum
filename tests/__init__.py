@@ -79,10 +79,10 @@ class TestCase(object):
         sa.orm.configure_mappers()
 
         if hasattr(self, 'Article'):
-            self.ArticleHistory = version_class(self.Article)
+            self.ArticleVersion = version_class(self.Article)
         if hasattr(self, 'Tag'):
             try:
-                self.TagHistory = version_class(self.Tag)
+                self.TagVersion = version_class(self.Tag)
             except (AttributeError, KeyError):
                 pass
         self.create_tables()

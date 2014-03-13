@@ -96,11 +96,11 @@ class TestJoinTableInheritanceWithValidityVersioning(TestCase):
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)
-        self.TextItemHistory = version_class(self.TextItem)
-        self.ArticleHistory = version_class(self.Article)
-        self.BlogPostHistory = version_class(self.BlogPost)
+        self.TextItemVersion = version_class(self.TextItem)
+        self.ArticleVersion = version_class(self.Article)
+        self.BlogPostVersion = version_class(self.BlogPost)
 
     def test_all_tables_contain_transaction_id_column(self):
-        assert 'end_transaction_id' in self.TextItemHistory.__table__.c
-        assert 'end_transaction_id' in self.ArticleHistory.__table__.c
-        assert 'end_transaction_id' in self.BlogPostHistory.__table__.c
+        assert 'end_transaction_id' in self.TextItemVersion.__table__.c
+        assert 'end_transaction_id' in self.ArticleVersion.__table__.c
+        assert 'end_transaction_id' in self.BlogPostVersion.__table__.c

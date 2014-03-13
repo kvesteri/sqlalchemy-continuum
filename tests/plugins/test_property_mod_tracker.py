@@ -22,15 +22,15 @@ class TestPropertyModificationsTracking(TestCase):
         self.User = User
 
     def test_each_column_generates_additional_mod_column(self):
-        UserHistory = version_class(self.User)
-        assert 'name_mod' in UserHistory.__table__.c
-        column = UserHistory.__table__.c['name_mod']
+        UserVersion = version_class(self.User)
+        assert 'name_mod' in UserVersion.__table__.c
+        column = UserVersion.__table__.c['name_mod']
         assert not column.nullable
         assert isinstance(column.type, sa.Boolean)
 
     def test_primary_keys_not_included(self):
-        UserHistory = version_class(self.User)
-        assert 'id_mod' not in UserHistory.__table__.c
+        UserVersion = version_class(self.User)
+        assert 'id_mod' not in UserVersion.__table__.c
 
     def test_mod_properties_get_updated(self):
         user = self.User(name=u'John')

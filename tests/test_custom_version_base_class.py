@@ -11,23 +11,23 @@ class TestCommonBaseClass(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
-        class ArticleHistoryBase(self.Model):
+        class ArticleVersionBase(self.Model):
             __abstract__ = True
 
         class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
-                'base_classes': (ArticleHistoryBase, )
+                'base_classes': (ArticleVersionBase, )
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
         self.TextItem = TextItem
         self.Article = Article
-        self.ArticleHistoryBase = ArticleHistoryBase
+        self.ArticleVersionBase = ArticleVersionBase
 
     def test_each_class_has_distinct_translation_class(self):
         class_ = version_class(self.TextItem)
-        assert class_.__name__ == 'TextItemHistory'
+        assert class_.__name__ == 'TextItemVersion'
         class_ = version_class(self.Article)
-        assert class_.__name__ == 'ArticleHistory'
-        assert issubclass(class_, self.ArticleHistoryBase)
+        assert class_.__name__ == 'ArticleVersion'
+        assert issubclass(class_, self.ArticleVersionBase)

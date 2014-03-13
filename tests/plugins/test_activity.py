@@ -58,8 +58,8 @@ class TestActivity(TestCase):
         self.session.add(activity)
         self.session.commit()
         versions = (
-            self.session.query(self.ArticleHistory)
-            .order_by(sa.desc(self.ArticleHistory.transaction_id))
+            self.session.query(self.ArticleVersion)
+            .order_by(sa.desc(self.ArticleVersion.transaction_id))
             .all()
         )
         assert activity

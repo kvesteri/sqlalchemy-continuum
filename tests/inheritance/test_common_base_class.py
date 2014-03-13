@@ -24,6 +24,6 @@ class TestCommonBaseClass(TestCase):
 
     def test_each_class_has_distinct_translation_class(self):
         class_ = version_class(self.TextItem)
-        assert class_.__name__ == 'TextItemHistory'
+        assert class_.__name__ == 'TextItemVersion'
         class_ = version_class(self.Article)
-        assert class_.__name__ == 'ArticleHistory'
+        assert class_.__name__ == 'ArticleVersion'
