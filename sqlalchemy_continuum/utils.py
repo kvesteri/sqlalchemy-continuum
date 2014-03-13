@@ -1,13 +1,21 @@
 from inspect import isclass
 from collections import defaultdict
 import sqlalchemy as sa
+from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import get_history
+from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent
 
 
 def get_versioning_manager(obj_or_class):
+    """
+    Return the associated SQLAlchemy-Continuum VersioningManager for given
+    SQLAlchemy declarative model class or object.
+
+    :param obj_or_class: SQLAlchemy declarative model object or class
+    """
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
@@ -38,6 +46,23 @@ def end_tx_attr(obj):
         obj.__class__,
         end_tx_column_name(obj)
     )
+
+
+def get_bind(obj):
+    if hasattr(obj, 'bind'):
+        conn = obj.bind
+    else:
+        try:
+            conn = object_session(obj).bind
+        except UnmappedInstanceError:
+            conn = obj
+
+    if not isinstance(conn, sa.engine.base.Connection):
+        raise TypeError(
+            'This method accepts only Session, Connection and declarative '
+            'model objects.'
+        )
+    return conn
 
 
 def parent_class(version_cls):

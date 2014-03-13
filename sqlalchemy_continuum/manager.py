@@ -6,13 +6,14 @@ import sqlalchemy as sa
 from sqlalchemy.orm import object_session
 from sqlalchemy_utils.functions import is_auto_assigned_date_column
 from sqlalchemy_utils.types import TSVectorType
+
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .operation import Operation
 from .plugins import PluginCollection
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
-from .utils import is_modified, is_versioned
+from .utils import get_bind, is_modified, is_versioned
 
 
 def tracked_operation(func):
@@ -252,21 +253,7 @@ class VersioningManager(object):
             Either a SQLAlchemy declarative model object or SQLAlchemy
             connection object or SQLAlchemy session object
         """
-        from sqlalchemy.orm.exc import UnmappedInstanceError
-
-        if hasattr(obj, 'bind'):
-            conn = obj.bind
-        else:
-            try:
-                conn = object_session(obj).bind
-            except UnmappedInstanceError:
-                conn = obj
-
-        if not isinstance(conn, sa.engine.base.Connection):
-            raise TypeError(
-                'This method accepts only Session, Connection and declarative '
-                'model objects.'
-            )
+        conn = get_bind(obj)
 
         if conn in self.units_of_work:
             return self.units_of_work[conn]

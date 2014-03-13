@@ -11,6 +11,12 @@ changeset
 .. autofunction:: changeset
 
 
+get_versioning_manager
+----------------------
+
+.. autofunction:: get_versioning_manager
+
+
 is_modified
 -----------
 
