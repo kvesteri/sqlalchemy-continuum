@@ -33,8 +33,10 @@ Using plugins
 TransactionMeta
 ---------------
 
+TransactionMetaPlugin offers a way of saving key-value data for transations.
 
-Each transaction has a relation to TransactionMeta class. This class contains three columns transaction_id, key and value.
+
+TransactionMetaPlugin creates a simple model called TransactionMeta. This class has three columns: transaction_id, key and value.
 
 You can easily 'tag' transactions with certain key value pairs by giving these keys and values as parameters to tx_meta function of VersioningManager.
 
