@@ -20,12 +20,26 @@ Using plugins
     del versioning_manager.plugins[0]
 
 
+Activity
+--------
 
 .. automodule:: sqlalchemy_continuum.plugins.activity
 
+
+Flask
+-----
+
 .. automodule:: sqlalchemy_continuum.plugins.flask
 
+
+PropertyModTracker
+------------------
+
 .. automodule:: sqlalchemy_continuum.plugins.property_mod_tracker
+
+
+TransactionChanges
+------------------
 
 .. automodule:: sqlalchemy_continuum.plugins.transaction_changes
 

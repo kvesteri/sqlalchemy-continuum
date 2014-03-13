@@ -1,6 +1,4 @@
 """
-Activity
---------
 The ActivityPlugin is the most powerful plugin for tracking changes of
 individual entities. If you use ActivityPlugin you probably don't need to use
 TransactionChanges nor TransactionMeta plugins.

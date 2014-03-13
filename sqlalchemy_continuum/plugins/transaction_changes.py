@@ -1,7 +1,4 @@
 """
-TransactionChanges
-------------------
-
 TransactionChanges provides way of keeping track efficiently which declarative
 models were changed in given transaction. This can be useful when transactions
 need to be queried afterwards for problems such as:
