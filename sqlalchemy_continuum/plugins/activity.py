@@ -52,8 +52,8 @@ objects and targets were in given point in time. All these relationship
 properties use `generic relationships`_ of the SQLAlchemy-Utils package.
 
 
-Creating activities
-^^^^^^^^^^^^^^^^^^^
+Create activities
+^^^^^^^^^^^^^^^^^
 
 
 Once your models have been configured you can get the Activity model from the
@@ -74,6 +74,9 @@ these models. ::
     session.commit()
 
 
+Update activities
+^^^^^^^^^^^^^^^^^
+
 The object property of the Activity object holds the current object and the
 object_version holds the object version at the time when the activity was
 created. ::
@@ -90,7 +93,16 @@ created. ::
     first_activity.object_version.name  # u'Some article'
 
 
-The version properties are especially useful for delete activities.
+Delete activities
+^^^^^^^^^^^^^^^^^
+
+
+The version properties are especially useful for delete activities. Once the
+activity is fetched from the database the object is no longer available (
+since its deleted), hence the only way we could show some information about the
+object the user deleted is by accessing the object_version property.
+
+::
 
 
     session.delete(article)
@@ -99,6 +111,12 @@ The version properties are especially useful for delete activities.
     session.commit()
 
     third_activity.object_version.name  # u'Some article updated!'
+
+
+Local version histories with targets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 
 
 .. _activity stream specification:
