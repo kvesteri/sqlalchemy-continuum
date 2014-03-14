@@ -103,7 +103,8 @@ class TableBuilder(object):
         return sa.Column(
             self.option('operation_type_column_name'),
             sa.SmallInteger,
-            nullable=False
+            nullable=False,
+            index=True
         )
 
     @property
@@ -116,6 +117,7 @@ class TableBuilder(object):
             self.option('transaction_column_name'),
             sa.BigInteger,
             primary_key=True,
+            index=True,
             autoincrement=False  # This is needed for MySQL
         )
 
@@ -127,7 +129,8 @@ class TableBuilder(object):
         """
         return sa.Column(
             self.option('end_transaction_column_name'),
-            sa.BigInteger
+            sa.BigInteger,
+            index=True
         )
 
     @property
