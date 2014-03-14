@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 from sqlalchemy_continuum.plugins import ActivityPlugin
-from tests import TestCase
+from tests import TestCase, QueryPool
 
 
 class ActivityTestCase(TestCase):
@@ -45,18 +45,6 @@ class TestActivity(ActivityTestCase):
         self.create_activity(article)
         self.session.commit()
         activity = self.session.query(versioning_manager.activity_cls).first()
-        assert activity
-        assert activity.transaction_id
-        assert activity.object == article
-        assert activity.object_version == article.versions[-1]
-
-    def test_create_activity_with_multiple_existing_objects(self):
-        article = self.create_article()
-        self.session.commit()
-        self.create_article()
-        self.session.commit()
-        activity = self.create_activity(article)
-        self.session.commit()
         assert activity
         assert activity.transaction_id
         assert activity.object == article
@@ -110,7 +98,37 @@ class TestActivity(ActivityTestCase):
         assert activities.count() == 2
 
 
+class TestObjectTxIdGeneration(ActivityTestCase):
+    def test_does_not_query_db_if_version_obj_in_session(self):
+        article = self.create_article()
+        self.session.flush()
+        self.create_activity(object=article)
+        query_count = len(QueryPool.queries)
+        self.session.commit()
+        assert query_count + 1 == len(QueryPool.queries)
+
+    def test_create_activity_with_multiple_existing_objects(self):
+        article = self.create_article()
+        self.session.commit()
+        self.create_article()
+        self.session.commit()
+        activity = self.create_activity(article)
+        self.session.commit()
+        assert activity
+        assert activity.transaction_id
+        assert activity.object == article
+        assert activity.object_version == article.versions[-1]
+
+
 class TestTargetTxIdGeneration(ActivityTestCase):
+    def test_does_not_query_db_if_version_obj_in_session(self):
+        article = self.create_article()
+        self.session.flush()
+        self.create_activity(target=article)
+        query_count = len(QueryPool.queries)
+        self.session.commit()
+        assert query_count + 1 == len(QueryPool.queries)
+
     def test_with_multiple_existing_targets(self):
         article = self.create_article()
         self.session.commit()

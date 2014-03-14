@@ -171,7 +171,7 @@ from sqlalchemy_utils import JSONType, generates, generic_relationship
 
 from .base import Plugin
 from ..factory import ModelFactory
-from ..utils import version_class
+from ..utils import version_class, version_obj
 
 
 class ActivityBase(object):
@@ -222,6 +222,10 @@ class ActivityFactory(ModelFactory):
             def generate_object_tx_id(self):
                 session = sa.orm.object_session(self)
                 if self.object:
+                    object_version = version_obj(session, self.object)
+                    if object_version:
+                        return object_version.transaction_id
+
                     version_cls = version_class(self.object.__class__)
                     return session.query(
                         sa.func.max(version_cls.transaction_id)
@@ -233,6 +237,11 @@ class ActivityFactory(ModelFactory):
             def generate_target_tx_id(self):
                 session = sa.orm.object_session(self)
                 if self.target:
+                    target_version = version_obj(session, self.target)
+
+                    if target_version:
+                        return target_version.transaction_id
+
                     version_cls = version_class(self.target.__class__)
                     return session.query(
                         sa.func.max(version_cls.transaction_id)

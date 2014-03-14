@@ -6,7 +6,7 @@ from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
-from sqlalchemy_utils.functions import naturally_equivalent
+from sqlalchemy_utils.functions import naturally_equivalent, identity
 
 
 def get_versioning_manager(obj_or_class):
@@ -79,6 +79,17 @@ def parent_class(version_cls):
     .. seealso:: :func:`version_class`
     """
     return get_versioning_manager(version_cls).parent_class_map[version_cls]
+
+
+def version_obj(session, parent_obj):
+    manager = get_versioning_manager(parent_obj)
+    uow = manager.unit_of_work(session)
+    for version_obj in uow.version_session:
+        if (
+            parent_class(version_obj.__class__) == parent_obj.__class__ and
+            identity(version_obj)[:-1] == identity(parent_obj)
+        ):
+            return version_obj
 
 
 def version_class(model):
