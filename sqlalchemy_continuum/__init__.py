@@ -12,7 +12,7 @@ from .utils import (
 )
 
 
-__version__ = '1.0-dev'
+__version__ = '1.0-b1'
 
 
 versioning_manager = VersioningManager()
