@@ -67,9 +67,15 @@ these models. ::
 
     article = Article(name=u'Some article')
     session.add(article)
+    session.commit()
     first_activity = Activity(verb=u'create', object=article)
     session.add(first_activity)
     session.commit()
+
+
+Current transaction gets automatically assigned to activity object::
+
+    first_activity.transaction  # Transaction object
 
 
 Update activities
@@ -125,7 +131,11 @@ activity.
 
 
     session.add(Category(name=u'Fist category', article=article))
-    activity = Activity(verb=u'create', object=category)
+    activity = Activity(
+        verb=u'create',
+        object=category,
+        target=article
+    )
     session.add(activity)
     session.commit()
 
@@ -209,21 +219,25 @@ class ActivityFactory(ModelFactory):
             target_tx_id = sa.Column(sa.BigInteger)
 
             @generates(object_tx_id)
-            def generate_object_transaction_id(self):
+            def generate_object_tx_id(self):
                 session = sa.orm.object_session(self)
                 if self.object:
                     version_cls = version_class(self.object.__class__)
                     return session.query(
                         sa.func.max(version_cls.transaction_id)
+                    ).filter(
+                        version_cls.id == self.object_id
                     ).scalar()
 
             @generates(target_tx_id)
-            def generate_target_transaction_id(self):
+            def generate_target_tx_id(self):
                 session = sa.orm.object_session(self)
                 if self.target:
                     version_cls = version_class(self.target.__class__)
                     return session.query(
                         sa.func.max(version_cls.transaction_id)
+                    ).filter(
+                        version_cls.id == self.target_id
                     ).scalar()
 
             object = generic_relationship(

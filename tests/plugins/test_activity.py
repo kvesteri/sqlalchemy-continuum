@@ -4,7 +4,7 @@ from sqlalchemy_continuum.plugins import ActivityPlugin
 from tests import TestCase
 
 
-class TestActivity(TestCase):
+class ActivityTestCase(TestCase):
     plugins = [ActivityPlugin()]
 
     def create_models(self):
@@ -20,28 +20,43 @@ class TestActivity(TestCase):
             name = sa.Column(sa.Unicode(255), nullable=False)
         self.User = User
 
-    def test_creates_activity_class(self):
-        assert versioning_manager.activity_cls.__name__ == 'Activity'
-
     def create_article(self):
         article = self.Article(name=u'Some article')
         self.session.add(article)
-        self.session.flush()
         return article
 
-    def create_activity(self, obj):
+    def create_activity(self, object=None, target=None):
         activity = versioning_manager.activity_cls(
-            object=obj,
+            object=object,
+            target=target,
             verb=u'create',
         )
         self.session.add(activity)
-        self.session.commit()
         return activity
+
+
+class TestActivity(ActivityTestCase):
+    def test_creates_activity_class(self):
+        assert versioning_manager.activity_cls.__name__ == 'Activity'
 
     def test_create_activity(self):
         article = self.create_article()
+        self.session.flush()
         self.create_activity(article)
+        self.session.commit()
         activity = self.session.query(versioning_manager.activity_cls).first()
+        assert activity
+        assert activity.transaction_id
+        assert activity.object == article
+        assert activity.object_version == article.versions[-1]
+
+    def test_create_activity_with_multiple_existing_objects(self):
+        article = self.create_article()
+        self.session.commit()
+        self.create_article()
+        self.session.commit()
+        activity = self.create_activity(article)
+        self.session.commit()
         assert activity
         assert activity.transaction_id
         assert activity.object == article
@@ -50,6 +65,7 @@ class TestActivity(TestCase):
     def test_delete_activity(self):
         article = self.create_article()
         self.create_activity(article)
+        self.session.commit()
         self.session.delete(article)
         activity = versioning_manager.activity_cls(
             object=article,
@@ -67,32 +83,11 @@ class TestActivity(TestCase):
         assert activity.object is None
         assert activity.object_version == versions[-1]
 
-    def test_activity_target(self):
-        article = self.create_article()
-        self.create_activity(article)
-        tag = self.Tag(name=u'some tag', article=article)
-        self.session.add(tag)
-        self.session.flush()
-        activity = versioning_manager.activity_cls(
-            object=tag,
-            target=article,
-            verb=u'create',
-        )
-        self.session.add(activity)
-        self.session.commit()
-        activity = self.session.query(
-            versioning_manager.activity_cls
-        ).filter_by(id=activity.id).one()
-        assert activity
-        assert activity.transaction_id
-        assert activity.object == tag
-        assert activity.object_version == tag.versions[-1]
-        assert activity.target == article
-        assert activity.target_version == article.versions[-1]
-
     def test_activity_queries(self):
         article = self.create_article()
+        self.session.flush()
         self.create_activity(article)
+        self.session.commit()
         tag = self.Tag(name=u'some tag', article=article)
         self.session.add(tag)
         self.session.flush()
@@ -113,3 +108,41 @@ class TestActivity(TestCase):
             )
         )
         assert activities.count() == 2
+
+
+class TestTargetTxIdGeneration(ActivityTestCase):
+    def test_with_multiple_existing_targets(self):
+        article = self.create_article()
+        self.session.commit()
+        self.create_article()
+        self.session.commit()
+        activity = self.create_activity(target=article)
+        self.session.commit()
+        assert activity
+        assert activity.transaction_id
+        assert activity.target == article
+        assert activity.target_version == article.versions[-1]
+
+    def test_activity_target(self):
+        article = self.create_article()
+        self.create_activity(article)
+        self.session.commit()
+        tag = self.Tag(name=u'some tag', article=article)
+        self.session.add(tag)
+        self.session.flush()
+        activity = versioning_manager.activity_cls(
+            object=tag,
+            target=article,
+            verb=u'create',
+        )
+        self.session.add(activity)
+        self.session.commit()
+        activity = self.session.query(
+            versioning_manager.activity_cls
+        ).filter_by(id=activity.id).one()
+        assert activity
+        assert activity.transaction_id
+        assert activity.object == tag
+        assert activity.object_version == tag.versions[-1]
+        assert activity.target == article
+        assert activity.target_version == article.versions[-1]

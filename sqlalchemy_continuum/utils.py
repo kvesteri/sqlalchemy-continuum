@@ -67,7 +67,7 @@ def get_bind(obj):
 
 def parent_class(version_cls):
     """
-    Returns the parent class for given version model class.
+    Return the parent class for given version model class.
 
     ::
 
@@ -83,7 +83,7 @@ def parent_class(version_cls):
 
 def version_class(model):
     """
-    Returns the version class for given SQLAlchemy declarative model class.
+    Return the version class for given SQLAlchemy declarative model class.
 
     ::
 
