@@ -49,6 +49,23 @@ object_version and target_version relationships for introspecting what those
 objects and targets were in given point in time. All these relationship
 properties use `generic relationships`_ of the SQLAlchemy-Utils package.
 
+Limitations
+^^^^^^^^^^^
+
+Currently all changes to parent models must be flushed or committed before
+creating activities. This is due to a fact that there is still no dependency
+processors for generic relationships. So when you create activities and assign
+objects / targets for those please remember to flush the session before
+creating an activity::
+
+
+    article = Article(name=u'Some article')
+    session.add(article)
+    session.flush()  # <- IMPORTANT!
+    first_activity = Activity(verb=u'create', object=article)
+    session.add(first_activity)
+    session.commit()
+
 
 Create activities
 ^^^^^^^^^^^^^^^^^
