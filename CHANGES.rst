@@ -16,7 +16,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Removed tx_meta context manager. Transaction meta objects can now be created explicitly.
 - Fixed association reverting when the relationship uses uselist=False
 - Fixed one-to-many directed relationship reverting when the relationship uses uselist=False
-- Fixed many-to-many relationship handling when multiple links where created during the same transaction
+- Fixed many-to-many relationship handling when multiple links were created during the same transaction
 - Added indexes to operation_type, transaction_id and end_transaction_id columns of version classes
 - Deprecated extensions
 - SQLAlchemy-Utils dependency updated to 0.25.0
