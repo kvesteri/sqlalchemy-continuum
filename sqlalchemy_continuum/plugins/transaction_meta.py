@@ -32,11 +32,12 @@ keys and values to the meta property of Transaction class.
     session.commit()
 
     TransactionMeta = meta_plugin.model_class
+    Transaction = versioning_manager.transaction_cls
 
     # find all transactions with 'article' tags
     query = (
-        session.query(  )
-        .join(TransactionLog.meta_relation)
+        session.query(Transaction)
+        .join(Transaction.meta_relation)
         .filter(
             db.and_(
                 TransactionMeta.key == 'some_key',
