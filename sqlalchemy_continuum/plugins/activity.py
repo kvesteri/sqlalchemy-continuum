@@ -87,6 +87,7 @@ created. ::
 
 
     article.name = u'Some article updated!'
+    session.flush()
     second_activity = Activity(verb=u'update', object=article)
     session.add(second_activity)
     session.commit()
@@ -110,6 +111,7 @@ object the user deleted is by accessing the object_version property.
 
 
     session.delete(article)
+    session.flush()
     third_activity = Activity(verb=u'delete', object=article)
     session.add(third_activity)
     session.commit()
@@ -131,6 +133,7 @@ activity.
 
 
     session.add(Category(name=u'Fist category', article=article))
+    session.flush()
     activity = Activity(
         verb=u'create',
         object=category,
