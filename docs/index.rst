@@ -11,10 +11,10 @@ SQLAlchemy-Continuum is a versioning extension for SQLAlchemy.
    version_objects
    revert
    queries
+   plugins
    transactions
+   configuration
    schema
    alembic
-   configuration
-   plugins
    utilities
    license
