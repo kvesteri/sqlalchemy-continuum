@@ -49,10 +49,9 @@ class TestRevertManyToManyRelationship(TestCase):
         self.Article = Article
         self.Tag = Tag
 
-    def test_revert_version_with_many_to_many_relation(self):
+    def test_revert_remove(self):
         article = self.Article()
         article.name = u'Some article'
-        article.content = u'Some content'
         tag = self.Tag(name=u'some tag')
         article.tags.append(tag)
         self.session.add(article)
@@ -66,6 +65,27 @@ class TestRevertManyToManyRelationship(TestCase):
         self.session.commit()
 
         assert article.name == u'Some article'
-        assert article.content == u'Some content'
+        assert len(article.tags) == 1
+        assert article.tags[0].name == u'some tag'
+
+    def test_revert_remove_with_multiple_parents(self):
+        article = self.Article(name=u'Some article')
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        self.session.add(article)
+        article2 = self.Article(name=u'Some article')
+        tag2 = self.Tag(name=u'some tag')
+        article2.tags.append(tag2)
+        self.session.add(article2)
+        self.session.commit()
+        article.tags.remove(tag)
+        self.session.commit()
+        self.session.refresh(article)
+
+        assert len(article.tags) == 0
+        article.versions[0].revert(relations=['tags'])
+        self.session.commit()
+
+        assert article.name == u'Some article'
         assert len(article.tags) == 1
         assert article.tags[0].name == u'some tag'

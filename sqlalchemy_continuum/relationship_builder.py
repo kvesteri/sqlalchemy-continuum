@@ -84,8 +84,10 @@ class RelationshipBuilder(object):
             getattr(self.remote_cls, tx_column) == sa.select(
                 [sa.func.max(getattr(self.remote_cls, tx_column))]
             ).where(
-                getattr(self.remote_cls, tx_column) <=
-                getattr(obj, tx_column)
+                sa.and_(
+                    getattr(self.remote_cls, tx_column) <=
+                    getattr(obj, tx_column),
+                )
             ).correlate(self.local_cls)
         )
         return sa.and_(
@@ -124,6 +126,24 @@ class RelationshipBuilder(object):
     def association_subquery(self, obj):
         """
         Returns association subquery for given SQLAlchemy declarative object.
+        This query is used by many_to_many_criteria method.
+
+        Example query:
+
+        SELECT article_tag_version.tag_id
+        FROM article_tag_version
+        WHERE
+            article_tag_version.transaction_id IN (
+                SELECT max(article_tag_version.transaction_id) AS max_1
+                FROM article_tag_version
+                WHERE
+                    article_tag_version.transaction_id <= ? AND
+                    article_tag_version.article_id = ?
+                GROUP BY article_tag_version.tag_id
+            ) AND
+            article_tag_version.article_id = ? AND
+            article_tag_version.operation_type != ?
+
 
         :param obj: SQLAlchemy declarative object
         """
@@ -151,6 +171,7 @@ class RelationshipBuilder(object):
             ).where(
                 sa.and_(
                     subquery,
+                    reflector(self.property.primaryjoin),
                     self.remote_table.c.operation_type != Operation.DELETE
                 )
             )

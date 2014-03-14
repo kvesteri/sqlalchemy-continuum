@@ -1,6 +1,5 @@
 from datetime import datetime
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.compiler import compiles
 from .factory import ModelFactory
 
