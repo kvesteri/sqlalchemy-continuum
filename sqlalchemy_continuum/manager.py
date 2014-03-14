@@ -37,6 +37,7 @@ class VersioningManager(object):
     def __init__(
         self,
         unit_of_work_cls=UnitOfWork,
+        transaction_cls=None,
         options={},
         plugins=None,
         builder=None
@@ -47,8 +48,10 @@ class VersioningManager(object):
         else:
             self.builder = builder
         self.builder.manager = self
-
         self.reset()
+        if transaction_cls is not None:
+            self.transaction_cls = transaction_cls
+
         self.options = {
             'versioning': True,
             'base_classes': None,
@@ -98,7 +101,7 @@ class VersioningManager(object):
         self.association_tables = set([])
         self.association_version_tables = set([])
         self.declarative_base = None
-        self.transaction_cls = None
+        self.transaction_cls = TransactionFactory()
         self.version_class_map = {}
         self.parent_class_map = {}
 
@@ -109,7 +112,9 @@ class VersioningManager(object):
         Create Transaction class but only if it doesn't already exist in
         declarative model registry.
         """
-        return TransactionFactory(self)()
+        if isinstance(self.transaction_cls, TransactionFactory):
+            self.transaction_cls = self.transaction_cls(self)
+        return self.transaction_cls
 
     def is_excluded_column(self, model, column):
         """

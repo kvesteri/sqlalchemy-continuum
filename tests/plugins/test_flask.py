@@ -2,11 +2,13 @@ from flask import Flask, url_for
 from flask.ext.login import LoginManager
 import sqlalchemy as sa
 from sqlalchemy_continuum.plugins import FlaskPlugin
+from sqlalchemy_continuum.transaction import TransactionFactory
 from tests import TestCase
 
 
 class TestFlaskVersioningManager(TestCase):
     plugins = [FlaskPlugin()]
+    transaction_cls = TransactionFactory()
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)

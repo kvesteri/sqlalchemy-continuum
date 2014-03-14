@@ -40,24 +40,24 @@ class TransactionChangesBase(object):
 class TransactionChangesFactory(ModelFactory):
     model_name = 'TransactionChanges'
 
-    def create_class(self):
+    def create_class(self, manager):
         """
         Create TransactionChanges class.
         """
         class TransactionChanges(
-            self.manager.declarative_base,
+            manager.declarative_base,
             TransactionChangesBase
         ):
             __tablename__ = 'transaction_changes'
 
         TransactionChanges.transaction = sa.orm.relationship(
-            self.manager.transaction_cls,
+            manager.transaction_cls,
             backref=sa.orm.backref(
                 'changes',
             ),
             primaryjoin=(
                 '%s.id == TransactionChanges.transaction_id' %
-                self.manager.transaction_cls.__name__
+                manager.transaction_cls.__name__
             ),
             foreign_keys=[TransactionChanges.transaction_id]
         )
@@ -68,10 +68,10 @@ class TransactionChangesPlugin(Plugin):
     objects = None
 
     def after_build_tx_class(self, manager):
-        self.model_class = TransactionChangesFactory(manager)()
+        self.model_class = TransactionChangesFactory()(manager)
 
     def after_build_models(self, manager):
-        self.model_class = TransactionChangesFactory(manager)()
+        self.model_class = TransactionChangesFactory()(manager)
 
     def before_create_version_objects(self, uow, session):
         for entity in uow.operations.entities:

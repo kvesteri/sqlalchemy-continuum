@@ -26,7 +26,6 @@ try:
     from flask.ext.login import current_user
 except ImportError:
     pass
-import sqlalchemy as sa
 from sqlalchemy_utils import ImproperlyConfigured
 from .base import Plugin
 
@@ -55,17 +54,6 @@ class FlaskPlugin(Plugin):
                 'Flask is required with FlaskPlugin. Please install Flask by'
                 ' running pip install Flask'
             )
-
-    def after_build_tx_class(self, manager):
-        Transaction = manager.transaction_cls
-        Transaction.remote_addr = sa.Column(sa.String(50))
-
-        Transaction.user_id = sa.Column(
-            sa.Integer,
-            sa.ForeignKey('user.id'),
-            index=True
-        )
-        Transaction.user = sa.orm.relationship('User')
 
     def before_create_tx_object(self, uow, session):
         uow.current_transaction.user_id = fetch_current_user_id()

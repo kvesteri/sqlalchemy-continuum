@@ -1,5 +1,6 @@
 from datetime import datetime
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.ext.compiler import compiles
 from .factory import ModelFactory
 
@@ -28,7 +29,8 @@ class TransactionBase(object):
         Entities are returned as a dict where keys are entity classes and
         values lists of entitites that changed in this transaction.
         """
-        tuples = set(self.manager.version_class_map.items())
+        manager = self.__versioning_manager__
+        tuples = set(manager.version_class_map.items())
         entities = []
 
         for class_, version_class in tuples:
@@ -39,7 +41,7 @@ class TransactionBase(object):
             try:
                 value = getattr(
                     self,
-                    self.manager.options['relation_naming_function'](
+                    manager.options['relation_naming_function'](
                         class_.__name__
                     )
                 )
@@ -57,17 +59,30 @@ class TransactionBase(object):
 class TransactionFactory(ModelFactory):
     model_name = 'Transaction'
 
-    def create_class(self):
+    def __init__(self, user=True, remote_addr=True):
+        self.user = user
+        self.remote_addr = remote_addr
+
+    def create_class(self, manager):
         """
         Create Transaction class.
         """
         class Transaction(
-            self.manager.declarative_base,
+            manager.declarative_base,
             TransactionBase
         ):
             __tablename__ = 'transaction'
-            manager = self.manager
+            __versioning_manager__ = manager
 
-        self.manager.transaction_cls = Transaction
+            if self.remote_addr:
+                remote_addr = sa.Column(sa.String(50))
 
+            if self.user:
+                user_id = sa.Column(
+                    sa.Integer,
+                    sa.ForeignKey('user.id'),
+                    index=True
+                )
+
+                user = sa.orm.relationship('User')
         return Transaction

@@ -12,6 +12,7 @@ from sqlalchemy_continuum import (
     make_versioned,
     versioning_manager,
 )
+from sqlalchemy_continuum.transaction import TransactionFactory
 from sqlalchemy_continuum.plugins import (
     TransactionMetaPlugin,
     TransactionChangesPlugin
@@ -45,6 +46,7 @@ class TestCase(object):
     end_transaction_column_name = 'end_transaction_id'
     composite_pk = False
     plugins = [TransactionChangesPlugin(), TransactionMetaPlugin()]
+    transaction_cls = TransactionFactory(user=False)
 
     @property
     def options(self):
@@ -68,6 +70,7 @@ class TestCase(object):
     def setup_method(self, method):
         driver = os.environ.get('DB', 'sqlite')
         versioning_manager.plugins = self.plugins
+        versioning_manager.transaction_cls = self.transaction_cls
 
         self.engine = create_engine(self.get_dns_from_driver(driver))
         # self.engine.echo = True

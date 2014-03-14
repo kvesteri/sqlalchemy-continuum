@@ -15,6 +15,7 @@ Features
 - Can revert objects data as well as all object relations at given transaction even if the object was deleted
 - Transactions can be queried afterwards using SQLAlchemy query syntax
 - Query for changed records at given transaction
+- Temporal relationship reflection. Version object's relationship show the parent objects relationships as they where in that point in time.
 
 
 QuickStart

@@ -207,12 +207,12 @@ class ActivityBase(object):
 class ActivityFactory(ModelFactory):
     model_name = 'Activity'
 
-    def create_class(self):
+    def create_class(self, manager):
         """
         Create Activity class.
         """
         class Activity(
-            self.manager.declarative_base,
+            manager.declarative_base,
             ActivityBase
         ):
             __tablename__ = 'activity'
@@ -302,13 +302,13 @@ class ActivityFactory(ModelFactory):
             )
 
         Activity.transaction = sa.orm.relationship(
-            self.manager.transaction_cls,
+            manager.transaction_cls,
             backref=sa.orm.backref(
                 'activities',
             ),
             primaryjoin=(
                 '%s.id == Activity.transaction_id' %
-                self.manager.transaction_cls.__name__
+                manager.transaction_cls.__name__
             ),
             foreign_keys=[Activity.transaction_id]
         )
@@ -317,7 +317,7 @@ class ActivityFactory(ModelFactory):
 
 class ActivityPlugin(Plugin):
     def after_build_models(self, manager):
-        self.activity_cls = ActivityFactory(manager)()
+        self.activity_cls = ActivityFactory()(manager)
         manager.activity_cls = self.activity_cls
 
     def is_session_modified(self, session):
