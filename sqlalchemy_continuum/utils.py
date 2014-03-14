@@ -81,6 +81,23 @@ def parent_class(version_cls):
     return get_versioning_manager(version_cls).parent_class_map[version_cls]
 
 
+def transaction_class(cls):
+    """
+    Return the associated transaction class for given versioned SQLAlchemy
+    declarative class or version class.
+
+    ::
+
+        from sqlalchemy_continuum import transaction_class
+
+
+        transaction_class(Article)  # Transaction class
+
+    :param cls: SQLAlchemy versioned declarative class or version model class
+    """
+    return get_versioning_manager(cls).transaction_cls
+
+
 def version_obj(session, parent_obj):
     manager = get_versioning_manager(parent_obj)
     uow = manager.unit_of_work(session)

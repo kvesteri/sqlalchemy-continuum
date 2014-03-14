@@ -5,9 +5,10 @@ from .unit_of_work import UnitOfWork
 from .utils import (
     changeset,
     get_versioning_manager,
-    version_class,
     parent_class,
+    transaction_class,
     vacuum,
+    version_class,
 )
 
 

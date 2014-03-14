@@ -47,6 +47,12 @@ parent_class
 .. autofunction:: parent_class
 
 
+transaction_class
+-----------------
+
+.. autofunction:: transaction_class
+
+
 version_class
 -------------
 

@@ -2,7 +2,9 @@ from pytest import raises
 
 from datetime import datetime
 import sqlalchemy as sa
-from sqlalchemy_continuum import changeset
+from sqlalchemy_continuum import (
+    changeset, transaction_class, versioning_manager
+)
 from sqlalchemy_continuum.utils import (
     get_bind,
     is_modified,
@@ -89,6 +91,18 @@ class TestGetBind(TestCase):
     def test_with_unknown_type(self):
         with raises(TypeError):
             get_bind(None)
+
+
+class TestTransactionClass(TestCase):
+    def test_with_versioned_class(self):
+        assert (
+            transaction_class(self.Article) ==
+            versioning_manager.transaction_cls
+        )
+
+    def test_with_unknown_type(self):
+        with raises(AttributeError):
+            transaction_class(None)
 
 
 class TestParentClass(TestCase):
