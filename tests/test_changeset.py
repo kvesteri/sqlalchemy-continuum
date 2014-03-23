@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 from sqlalchemy_continuum import get_versioning_manager
-from six import PY3
 from tests import TestCase
 
 
