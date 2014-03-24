@@ -3,70 +3,8 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
+from sqlalchemy_continuum.schema import update_property_mod_flags
 from tests import TestCase
-
-
-def update_property_mod_flags(
-    table_name,
-    tracked_columns,
-    mod_suffix='_mod',
-    primary_keys=['id'],
-    end_tx_column_name='end_transaction_id',
-    tx_column_name='transaction_id',
-    op=None
-):
-    if op is None:
-        from alembic import op
-
-    query = '''SELECT
-            {primary_keys},
-            v.{tx_column_name},
-            {tracked_columns}
-        FROM {table_name} AS v
-        LEFT JOIN {table_name} AS v2
-            ON
-            v2.{end_tx_column_name} = v.{tx_column_name}
-            AND
-            {pk_condition}
-        ORDER BY v.{tx_column_name}
-    '''.format(
-        table_name=table_name,
-        tx_column_name=tx_column_name,
-        tracked_columns=', '.join(
-            '(v.%s != v2.%s OR v2.transaction_id IS NULL) AS %s%s' % (
-                column, column, column, mod_suffix
-            )
-            for column in tracked_columns
-        ),
-        end_tx_column_name=end_tx_column_name,
-        primary_keys=', '.join('v.%s' % pk for pk in primary_keys),
-        pk_condition=' AND '.join(
-            'v.%s == v2.%s' % (pk, pk) for pk in primary_keys
-        )
-    )
-
-    stmt = op.execute(query)
-
-    for row in stmt:
-        values = [
-            '%s = %s' % (column + mod_suffix, row[column + mod_suffix])
-            for column in tracked_columns
-            if row[column + mod_suffix]
-        ]
-        if values:
-            query = '''UPDATE
-                {table_name}
-                SET {values}
-                WHERE
-                    {condition}
-            '''.format(
-                table_name=table_name,
-                values=', '.join(values),
-                condition=' AND '.join(
-                    '%s = %s' % (pk, row[pk]) for pk in primary_keys
-                ) + ' AND transaction_id = %s' % row[tx_column_name]
-            )
-            op.execute(query)
 
 
 class TestSchemaTools(TestCase):
