@@ -35,6 +35,7 @@ class PropertyModTrackerPlugin(Plugin):
                         sa.Boolean,
                         key=column.key + self.column_suffix,
                         default=False,
+                        server_default=sa.sql.expression.false(),
                         nullable=False
                     )
                 )
