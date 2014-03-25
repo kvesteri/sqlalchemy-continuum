@@ -1,40 +1,49 @@
+import sqlalchemy as sa
 
 
 def get_end_tx_column_query(
-    table_name,
-    primary_keys=['id'],
+    table,
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id'
 ):
-    return '''SELECT
-        {primary_keys},
-        v.{tx_column_name},
-        v2.{tx_column_name} AS end_transaction_id
-    FROM {table_name} AS v
-    LEFT JOIN {table_name} AS v2
-        ON
-        v2.{tx_column_name} = (
-            SELECT MIN(v3.{tx_column_name})
-            FROM {table_name} v3
-            WHERE
-                {pk_condition}
-                AND
-                v3.{tx_column_name} > v.{tx_column_name}
-        )
-    ORDER BY v.{tx_column_name}
-    '''.format(
-        table_name=table_name,
-        tx_column_name=tx_column_name,
-        primary_keys=', '.join('v.%s' % pk for pk in primary_keys),
-        pk_condition=' AND '.join(
-            'v.%s == v3.%s' % (pk, pk) for pk in primary_keys
+
+    v1 = sa.alias(table, name='v')
+    v2 = sa.alias(table, name='v2')
+    v3 = sa.alias(table, name='v3')
+
+    primary_keys = [c.name for c in table.c if c.primary_key]
+
+    tx_criterion = sa.select(
+        [sa.func.min(getattr(v3.c, tx_column_name))]
+    ).where(
+        sa.and_(
+            getattr(v3.c, tx_column_name) > getattr(v1.c, tx_column_name),
+            *[
+                getattr(v3.c, pk) == getattr(v1.c, pk)
+                for pk in primary_keys
+                if pk != tx_column_name
+            ]
         )
     )
+    return sa.select(
+        columns=[
+            getattr(v1.c, column)
+            for column in primary_keys
+        ] + [
+            getattr(v2.c, tx_column_name).label(end_tx_column_name)
+        ],
+        from_obj=v1.outerjoin(
+            v2,
+            sa.and_(
+                getattr(v2.c, tx_column_name) ==
+                tx_criterion
+            )
+        )
+    ).order_by(getattr(v1.c, tx_column_name))
 
 
 def update_end_tx_column(
-    table_name,
-    primary_keys=['id'],
+    table,
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id',
     op=None
@@ -43,74 +52,68 @@ def update_end_tx_column(
         from alembic import op
 
     query = get_end_tx_column_query(
-        table_name,
-        primary_keys=primary_keys,
+        table,
         end_tx_column_name=end_tx_column_name,
         tx_column_name=tx_column_name
     )
     stmt = op.execute(query)
-
+    primary_keys = [c.name for c in table.c if c.primary_key]
     for row in stmt:
-        if row['end_transaction_id']:
-            op.execute(
-                '''UPDATE
-                {table_name}
-                SET {end_tx_column_name} = {end_tx_value}
-                WHERE
-                    {condition}
-                '''
-                .format(
-                    table_name=table_name,
-                    end_tx_column_name=end_tx_column_name,
-                    end_tx_value=row['end_transaction_id'],
-                    condition=' AND '.join(
-                        '%s = %s' % (pk, row[pk]) for pk in primary_keys
-                    ) + ' AND transaction_id = %s' % row[tx_column_name]
-                )
+        if row[end_tx_column_name]:
+            criteria = [
+                getattr(table.c, pk) == row[pk]
+                for pk in primary_keys
+            ]
+
+            update_stmt = (
+                table.update()
+                .where(sa.and_(*criteria))
+                .values({end_tx_column_name: row[end_tx_column_name]})
             )
+            op.execute(update_stmt)
 
 
 def get_property_mod_flags_query(
-    table_name,
+    table,
     tracked_columns,
     mod_suffix='_mod',
-    primary_keys=['id'],
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id',
 ):
-    return '''SELECT
-            {primary_keys},
-            v.{tx_column_name},
-            {tracked_columns}
-        FROM {table_name} AS v
-        LEFT JOIN {table_name} AS v2
-            ON
-            v2.{end_tx_column_name} = v.{tx_column_name}
-            AND
-            {pk_condition}
-        ORDER BY v.{tx_column_name}
-    '''.format(
-        table_name=table_name,
-        tx_column_name=tx_column_name,
-        tracked_columns=', '.join(
-            '(v.%s != v2.%s OR v2.transaction_id IS NULL) AS %s%s' % (
-                column, column, column, mod_suffix
-            )
+    v1 = sa.alias(table, name='v')
+    v2 = sa.alias(table, name='v2')
+    primary_keys = [c.name for c in table.c if c.primary_key]
+
+    return sa.select(
+        columns=[
+            getattr(v1.c, column)
+            for column in primary_keys
+        ] + [
+            (sa.or_(
+                getattr(v1.c, column) != getattr(v2.c, column),
+                getattr(v2.c, tx_column_name).is_(None)
+            )).label(column + mod_suffix)
             for column in tracked_columns
-        ),
-        end_tx_column_name=end_tx_column_name,
-        primary_keys=', '.join('v.%s' % pk for pk in primary_keys),
-        pk_condition=' AND '.join(
-            'v.%s == v2.%s' % (pk, pk) for pk in primary_keys
+        ],
+        from_obj=v1.outerjoin(
+            v2,
+            sa.and_(
+                getattr(v2.c, end_tx_column_name) ==
+                getattr(v1.c, tx_column_name),
+                *[
+                    getattr(v2.c, pk) == getattr(v1.c, pk)
+                    for pk in primary_keys
+                    if pk != tx_column_name
+                ]
+            )
         )
-    )
+    ).order_by(getattr(v1.c, tx_column_name))
 
 
 def update_property_mod_flags(
-    table_name,
+    table,
     tracked_columns,
     mod_suffix='_mod',
-    primary_keys=['id'],
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id',
     op=None
@@ -119,32 +122,24 @@ def update_property_mod_flags(
         from alembic import op
 
     query = get_property_mod_flags_query(
-        table_name,
+        table,
         tracked_columns,
         mod_suffix=mod_suffix,
-        primary_keys=primary_keys,
         end_tx_column_name=end_tx_column_name,
         tx_column_name=tx_column_name,
     )
     stmt = op.execute(query)
 
+    primary_keys = [c.name for c in table.c if c.primary_key]
     for row in stmt:
-        values = [
-            '%s = %s' % (column + mod_suffix, row[column + mod_suffix])
+        values = dict([
+            (column + mod_suffix, row[column + mod_suffix])
             for column in tracked_columns
             if row[column + mod_suffix]
-        ]
+        ])
         if values:
-            query = '''UPDATE
-                {table_name}
-                SET {values}
-                WHERE
-                    {condition}
-            '''.format(
-                table_name=table_name,
-                values=', '.join(values),
-                condition=' AND '.join(
-                    '%s = %s' % (pk, row[pk]) for pk in primary_keys
-                ) + ' AND transaction_id = %s' % row[tx_column_name]
-            )
+            criteria = [
+                getattr(table.c, pk) == row[pk] for pk in primary_keys
+            ]
+            query = table.update().where(sa.and_(*criteria)).values(values)
             op.execute(query)

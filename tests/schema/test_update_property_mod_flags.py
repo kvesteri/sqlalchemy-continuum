@@ -68,7 +68,7 @@ class TestSchemaTools(TestCase):
         self.session.execute(stmt)
 
         update_property_mod_flags(
-            'article_version',
+            table,
             ['name'],
             op=self.session
         )

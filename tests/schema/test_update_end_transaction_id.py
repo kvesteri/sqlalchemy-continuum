@@ -42,7 +42,7 @@ class TestSchemaTools(TestCase):
         ])
         self.session.execute(stmt)
 
-        update_end_tx_column('article_version', op=self.session)
+        update_end_tx_column(table, op=self.session)
         rows = self.session.execute(
             'SELECT * FROM article_version ORDER BY transaction_id'
         ).fetchall()
