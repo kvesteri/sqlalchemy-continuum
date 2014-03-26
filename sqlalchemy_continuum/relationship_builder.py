@@ -130,19 +130,21 @@ class RelationshipBuilder(object):
 
         Example query:
 
-        SELECT article_tag_version.tag_id
-        FROM article_tag_version
-        WHERE
-            article_tag_version.transaction_id IN (
-                SELECT max(article_tag_version.transaction_id) AS max_1
-                FROM article_tag_version
-                WHERE
-                    article_tag_version.transaction_id <= ? AND
-                    article_tag_version.article_id = ?
-                GROUP BY article_tag_version.tag_id
-            ) AND
-            article_tag_version.article_id = ? AND
-            article_tag_version.operation_type != ?
+        .. code-block:: sql
+
+            SELECT article_tag_version.tag_id
+            FROM article_tag_version
+            WHERE
+                article_tag_version.transaction_id IN (
+                    SELECT max(article_tag_version.transaction_id) AS max_1
+                    FROM article_tag_version
+                    WHERE
+                        article_tag_version.transaction_id <= ? AND
+                        article_tag_version.article_id = ?
+                    GROUP BY article_tag_version.tag_id
+                ) AND
+                article_tag_version.article_id = ? AND
+                article_tag_version.operation_type != ?
 
 
         :param obj: SQLAlchemy declarative object

@@ -2,6 +2,8 @@ API Documentation
 =================
 
 
+.. module:: sqlalchemy_continuum
+
 .. autofunction:: make_versioned
 
 
