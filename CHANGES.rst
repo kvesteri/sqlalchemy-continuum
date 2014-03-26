@@ -3,6 +3,13 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
+
+1.0-b2 (2014-xx-xx)
+^^^^^^^^^^^^^^^^^^^
+
+- Added some schema tools to help migrating between different plugins and versioning strategies
+
+
 1.0-b1 (2014-03-14)
 ^^^^^^^^^^^^^^^^^^^
 
