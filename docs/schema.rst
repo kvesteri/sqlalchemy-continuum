@@ -32,3 +32,13 @@ Using vacuum
 
 .. module:: sqlalchemy_continuum
 .. autofunction:: vacuum
+
+
+Schema tools
+------------
+
+.. module:: sqlalchemy_continuum.schema
+
+.. autofunction:: update_end_tx_column
+
+.. autofunction:: update_property_mod_flags
