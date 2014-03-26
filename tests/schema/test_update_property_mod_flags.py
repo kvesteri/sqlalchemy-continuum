@@ -70,7 +70,7 @@ class TestSchemaTools(TestCase):
         update_property_mod_flags(
             table,
             ['name'],
-            op=self.session
+            conn=self.session
         )
         rows = self.session.execute(
             'SELECT * FROM article_version ORDER BY transaction_id'

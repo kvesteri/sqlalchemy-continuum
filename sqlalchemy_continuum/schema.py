@@ -46,17 +46,33 @@ def update_end_tx_column(
     table,
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id',
-    op=None
+    conn=None
 ):
-    if op is None:
-        from alembic import op
+    """
+    Calculates end transaction columns and updates the version table with the
+    calculated values. This function can be used for migrating between subquery
+    versioning strategy and validity versioning strategy.
+
+    :param table: SQLAlchemy table object
+    :param end_tx_column_name: Name of the end transaction column
+    :param tx_column_name: Transaction column name
+    :param conn:
+        Either SQLAlchemy Connection, Engine, Session or Alembic
+        Operations object. Basically this should be an object that can execute
+        the queries needed to update the end transaction column values.
+
+        If no object is given then this function tries to use alembic.op for
+        executing the queries.
+    """
+    if conn is None:
+        from alembic import op as conn
 
     query = get_end_tx_column_query(
         table,
         end_tx_column_name=end_tx_column_name,
         tx_column_name=tx_column_name
     )
-    stmt = op.execute(query)
+    stmt = conn.execute(query)
     primary_keys = [c.name for c in table.c if c.primary_key]
     for row in stmt:
         if row[end_tx_column_name]:
@@ -70,7 +86,7 @@ def update_end_tx_column(
                 .where(sa.and_(*criteria))
                 .values({end_tx_column_name: row[end_tx_column_name]})
             )
-            op.execute(update_stmt)
+            conn.execute(update_stmt)
 
 
 def get_property_mod_flags_query(
@@ -116,10 +132,27 @@ def update_property_mod_flags(
     mod_suffix='_mod',
     end_tx_column_name='end_transaction_id',
     tx_column_name='transaction_id',
-    op=None
+    conn=None
 ):
-    if op is None:
-        from alembic import op
+    """
+    Update property modification flags for given table and given columns. This
+    function can be used for migrating an existing schema to use property mod
+    flags (provided by PropertyModTracker plugin).
+
+    :param table: SQLAlchemy table object
+    :param mod_suffix: Modification tracking columns suffix
+    :param end_tx_column_name: Name of the end transaction column
+    :param tx_column_name: Transaction column name
+    :param conn:
+        Either SQLAlchemy Connection, Engine, Session or Alembic
+        Operations object. Basically this should be an object that can execute
+        the queries needed to update the property modification flags.
+
+        If no object is given then this function tries to use alembic.op for
+        executing the queries.
+    """
+    if conn is None:
+        from alembic import op as conn
 
     query = get_property_mod_flags_query(
         table,
@@ -128,7 +161,7 @@ def update_property_mod_flags(
         end_tx_column_name=end_tx_column_name,
         tx_column_name=tx_column_name,
     )
-    stmt = op.execute(query)
+    stmt = conn.execute(query)
 
     primary_keys = [c.name for c in table.c if c.primary_key]
     for row in stmt:
@@ -142,4 +175,4 @@ def update_property_mod_flags(
                 getattr(table.c, pk) == row[pk] for pk in primary_keys
             ]
             query = table.update().where(sa.and_(*criteria)).values(values)
-            op.execute(query)
+            conn.execute(query)
