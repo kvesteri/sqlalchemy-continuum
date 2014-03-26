@@ -21,9 +21,14 @@ class TestSchemaTools(TestCase):
 
         self.Article = Article
 
+    def _insert(self, values):
+        table = version_class(self.Article).__table__
+        stmt = table.insert().values(values)
+        self.session.execute(stmt)
+
     def test_something(self):
         table = version_class(self.Article).__table__
-        stmt = table.insert().values([
+        self._insert(
             {
                 'id': 1,
                 'transaction_id': 1,
@@ -31,7 +36,9 @@ class TestSchemaTools(TestCase):
                 'name': u'Article 1',
                 'name_mod': False,
                 'operation_type': 1,
-            },
+            }
+        )
+        self._insert(
             {
                 'id': 1,
                 'transaction_id': 2,
@@ -39,7 +46,9 @@ class TestSchemaTools(TestCase):
                 'name': u'Article 1',
                 'name_mod': False,
                 'operation_type': 2,
-            },
+            }
+        )
+        self._insert(
             {
                 'id': 2,
                 'transaction_id': 3,
@@ -47,7 +56,9 @@ class TestSchemaTools(TestCase):
                 'name': u'Article 2',
                 'name_mod': False,
                 'operation_type': 1,
-            },
+            }
+        )
+        self._insert(
             {
                 'id': 1,
                 'transaction_id': 4,
@@ -55,7 +66,9 @@ class TestSchemaTools(TestCase):
                 'name': u'Article 1 updated',
                 'name_mod': False,
                 'operation_type': 2,
-            },
+            }
+        )
+        self._insert(
             {
                 'id': 2,
                 'transaction_id': 5,
@@ -63,9 +76,8 @@ class TestSchemaTools(TestCase):
                 'name': u'Article 2',
                 'name_mod': False,
                 'operation_type': 2,
-            },
-        ])
-        self.session.execute(stmt)
+            }
+        )
 
         update_property_mod_flags(
             table,
