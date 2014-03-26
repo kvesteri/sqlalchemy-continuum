@@ -70,3 +70,59 @@ class TestChangeSetWithPropertyModPlugin(TestCase):
             'content': [u'Some content', u'Updated content'],
             'name': [u'Some article', u'Updated name']
         }
+
+
+class TestWithAssociationTables(TestCase):
+    plugins = [PropertyModTrackerPlugin()]
+
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_tag = sa.Table(
+            'article_tag',
+            self.Model.metadata,
+            sa.Column(
+                'article_id',
+                sa.Integer,
+                sa.ForeignKey('article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'tag_id',
+                sa.Integer,
+                sa.ForeignKey('tag.id'),
+                primary_key=True
+            )
+        )
+
+        class Tag(self.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        Tag.articles = sa.orm.relationship(
+            Article,
+            secondary=article_tag,
+            backref='tags'
+        )
+
+        self.Article = Article
+        self.Tag = Tag
+
+    def test_each_column_generates_additional_mod_column(self):
+        ArticleVersion = version_class(self.Article)
+        assert 'name_mod' in ArticleVersion.__table__.c
+        column = ArticleVersion.__table__.c['name_mod']
+        assert not column.nullable
+        assert isinstance(column.type, sa.Boolean)
