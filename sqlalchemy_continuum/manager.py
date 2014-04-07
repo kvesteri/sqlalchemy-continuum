@@ -23,7 +23,10 @@ def tracked_operation(func):
             return
         session = object_session(target)
         conn = session.connection()
-        uow = self.units_of_work[conn]
+        try:
+            uow = self.units_of_work[conn]
+        except KeyError:
+            uow = self.units_of_work[conn.engine]
         return func(self, uow, target)
     return wrapper
 

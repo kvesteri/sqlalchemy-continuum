@@ -1,12 +1,15 @@
 from flask import Flask, url_for
 from flask.ext.login import LoginManager
+from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
+from flexmock import flexmock
+
 import sqlalchemy as sa
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
 from tests import TestCase
 
 
-class TestFlaskVersioningManager(TestCase):
+class TestFlaskPlugin(TestCase):
     plugins = [FlaskPlugin()]
     transaction_cls = TransactionFactory()
 
@@ -81,7 +84,7 @@ class TestFlaskVersioningManager(TestCase):
         assert tx.user.id == user.id
 
 
-class TestFlaskVersioningManagerWithoutRequestContext(TestCase):
+class TestFlaskPluginWithoutRequestContext(TestCase):
     plugins = [FlaskPlugin()]
 
     def create_models(self):
@@ -101,3 +104,47 @@ class TestFlaskVersioningManagerWithoutRequestContext(TestCase):
         user = self.User(name=u'Rambo')
         self.session.add(user)
         self.session.commit()
+
+
+class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
+    def setup_method(self, method):
+        # Mock the event registering of Flask-SQLAlchemy. Currently there is no
+        # way of unregistering Flask-SQLAlchemy event listeners, hence the
+        # event listeners would affect other tests.
+        flexmock(_SessionSignalEvents).should_receive('register')
+
+        self.db = SQLAlchemy()
+
+        class User(self.db.Model):
+            __tablename__ = 'user'
+            __versioned__ = {
+                'base_classes': (self.db.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+
+        self.User = User
+        sa.orm.configure_mappers()
+
+        self.app = Flask(__name__)
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        self.db.init_app(self.app)
+        self.app.secret_key = 'secret'
+        self.app.debug = True
+        self.client = self.app.test_client()
+        self.context = self.app.test_request_context()
+        self.context.push()
+        self.db.create_all()
+
+    def teardown_method(self, method):
+        self.db.drop_all()
+        self.context.pop()
+        self.context = None
+        self.client = None
+        self.app = None
+
+    def test_something(self):
+        user = self.User(name=u'Rambo')
+        self.db.session.add(user)
+        self.db.session.commit()

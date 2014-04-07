@@ -65,7 +65,9 @@ def update_end_tx_column(
         executing the queries.
     """
     if conn is None:
-        from alembic import op as conn
+        from alembic import op
+
+        conn = op.get_bind()
 
     query = get_end_tx_column_query(
         table,
@@ -152,7 +154,9 @@ def update_property_mod_flags(
         executing the queries.
     """
     if conn is None:
-        from alembic import op as conn
+        from alembic import op
+
+        conn = op.get_bind()
 
     query = get_property_mod_flags_query(
         table,

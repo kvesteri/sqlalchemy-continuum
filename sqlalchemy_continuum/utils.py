@@ -57,10 +57,10 @@ def get_bind(obj):
         except UnmappedInstanceError:
             conn = obj
 
-    if not isinstance(conn, sa.engine.base.Connection):
+    if not hasattr(conn, 'execute'):
         raise TypeError(
-            'This method accepts only Session, Connection and declarative '
-            'model objects.'
+            'This method accepts only Session, Engine, Connection and '
+            'declarative model objects.'
         )
     return conn
 

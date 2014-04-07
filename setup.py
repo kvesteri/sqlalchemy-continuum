@@ -35,6 +35,8 @@ extras_require = {
     'anyjson': ['anyjson>=0.3.3'],
     'flask': ['Flask>=0.9'],
     'flask-login': ['Flask-Login>=0.2.9'],
+    'flask-sqlalchemy': ['Flask-SQLAlchemy>=1.0'],
+    'flexmock': ['flexmock>=0.9.7'],
     'i18n': ['SQLAlchemy-i18n >= 0.8.2'],
 }
 
