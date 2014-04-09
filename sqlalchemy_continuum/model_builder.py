@@ -47,6 +47,10 @@ class ModelBuilder(object):
                 self.version_class,
                 primaryjoin=sa.and_(*conditions),
                 foreign_keys=foreign_keys,
+                order_by=lambda: getattr(
+                    self.version_class,
+                    option(self.model, 'transaction_column_name')
+                ),
                 lazy='dynamic',
                 backref=sa.orm.backref(
                     'version_parent'

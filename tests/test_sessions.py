@@ -34,6 +34,9 @@ class TestSessions(TestCase):
         self.session.commit()
         assert article.versions[-1].transaction_id == 1
 
+    def test_commit_without_objects(self):
+        self.session.commit()
+
 
 class TestUnitOfWork(TestCase):
     def test_with_session_arg(self):

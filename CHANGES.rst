@@ -9,8 +9,10 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 - Added some schema tools to help migrating between different plugins and versioning strategies
 - Added remove_versioning utility function, see issue #45
+- Added order_by transaction_id default to versions relationship
 - Fixed PropertyModTrackerPlugin association table handling.
 - Fixed get_bind schematics (Flask-SQLAlchemy integration wasn't working)
+- Fixed a bug where committing a session without objects would result in KeyError
 - SQLAlchemy dependency updated to 0.9.4
 
 

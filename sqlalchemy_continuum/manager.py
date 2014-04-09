@@ -318,8 +318,9 @@ class VersioningManager(object):
         :param session: SQLAlchemy session object
         """
         conn = session.bind
-        uow = self.units_of_work[conn]
-        uow.reset()
+        if conn in self.units_of_work:
+            uow = self.units_of_work[conn]
+            uow.reset()
 
     def append_association_operation(self, conn, table_name, params, op):
         """
