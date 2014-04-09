@@ -108,13 +108,12 @@ def transaction_class(cls):
 def version_obj(session, parent_obj):
     manager = get_versioning_manager(parent_obj)
     uow = manager.unit_of_work(session)
-    if uow.version_session:
-        for version_obj in uow.version_session:
-            if (
-                parent_class(version_obj.__class__) == parent_obj.__class__ and
-                identity(version_obj)[:-1] == identity(parent_obj)
-            ):
-                return version_obj
+    for version_obj in uow.version_session:
+        if (
+            parent_class(version_obj.__class__) == parent_obj.__class__ and
+            identity(version_obj)[:-1] == identity(parent_obj)
+        ):
+            return version_obj
 
 
 def version_class(model):

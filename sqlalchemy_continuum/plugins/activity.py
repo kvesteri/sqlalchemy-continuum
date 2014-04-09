@@ -67,6 +67,10 @@ creating an activity::
     session.commit()
 
 
+Targets and objects of given activity must have an integer primary key
+column id.
+
+
 Create activities
 ^^^^^^^^^^^^^^^^^
 
@@ -187,7 +191,7 @@ target is the given article.
 
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy_utils import JSONType, generates, generic_relationship
+from sqlalchemy_utils import JSONType, generic_relationship
 
 from .base import Plugin
 from ..factory import ModelFactory
@@ -238,36 +242,25 @@ class ActivityFactory(ModelFactory):
 
             target_tx_id = sa.Column(sa.BigInteger)
 
-            @generates(object_tx_id)
-            def generate_object_tx_id(self):
+            def _calculate_tx_id(self, obj):
                 session = sa.orm.object_session(self)
-                if self.object:
-                    object_version = version_obj(session, self.object)
+                if obj:
+                    object_version = version_obj(session, obj)
                     if object_version:
                         return object_version.transaction_id
 
-                    version_cls = version_class(self.object.__class__)
+                    version_cls = version_class(obj.__class__)
                     return session.query(
                         sa.func.max(version_cls.transaction_id)
                     ).filter(
-                        version_cls.id == self.object_id
+                        version_cls.id == obj.id
                     ).scalar()
 
-            @generates(target_tx_id)
-            def generate_target_tx_id(self):
-                session = sa.orm.object_session(self)
-                if self.target:
-                    target_version = version_obj(session, self.target)
+            def calculate_object_tx_id(self):
+                self.object_tx_id = self._calculate_tx_id(self.object)
 
-                    if target_version:
-                        return target_version.transaction_id
-
-                    version_cls = version_class(self.target.__class__)
-                    return session.query(
-                        sa.func.max(version_cls.transaction_id)
-                    ).filter(
-                        version_cls.id == self.target_id
-                    ).scalar()
+            def calculate_target_tx_id(self):
+                self.target_tx_id = self._calculate_tx_id(self.target)
 
             object = generic_relationship(
                 object_type, object_id
@@ -333,6 +326,8 @@ class ActivityPlugin(Plugin):
         for obj in session:
             if isinstance(obj, self.activity_cls):
                 obj.transaction = uow.current_transaction
+                obj.calculate_target_tx_id()
+                obj.calculate_object_tx_id()
 
     def after_version_class_built(self, parent_cls, version_cls):
         pass
