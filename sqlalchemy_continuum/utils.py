@@ -23,6 +23,13 @@ def get_versioning_manager(obj_or_class):
 
 
 def option(obj_or_class, option_name):
+    """
+    Return the option value of given option for given versioned object or
+    class.
+
+    :param obj_or_class: SQLAlchemy declarative model object or class
+    :param option_name: The name of an option to return
+    """
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
@@ -101,12 +108,13 @@ def transaction_class(cls):
 def version_obj(session, parent_obj):
     manager = get_versioning_manager(parent_obj)
     uow = manager.unit_of_work(session)
-    for version_obj in uow.version_session:
-        if (
-            parent_class(version_obj.__class__) == parent_obj.__class__ and
-            identity(version_obj)[:-1] == identity(parent_obj)
-        ):
-            return version_obj
+    if uow.version_session:
+        for version_obj in uow.version_session:
+            if (
+                parent_class(version_obj.__class__) == parent_obj.__class__ and
+                identity(version_obj)[:-1] == identity(parent_obj)
+            ):
+                return version_obj
 
 
 def version_class(model):

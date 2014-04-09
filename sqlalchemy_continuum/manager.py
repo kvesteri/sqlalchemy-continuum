@@ -73,10 +73,6 @@ class VersioningManager(object):
             self.plugins = plugins
         self.options.update(options)
 
-        # A dictionary of units of work. Keys as connection objects and values
-        # as UnitOfWork objects.
-        self.units_of_work = {}
-
     @property
     def plugins(self):
         return self._plugins
@@ -107,6 +103,25 @@ class VersioningManager(object):
         self.transaction_cls = TransactionFactory()
         self.version_class_map = {}
         self.parent_class_map = {}
+        self.session_listeners = {
+            'before_flush': self.before_flush,
+            'after_flush': self.after_flush,
+            'after_commit': self.clear,
+            'after_rollback': self.clear,
+        }
+        self.mapper_listeners = {
+            'after_delete': self.track_deletes,
+            'after_update': self.track_updates,
+            'after_insert': self.track_inserts,
+        }
+        self.class_config_listeners = {
+            'instrument_class': self.builder.instrument_versioned_classes,
+            'after_configured': self.builder.configure_versioned_classes,
+        }
+
+        # A dictionary of units of work. Keys as connection objects and values
+        # as UnitOfWork objects.
+        self.units_of_work = {}
 
         self.metadata = None
 
@@ -172,16 +187,12 @@ class VersioningManager(object):
         :param mapper:
             SQLAlchemy mapper to apply the class configuration listeners to
         """
-        sa.event.listen(
-            mapper,
-            'instrument_class',
-            self.builder.instrument_versioned_classes
-        )
-        sa.event.listen(
-            mapper,
-            'after_configured',
-            self.builder.configure_versioned_classes
-        )
+        for event_name, listener in self.class_config_listeners.items():
+            sa.event.listen(mapper, event_name, listener)
+
+    def remove_class_configuration_listeners(self, mapper):
+        for event_name, listener in self.class_config_listeners.items():
+            sa.event.remove(mapper, event_name, listener)
 
     def track_operations(self, mapper):
         """
@@ -190,15 +201,19 @@ class VersioningManager(object):
 
         :param mapper: mapper to track the SQL operations from
         """
-        sa.event.listen(
-            mapper, 'after_delete', self.track_deletes
-        )
-        sa.event.listen(
-            mapper, 'after_update', self.track_updates
-        )
-        sa.event.listen(
-            mapper, 'after_insert', self.track_inserts
-        )
+        for event_name, listener in self.mapper_listeners.items():
+            sa.event.listen(mapper, event_name, listener)
+
+    def remove_operations_tracking(self, mapper):
+        """
+        Remove listeners from specified mapper that track SQL inserts, updates
+        and deletes.
+
+        :param mapper:
+            mapper to remove the SQL operations tracking listeners from
+        """
+        for event_name, listener in self.mapper_listeners.items():
+            sa.event.remove(mapper, event_name, listener)
 
     def track_session(self, session):
         """
@@ -208,18 +223,20 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session to track the operations from
         """
-        sa.event.listen(
-            session, 'before_flush', self.before_flush
-        )
-        sa.event.listen(
-            session, 'after_flush', self.after_flush
-        )
-        sa.event.listen(
-            session, 'after_commit', self.clear
-        )
-        sa.event.listen(
-            session, 'after_rollback', self.clear
-        )
+        for event_name, listener in self.session_listeners.items():
+            sa.event.listen(session, event_name, listener)
+
+    def remove_session_tracking(self, session):
+        """
+        Remove listeners that track the operations (flushing, committing and
+        rolling back) of given session. This method should be used in
+        conjuction with `remove_operations_tracking`.
+
+        :param session:
+            SQLAlchemy session to remove the operations tracking from
+        """
+        for event_name, listener in self.session_listeners.items():
+            sa.event.remove(session, event_name, listener)
 
     @tracked_operation
     def track_inserts(self, uow, target):

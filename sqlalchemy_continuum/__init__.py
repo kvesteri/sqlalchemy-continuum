@@ -12,7 +12,7 @@ from .utils import (
 )
 
 
-__version__ = '1.0-b1'
+__version__ = '1.0-b2'
 
 
 versioning_manager = VersioningManager()
@@ -36,8 +36,7 @@ def make_versioned(
         SQLAlchemy session to apply the versioning to. By default this is
         sa.orm.session.Session meaning it applies to all Session subclasses.
     :param manager:
-        The versioning manager. Override this if you want to use one of
-        SQLAlchemy-Continuum's extensions (eg. Flask extension)
+        SQLAlchemy-Continuum versioning manager.
     :param plugins:
         Plugins to pass for versioning manager.
     :param options:
@@ -45,14 +44,42 @@ def make_versioned(
     """
     if plugins is not None:
         manager.plugins = plugins
-    manager.apply_class_configuration_listeners(mapper)
-    manager.track_operations(mapper)
-    manager.track_session(session)
 
     if options is not None:
         manager.options.update(options)
 
+    manager.apply_class_configuration_listeners(mapper)
+    manager.track_operations(mapper)
+    manager.track_session(session)
+
     sa.event.listen(
+        sa.engine.Engine,
+        'before_cursor_execute',
+        manager.track_association_operations
+    )
+
+
+def remove_versioning(
+    mapper=sa.orm.mapper,
+    session=sa.orm.session.Session,
+    manager=versioning_manager
+):
+    """
+    Remove the versioning from given mapper / session and manager.
+
+    :param mapper:
+        SQLAlchemy mapper to remove the versioning from.
+    :param session:
+        SQLAlchemy session to remove the versioning from. By default this is
+        sa.orm.session.Session meaning it applies to all sessions.
+    :param manager:
+        SQLAlchemy-Continuum versioning manager.
+    """
+    manager.reset()
+    manager.remove_class_configuration_listeners(mapper)
+    manager.remove_operations_tracking(mapper)
+    manager.remove_session_tracking(session)
+    sa.event.remove(
         sa.engine.Engine,
         'before_cursor_execute',
         manager.track_association_operations

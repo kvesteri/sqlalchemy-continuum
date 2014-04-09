@@ -11,6 +11,7 @@ from sqlalchemy_continuum import (
     version_class,
     make_versioned,
     versioning_manager,
+    remove_versioning
 )
 from sqlalchemy_continuum.transaction import TransactionFactory
 from sqlalchemy_continuum.plugins import (
@@ -19,9 +20,6 @@ from sqlalchemy_continuum.plugins import (
 )
 
 warnings.simplefilter('error', sa.exc.SAWarning)
-
-
-make_versioned(options={'strategy': 'subquery'})
 
 
 class QueryPool(object):
@@ -68,6 +66,8 @@ class TestCase(object):
             raise Exception('Unknown driver given: %r' % driver)
 
     def setup_method(self, method):
+        make_versioned()
+
         driver = os.environ.get('DB', 'sqlite')
         versioning_manager.plugins = self.plugins
         versioning_manager.transaction_cls = self.transaction_cls
@@ -100,6 +100,7 @@ class TestCase(object):
         self.Model.metadata.drop_all(self.connection)
 
     def teardown_method(self, method):
+        remove_versioning()
         QueryPool.queries = []
         versioning_manager.reset()
 
