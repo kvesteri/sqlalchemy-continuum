@@ -84,7 +84,7 @@ these models. ::
 
     article = Article(name=u'Some article')
     session.add(article)
-    session.commit()
+    session.flush()
     first_activity = Activity(verb=u'create', object=article)
     session.add(first_activity)
     session.commit()
