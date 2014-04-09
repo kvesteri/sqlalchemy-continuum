@@ -10,6 +10,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Added some schema tools to help migrating between different plugins and versioning strategies
 - Fixed PropertyModTrackerPlugin association table handling.
 - Fixed get_bind schematics (Flask-SQLAlchemy integration wasn't working)
+- SQLAlchemy dependency updated to 0.9.4
 
 
 1.0-b1 (2014-03-14)

@@ -49,7 +49,7 @@ for name, requirements in extras_require.items():
 
 setup(
     name='SQLAlchemy-Continuum',
-    version='1.0-b1',
+    version='1.0-b2',
     url='https://github.com/kvesteri/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
@@ -64,7 +64,7 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'SQLAlchemy>=0.9.3',
+        'SQLAlchemy>=0.9.4',
         'SQLAlchemy-Utils>=0.25.0',
         'inflection>=0.2.0',
         'ordereddict>=1.1'
