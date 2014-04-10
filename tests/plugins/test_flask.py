@@ -4,6 +4,7 @@ from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
 import sqlalchemy as sa
+from sqlalchemy_continuum import make_versioned, remove_versioning
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
 from tests import TestCase
@@ -107,6 +108,8 @@ class TestFlaskPluginWithoutRequestContext(TestCase):
 
 
 class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
+    versioning_strategy = 'validity'
+
     def setup_method(self, method):
         # Mock the event registering of Flask-SQLAlchemy. Currently there is no
         # way of unregistering Flask-SQLAlchemy event listeners, hence the
@@ -114,6 +117,7 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         flexmock(_SessionSignalEvents).should_receive('register')
 
         self.db = SQLAlchemy()
+        make_versioned()
 
         class User(self.db.Model):
             __tablename__ = 'user'
@@ -138,13 +142,17 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.db.create_all()
 
     def teardown_method(self, method):
+        remove_versioning()
         self.db.drop_all()
         self.context.pop()
         self.context = None
         self.client = None
         self.app = None
 
-    def test_something(self):
+    def test_insert_and_update(self):
         user = self.User(name=u'Rambo')
         self.db.session.add(user)
         self.db.session.commit()
+        user.name = u'John Rambo'
+        self.db.session.commit()
+        assert user.versions[0].end_transaction_id
