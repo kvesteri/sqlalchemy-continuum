@@ -158,7 +158,7 @@ class ModelBuilder(object):
 
                 args['inherit_condition'] = sa.and_(
                     inherit_condition,
-                    '%s.transaction_id == %s_version.transaction_id' % (
+                    '%s.transaction_id = %s_version.transaction_id' % (
                         parent.__table__.name,
                         self.model.__table__.name
                     )
