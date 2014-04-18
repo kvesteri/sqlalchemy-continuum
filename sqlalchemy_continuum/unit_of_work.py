@@ -166,7 +166,7 @@ class UnitOfWork(object):
 
         self.version_session.flush()
 
-    def version_validity_subquery(self, parent, version_obj):
+    def version_validity_subquery(self, parent, version_obj, alias=None):
         """
         Return the subquery needed by :func:`update_version_validity`.
 
@@ -181,7 +181,9 @@ class UnitOfWork(object):
         session = sa.orm.object_session(version_obj)
 
         subquery = fetcher._transaction_id_subquery(
-            version_obj, next_or_prev='prev'
+            version_obj,
+            next_or_prev='prev',
+            alias=alias
         )
         if session.connection().engine.dialect.name == 'mysql':
             return sa.select(
@@ -207,26 +209,36 @@ class UnitOfWork(object):
         fetcher = self.manager.fetcher(parent)
         session = sa.orm.object_session(version_obj)
 
-        subquery = self.version_validity_subquery(parent, version_obj)
-        query = (
-            session.query(version_obj.__class__)
-            .filter(
-                sa.and_(
-                    getattr(
-                        version_obj.__class__,
-                        tx_column_name(version_obj)
-                    ) == subquery,
-                    *fetcher.parent_identity_correlation(version_obj)
+        for class_ in version_obj.__class__.__mro__:
+            if class_ in self.manager.parent_class_map:
+
+                subquery = self.version_validity_subquery(
+                    parent,
+                    version_obj,
+                    alias=sa.orm.aliased(class_.__table__)
                 )
-            )
-        )
-        query.update(
-            {
-                end_tx_column_name(version_obj):
-                self.current_transaction.id
-            },
-            synchronize_session=False
-        )
+                query = (
+                    session.query(class_.__table__)
+                    .filter(
+                        sa.and_(
+                            getattr(
+                                class_,
+                                tx_column_name(version_obj)
+                            ) == subquery,
+                            *fetcher.parent_identity_correlation(
+                                version_obj,
+                                class_.__table__
+                            )
+                        )
+                    )
+                )
+                query.update(
+                    {
+                        end_tx_column_name(version_obj):
+                        self.current_transaction.id
+                    },
+                    synchronize_session=False
+                )
 
     def create_association_versions(self, session):
         """

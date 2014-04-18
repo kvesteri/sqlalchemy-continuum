@@ -9,6 +9,16 @@ def eq(tuple_):
 
 
 def parent_identity(obj_or_class):
+    if (
+        isinstance(obj_or_class, sa.sql.selectable.Alias) or
+        isinstance(obj_or_class, sa.Table)
+    ):
+        return tuple(
+            column
+            for column in obj_or_class.c
+            if column.name != 'transaction_id'
+            and column.primary_key
+        )
     return tuple(
         getattr(obj_or_class, column.name)
         for column in primary_keys(obj_or_class)
@@ -43,16 +53,18 @@ class VersionObjectFetcher(object):
         """
         return self.next_query(obj).first()
 
-    def parent_identity_correlation(self, obj):
+    def parent_identity_correlation(self, obj, class_=None):
+        if class_ is None:
+            class_ = obj.__class__
         return map(
             eq,
             zip(
-                parent_identity(obj.__class__),
+                parent_identity(class_),
                 parent_identity(obj)
             )
         )
 
-    def _transaction_id_subquery(self, obj, next_or_prev='next'):
+    def _transaction_id_subquery(self, obj, next_or_prev='next', alias=None):
         if next_or_prev == 'next':
             op = operator.gt
             func = sa.func.min
@@ -60,24 +72,30 @@ class VersionObjectFetcher(object):
             op = operator.lt
             func = sa.func.max
 
-        alias = sa.orm.aliased(obj)
+        if alias is None:
+            alias = sa.orm.aliased(obj)
+            table = alias.__table__
+            attrs = alias
+        else:
+            table = alias.original
+            attrs = alias.c
         query = (
             sa.select(
                 [func(
-                    getattr(alias, tx_column_name(obj))
+                    getattr(attrs, tx_column_name(obj))
                 )],
-                from_obj=[alias.__table__]
+                from_obj=[table]
             )
             .where(
                 sa.and_(
                     op(
-                        getattr(alias, tx_column_name(obj)),
+                        getattr(attrs, tx_column_name(obj)),
                         getattr(obj, tx_column_name(obj))
                     ),
                     *map(eq, zip(parent_identity(alias), parent_identity(obj)))
                 )
             )
-            .correlate(alias.__table__)
+            .correlate(table)
         )
         return query
 

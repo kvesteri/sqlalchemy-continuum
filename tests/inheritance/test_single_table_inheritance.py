@@ -1,4 +1,3 @@
-from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager, version_class
 from tests import TestCase
@@ -19,6 +18,7 @@ class TestSingleTableInheritance(TestCase):
 
             __mapper_args__ = {
                 'polymorphic_on': discriminator,
+                'with_polymorphic': '*'
             }
 
         class Article(TextItem):
@@ -39,6 +39,10 @@ class TestSingleTableInheritance(TestCase):
         self.ArticleVersion = version_class(self.Article)
         self.BlogPostVersion = version_class(self.BlogPost)
 
+    def test_inheritance(self):
+        assert issubclass(self.ArticleVersion, self.TextItemVersion)
+        assert issubclass(self.BlogPostVersion, self.TextItemVersion)
+
     def test_version_class_map(self):
         manager = self.TextItem.__versioning_manager__
         assert len(manager.version_class_map.keys()) == 3
@@ -53,10 +57,7 @@ class TestSingleTableInheritance(TestCase):
         assert self.TextItemVersion.__table__.name == 'text_item_version'
         assert self.ArticleVersion.__table__.name == 'text_item_version'
         assert self.BlogPostVersion.__table__.name == 'text_item_version'
-        assert issubclass(self.ArticleVersion, self.TextItemVersion)
-        assert issubclass(self.BlogPostVersion, self.TextItemVersion)
 
-    @mark.skipif('True')
     def test_each_object_has_distinct_version_class(self):
         article = self.Article()
         blogpost = self.BlogPost()

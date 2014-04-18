@@ -1,4 +1,5 @@
 from copy import copy
+import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import primary_keys, declarative_base
 from .expression_reflector import ClassExpressionReflector
@@ -42,6 +43,9 @@ class ModelBuilder(object):
 
         # We need to check if versions relation was already set for parent
         # class.
+        # if not hasattr(self.model, 'versions'):
+        #     del self.model.versions
+
         if not hasattr(self.model, 'versions'):
             self.model.versions = sa.orm.relationship(
                 self.version_class,
@@ -114,34 +118,67 @@ class ModelBuilder(object):
         )
         return parents + (VersionClassBase, )
 
-    def inheritance_args(self):
+    def copy_polymorphism_args(self):
+        args = {}
+        if hasattr(self.model, '__mapper_args__'):
+            for arg in ('with_polymorphic', 'polymorphic_identity'):
+                if arg in self.model.__mapper_args__:
+                    args[arg] = (
+                        self.model.__mapper_args__[arg]
+                    )
+
+            if 'polymorphic_on' in self.model.__mapper_args__:
+                column = self.model.__mapper_args__['polymorphic_on']
+                if isinstance(column, six.string_types):
+                    args['polymorphic_on'] = column
+                else:
+                    args['polymorphic_on'] = column.key
+        return args
+
+    def inheritance_args(self, table):
         """
         Return mapper inheritance args for currently built history model.
         """
-        if self.find_closest_versioned_parent():
-            reflector = ClassExpressionReflector(self.model)
-            mapper = sa.inspect(self.model)
-            inherit_condition = reflector(mapper.inherit_condition)
+        args = {}
+        parent_tuple = self.find_closest_versioned_parent()
+        if parent_tuple:
+            # The version classes do not contain foreign keys, hence we need
+            # to map inheritance condition manually for classes that use
+            # joined table inheritance
+            parent = parent_tuple[0]
 
-            return {
-                'inherit_condition': inherit_condition
-            }
-        return {}
+            if parent.__table__.name != table.name:
+                reflector = ClassExpressionReflector(self.model)
+                mapper = sa.inspect(self.model)
+                inherit_condition = reflector(mapper.inherit_condition)
+
+                args['inherit_condition'] = sa.and_(
+                    inherit_condition,
+                    '%s.transaction_id == %s_version.transaction_id' % (
+                        parent.__table__.name,
+                        self.model.__table__.name
+                    )
+                )
+        args.update(self.copy_polymorphism_args())
+
+        return args
 
     def build_model(self, table):
         """
         Build history model class.
         """
         mapper_args = {}
-        mapper_args.update(self.inheritance_args())
+        mapper_args.update(self.inheritance_args(table))
+        args = {
+            '__mapper_args__': mapper_args
+        }
+        if not sa.inspect(self.model).single:
+            args['__table__'] = table
 
         return type(
             '%sVersion' % self.model.__name__,
             self.base_classes(),
-            {
-                '__table__': table,
-                '__mapper_args__': mapper_args
-            }
+            args
         )
 
     def __call__(self, table, tx_log_class):

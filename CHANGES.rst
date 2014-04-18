@@ -4,6 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.0-b3 (2014-xx-xx)
+^^^^^^^^^^^^^^^^^^^
+
+- Made model builder copy inheritance mapper args to version classes from parent classes
+- Fixed end transaction id setting for join table inheritance classes. Now end transaction id is set explicitly to all tables in inheritance hierarchy.
+- Fixed single table inheritance handling
+
+
 1.0-b2 (2014-04-09)
 ^^^^^^^^^^^^^^^^^^^
 

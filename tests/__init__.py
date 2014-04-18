@@ -73,7 +73,7 @@ class TestCase(object):
         versioning_manager.transaction_cls = self.transaction_cls
 
         self.engine = create_engine(self.get_dns_from_driver(driver))
-        self.engine.echo = True
+        # self.engine.echo = True
         self.connection = self.engine.connect()
         self.Model = declarative_base()
 
