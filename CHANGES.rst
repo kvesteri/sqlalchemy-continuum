@@ -7,6 +7,9 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 1.0-b3 (2014-xx-xx)
 ^^^^^^^^^^^^^^^^^^^
 
+- Added support for concrete inheritance
+- Added order_by mapper arg reflection to version classes
+- Added support for column_prefix mapper arg
 - Made model builder copy inheritance mapper args to version classes from parent classes
 - Fixed end transaction id setting for join table inheritance classes. Now end transaction id is set explicitly to all tables in inheritance hierarchy.
 - Fixed single table inheritance handling

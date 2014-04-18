@@ -31,21 +31,19 @@ class ModelBuilder(object):
         """
         conditions = []
         foreign_keys = []
-        for primary_key in primary_keys(self.model):
-            conditions.append(
-                getattr(self.model, primary_key.name)
-                ==
-                getattr(self.version_class, primary_key.name)
-            )
-            foreign_keys.append(
-                getattr(self.version_class, primary_key.name)
-            )
+        for key, column in sa.inspect(self.model).columns.items():
+            if column.primary_key:
+                conditions.append(
+                    getattr(self.model, key)
+                    ==
+                    getattr(self.version_class, key)
+                )
+                foreign_keys.append(
+                    getattr(self.version_class, key)
+                )
 
         # We need to check if versions relation was already set for parent
         # class.
-        # if not hasattr(self.model, 'versions'):
-        #     del self.model.versions
-
         if not hasattr(self.model, 'versions'):
             self.model.versions = sa.orm.relationship(
                 self.version_class,
@@ -121,7 +119,13 @@ class ModelBuilder(object):
     def copy_polymorphism_args(self):
         args = {}
         if hasattr(self.model, '__mapper_args__'):
-            for arg in ('with_polymorphic', 'polymorphic_identity'):
+            arg_names = (
+                'with_polymorphic',
+                'polymorphic_identity',
+                'concrete',
+                'order_by'
+            )
+            for arg in arg_names:
                 if arg in self.model.__mapper_args__:
                     args[arg] = (
                         self.model.__mapper_args__[arg]
