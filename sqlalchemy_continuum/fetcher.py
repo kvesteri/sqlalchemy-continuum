@@ -4,10 +4,6 @@ from sqlalchemy_utils import primary_keys, identity
 from .utils import tx_column_name, end_tx_column_name
 
 
-def eq(tuple_):
-    return tuple_[0] == tuple_[1]
-
-
 def parent_identity(obj_or_class):
     if (
         isinstance(obj_or_class, sa.sql.selectable.Alias) or
@@ -56,8 +52,8 @@ class VersionObjectFetcher(object):
     def parent_identity_correlation(self, obj, class_=None):
         if class_ is None:
             class_ = obj.__class__
-        return map(
-            eq,
+        return (
+            a == b for a, b in
             zip(
                 parent_identity(class_),
                 parent_identity(obj)
@@ -92,7 +88,10 @@ class VersionObjectFetcher(object):
                         getattr(attrs, tx_column_name(obj)),
                         getattr(obj, tx_column_name(obj))
                     ),
-                    *map(eq, zip(parent_identity(alias), parent_identity(obj)))
+                    *(
+                        a == b for a, b in
+                        zip(parent_identity(alias), parent_identity(obj))
+                    )
                 )
             )
             .correlate(table)
@@ -140,7 +139,10 @@ class VersionObjectFetcher(object):
             sa.select([subquery], from_obj=[obj.__table__])
             .where(
                 sa.and_(
-                    *map(eq, zip(identity(obj.__class__), identity(obj)))
+                    *(
+                        a == b for a, b in
+                        zip(identity(obj.__class__), identity(obj))
+                    )
                 )
             )
             .order_by(
