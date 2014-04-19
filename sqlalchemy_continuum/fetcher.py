@@ -22,6 +22,11 @@ def parent_identity(obj_or_class):
     )
 
 
+def eqmap(callback, iterable):
+    for a, b in zip(*map(callback, iterable)):
+        yield a == b
+
+
 class VersionObjectFetcher(object):
     def __init__(self, manager):
         self.manager = manager
@@ -52,13 +57,7 @@ class VersionObjectFetcher(object):
     def parent_identity_correlation(self, obj, class_=None):
         if class_ is None:
             class_ = obj.__class__
-        return (
-            a == b for a, b in
-            zip(
-                parent_identity(class_),
-                parent_identity(obj)
-            )
-        )
+        return eqmap(parent_identity, (class_, obj))
 
     def _transaction_id_subquery(self, obj, next_or_prev='next', alias=None):
         if next_or_prev == 'next':
@@ -88,10 +87,7 @@ class VersionObjectFetcher(object):
                         getattr(attrs, tx_column_name(obj)),
                         getattr(obj, tx_column_name(obj))
                     ),
-                    *(
-                        a == b for a, b in
-                        zip(parent_identity(alias), parent_identity(obj))
-                    )
+                    *eqmap(parent_identity, (alias, obj))
                 )
             )
             .correlate(table)
@@ -138,12 +134,7 @@ class VersionObjectFetcher(object):
         query = (
             sa.select([subquery], from_obj=[obj.__table__])
             .where(
-                sa.and_(
-                    *(
-                        a == b for a, b in
-                        zip(identity(obj.__class__), identity(obj))
-                    )
-                )
+                sa.and_(*eqmap(identity, (obj.__class__, obj)))
             )
             .order_by(
                 getattr(obj.__class__, tx_column_name(obj))
