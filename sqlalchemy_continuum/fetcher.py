@@ -27,6 +27,12 @@ def eqmap(callback, iterable):
         yield a == b
 
 
+def parent_criteria(obj, class_=None):
+    if class_ is None:
+        class_ = obj.__class__
+    return eqmap(parent_identity, (class_, obj))
+
+
 class VersionObjectFetcher(object):
     def __init__(self, manager):
         self.manager = manager
@@ -53,11 +59,6 @@ class VersionObjectFetcher(object):
         None.
         """
         return self.next_query(obj).first()
-
-    def parent_identity_correlation(self, obj, class_=None):
-        if class_ is None:
-            class_ = obj.__class__
-        return eqmap(parent_identity, (class_, obj))
 
     def _transaction_id_subquery(self, obj, next_or_prev='next', alias=None):
         if next_or_prev == 'next':
@@ -109,7 +110,7 @@ class VersionObjectFetcher(object):
                     self._transaction_id_subquery(
                         obj, next_or_prev=next_or_prev
                     ),
-                    *self.parent_identity_correlation(obj)
+                    *parent_criteria(obj)
                 )
             )
         )
@@ -174,7 +175,7 @@ class ValidityFetcher(VersionObjectFetcher):
                     getattr(obj.__class__, tx_column_name(obj))
                     ==
                     getattr(obj, end_tx_column_name(obj)),
-                    *self.parent_identity_correlation(obj)
+                    *parent_criteria(obj)
                 )
             )
         )
@@ -193,7 +194,7 @@ class ValidityFetcher(VersionObjectFetcher):
                     getattr(obj.__class__, end_tx_column_name(obj))
                     ==
                     getattr(obj, tx_column_name(obj)),
-                    *self.parent_identity_correlation(obj)
+                    *parent_criteria(obj)
                 )
             )
         )

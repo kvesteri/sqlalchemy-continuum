@@ -2,6 +2,7 @@ from copy import copy
 
 import sqlalchemy as sa
 from sqlalchemy_utils import identity
+from .fetcher import parent_criteria
 from .operation import Operations
 from .utils import (
     end_tx_column_name,
@@ -206,7 +207,6 @@ class UnitOfWork(object):
 
         .. seealso:: :func:`version_validity_subquery`
         """
-        fetcher = self.manager.fetcher(parent)
         session = sa.orm.object_session(version_obj)
 
         for class_ in version_obj.__class__.__mro__:
@@ -225,7 +225,7 @@ class UnitOfWork(object):
                                 class_,
                                 tx_column_name(version_obj)
                             ) == subquery,
-                            *fetcher.parent_identity_correlation(
+                            *parent_criteria(
                                 version_obj,
                                 class_.__table__
                             )
