@@ -4,7 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0-b3 (2014-xx-xx)
+1.0-b4 (2014-xx-xx)
+^^^^^^^^^^^^^^^^^^^
+
+- Fixed many-to-many unit of work inspection when using engine bind instead of collection bind
+
+
+1.0-b3 (2014-04-19)
 ^^^^^^^^^^^^^^^^^^^
 
 - Added support for concrete inheritance

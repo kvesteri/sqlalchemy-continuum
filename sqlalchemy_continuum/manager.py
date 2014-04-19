@@ -332,7 +332,10 @@ class VersioningManager(object):
             .insert()
             .values(params)
         )
-        uow = self.units_of_work[conn]
+        try:
+            uow = self.units_of_work[conn]
+        except KeyError:
+            uow = self.units_of_work[conn.engine]
         uow.pending_statements.append(stmt)
 
     def track_association_operations(

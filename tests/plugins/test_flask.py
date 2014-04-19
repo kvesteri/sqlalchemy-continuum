@@ -110,15 +110,7 @@ class TestFlaskPluginWithoutRequestContext(TestCase):
 class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
     versioning_strategy = 'validity'
 
-    def setup_method(self, method):
-        # Mock the event registering of Flask-SQLAlchemy. Currently there is no
-        # way of unregistering Flask-SQLAlchemy event listeners, hence the
-        # event listeners would affect other tests.
-        flexmock(_SessionSignalEvents).should_receive('register')
-
-        self.db = SQLAlchemy()
-        make_versioned()
-
+    def create_models(self):
         class User(self.db.Model):
             __tablename__ = 'user'
             __versioned__ = {
@@ -128,7 +120,62 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
 
+        class Article(self.db.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.db.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_tag = sa.Table(
+            'article_tag',
+            self.db.Model.metadata,
+            sa.Column(
+                'article_id',
+                sa.Integer,
+                sa.ForeignKey('article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'tag_id',
+                sa.Integer,
+                sa.ForeignKey('tag.id'),
+                primary_key=True
+            )
+        )
+
+        class Tag(self.db.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {
+                'base_classes': (self.db.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        Tag.articles = sa.orm.relationship(
+            Article,
+            secondary=article_tag,
+            backref='tags'
+        )
+
         self.User = User
+        self.Article = Article
+        self.Tag = Tag
+
+    def setup_method(self, method):
+        # Mock the event registering of Flask-SQLAlchemy. Currently there is no
+        # way of unregistering Flask-SQLAlchemy event listeners, hence the
+        # event listeners would affect other tests.
+        flexmock(_SessionSignalEvents).should_receive('register')
+
+        self.db = SQLAlchemy()
+        make_versioned()
+
+        self.create_models()
+
         sa.orm.configure_mappers()
 
         self.app = Flask(__name__)
@@ -149,10 +196,20 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.client = None
         self.app = None
 
-    def test_insert_and_update(self):
-        user = self.User(name=u'Rambo')
-        self.db.session.add(user)
+    def test_version_relations(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.db.session.add(article)
         self.db.session.commit()
-        user.name = u'John Rambo'
+        assert not article.versions[0].tags
+
+    def test_single_insert(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        self.db.session.add(article)
         self.db.session.commit()
-        assert user.versions[0].end_transaction_id
+        assert len(article.versions[0].tags) == 1
