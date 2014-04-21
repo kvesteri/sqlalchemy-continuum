@@ -53,6 +53,8 @@ class JoinTableInheritanceTestCase(TestCase):
 
 
 class TestJoinTableInheritance(JoinTableInheritanceTestCase):
+    versioning_strategy = 'validity'
+
     def test_each_class_has_distinct_version_table(self):
         assert self.TextItemVersion.__table__.name == 'text_item_version'
         assert self.ArticleVersion.__table__.name == 'article_version'

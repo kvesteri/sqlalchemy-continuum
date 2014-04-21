@@ -248,7 +248,12 @@ class UnitOfWork(object):
         """
         statements = copy(self.pending_statements)
         for stmt in statements:
-            stmt = stmt.values(transaction_id=self.current_transaction.id)
+            stmt = stmt.values(
+                **{
+                    self.manager.options['transaction_column_name']:
+                    self.current_transaction.id
+                }
+            )
             session.execute(stmt)
         self.pending_statements = []
 

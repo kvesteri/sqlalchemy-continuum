@@ -9,6 +9,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 - Fixed many-to-many unit of work inspection when using engine bind instead of collection bind
 - Fixed various issues if primary key aliases were used in declarative models
+- Fixed an issue where association versioning would not work with custom transaction column name
 - SQLAlchemy-Utils dependency updated to 0.25.3
 
 

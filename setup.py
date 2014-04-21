@@ -37,7 +37,7 @@ extras_require = {
     'flask-login': ['Flask-Login>=0.2.9'],
     'flask-sqlalchemy': ['Flask-SQLAlchemy>=1.0'],
     'flexmock': ['flexmock>=0.9.7'],
-    'i18n': ['SQLAlchemy-i18n >= 0.8.2'],
+    'i18n': ['SQLAlchemy-i18n>=0.8.4'],
 }
 
 
