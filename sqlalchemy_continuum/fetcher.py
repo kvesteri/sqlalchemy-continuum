@@ -1,6 +1,6 @@
 import operator
 import sqlalchemy as sa
-from sqlalchemy_utils import primary_keys, identity
+from sqlalchemy_utils import get_primary_keys, identity
 from .utils import tx_column_name, end_tx_column_name
 
 
@@ -16,9 +16,9 @@ def parent_identity(obj_or_class):
             and column.primary_key
         )
     return tuple(
-        getattr(obj_or_class, column.name)
-        for column in primary_keys(obj_or_class)
-        if column.name != tx_column_name(obj_or_class)
+        getattr(obj_or_class, column_key)
+        for column_key in get_primary_keys(obj_or_class).keys()
+        if column_key != tx_column_name(obj_or_class)
     )
 
 

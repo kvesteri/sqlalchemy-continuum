@@ -1,7 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import declarative_base
+from sqlalchemy_utils.functions import get_declarative_base
 
 from .table_builder import TableBuilder
 from .model_builder import ModelBuilder
@@ -57,7 +57,7 @@ class Builder(object):
         """
         if self.manager.pending_classes:
             cls = self.manager.pending_classes[0]
-            self.manager.declarative_base = declarative_base(cls)
+            self.manager.declarative_base = get_declarative_base(cls)
             self.manager.create_transaction_model()
             self.manager.plugins.after_build_tx_class(self.manager)
 

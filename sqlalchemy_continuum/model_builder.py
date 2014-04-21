@@ -1,7 +1,7 @@
 from copy import copy
 import six
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import declarative_base
+from sqlalchemy_utils.functions import get_declarative_base
 from .expression_reflector import ClassExpressionReflector
 from .utils import option
 from .version import VersionClassBase
@@ -112,7 +112,7 @@ class ModelBuilder(object):
         parents = (
             self.find_closest_versioned_parent()
             or option(self.model, 'base_classes')
-            or (declarative_base(self.model), )
+            or (get_declarative_base(self.model), )
         )
         return parents + (VersionClassBase, )
 

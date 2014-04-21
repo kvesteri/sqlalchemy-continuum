@@ -66,7 +66,8 @@ class TestCase(object):
             raise Exception('Unknown driver given: %r' % driver)
 
     def setup_method(self, method):
-        make_versioned()
+        self.Model = declarative_base()
+        make_versioned(options=self.options)
 
         driver = os.environ.get('DB', 'sqlite')
         versioning_manager.plugins = self.plugins
@@ -75,7 +76,6 @@ class TestCase(object):
         self.engine = create_engine(self.get_dns_from_driver(driver))
         # self.engine.echo = True
         self.connection = self.engine.connect()
-        self.Model = declarative_base()
 
         self.create_models()
 
