@@ -8,6 +8,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^^
 
 - Fixed many-to-many unit of work inspection when using engine bind instead of collection bind
+- SQLAlchemy-Utils dependency updated to 0.25.3
 
 
 1.0-b3 (2014-04-19)
