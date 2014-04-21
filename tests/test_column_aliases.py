@@ -1,10 +1,11 @@
+from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
 
 from tests import TestCase, create_test_cases
 
 
-class ColumnAliasesTestCase(TestCase):
+class ColumnAliasesBaseTestCase(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
@@ -18,6 +19,14 @@ class ColumnAliasesTestCase(TestCase):
 
         self.TextItem = TextItem
 
+
+@mark.skipif('True')
+class TestVersionTableWithColumnAliases(ColumnAliasesBaseTestCase):
+    def test_column_reflection(self):
+        assert '_id' in version_class(self.TextItem).__table__.c
+
+
+class ColumnAliasesTestCase(ColumnAliasesBaseTestCase):
     def test_insert(self):
         item = self.TextItem(name=u'Something')
         self.session.add(item)
