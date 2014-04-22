@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from .table_builder import TableBuilder
-from .expression_reflector import ObjectExpressionReflector
+from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
 from .utils import version_table, version_class, option
 
@@ -33,7 +33,7 @@ class RelationshipBuilder(object):
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
-        reflector = ObjectExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj)
 
         return getattr(self.remote_cls, tx_column).in_(
             sa.select(
@@ -96,7 +96,7 @@ class RelationshipBuilder(object):
         )
 
     def many_to_one_criteria(self, obj):
-        reflector = ObjectExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.many_to_one_subquery(obj),
@@ -104,7 +104,7 @@ class RelationshipBuilder(object):
         )
 
     def one_to_many_criteria(self, obj):
-        reflector = ObjectExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.one_to_many_subquery(obj),
@@ -150,7 +150,7 @@ class RelationshipBuilder(object):
         :param obj: SQLAlchemy declarative object
         """
         tx_column = option(obj, 'transaction_column_name')
-        reflector = ObjectExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj)
         subquery = (
             getattr(self.remote_table.c, tx_column).in_(
                 sa.select(

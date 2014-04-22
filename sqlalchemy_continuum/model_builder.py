@@ -2,7 +2,7 @@ from copy import copy
 import six
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
-from .expression_reflector import ClassExpressionReflector
+from .expression_reflector import VersionExpressionReflector
 from .utils import option
 from .version import VersionClassBase
 
@@ -122,14 +122,20 @@ class ModelBuilder(object):
             arg_names = (
                 'with_polymorphic',
                 'polymorphic_identity',
-                'concrete',
-                'order_by'
+                'concrete'
             )
             for arg in arg_names:
                 if arg in self.model.__mapper_args__:
                     args[arg] = (
                         self.model.__mapper_args__[arg]
                     )
+
+            if 'order_by' in self.model.__mapper_args__:
+                arg = self.model.__mapper_args__['order_by']
+                # Only allow string based order_by reflection to version
+                # classes.
+                if isinstance(arg, six.string_types):
+                    args['order_by'] = arg
 
             if 'polymorphic_on' in self.model.__mapper_args__:
                 column = self.model.__mapper_args__['polymorphic_on']
@@ -152,7 +158,7 @@ class ModelBuilder(object):
             parent = parent_tuple[0]
 
             if parent.__table__.name != table.name:
-                reflector = ClassExpressionReflector(self.model)
+                reflector = VersionExpressionReflector(self.model)
                 mapper = sa.inspect(self.model)
                 inherit_condition = reflector(mapper.inherit_condition)
 
