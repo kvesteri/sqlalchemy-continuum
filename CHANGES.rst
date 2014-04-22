@@ -4,7 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0-b4 (2014-xx-xx)
+1.0-b5 (2014-04-xx)
+^^^^^^^^^^^^^^^^^^^
+
+- SQLAlchemy-Utils dependency updated to 0.25.4
+
+
+1.0-b4 (2014-04-20)
 ^^^^^^^^^^^^^^^^^^^
 
 - Fixed many-to-many unit of work inspection when using engine bind instead of collection bind
