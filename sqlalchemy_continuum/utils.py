@@ -1,5 +1,6 @@
 from inspect import isclass
 from collections import defaultdict
+
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import get_history
@@ -7,6 +8,8 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent, identity
+
+from .exc import ClassNotVersioned
 
 
 def get_versioning_manager(obj_or_class):
@@ -19,7 +22,10 @@ def get_versioning_manager(obj_or_class):
     if isinstance(obj_or_class, AliasedClass):
         obj_or_class = sa.inspect(obj_or_class).mapper.class_
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
-    return cls.__versioning_manager__
+    try:
+        return cls.__versioning_manager__
+    except AttributeError:
+        raise ClassNotVersioned(obj_or_class.__name__)
 
 
 def option(obj_or_class, option_name):

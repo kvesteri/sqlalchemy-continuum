@@ -9,11 +9,15 @@ class VersionExpressionParser(ExpressionParser):
     parent_class = None
 
     def column(self, column):
-        table = version_table(column.table)
+        try:
+            table = version_table(column.table)
+        except KeyError:
+            return column
         if self.parent and table == self.parent.__table__:
             return bindparam(column.key, getattr(self.parent, column.key))
         else:
             return table.c[column.name]
+
 
 
 class VersionExpressionReflector(VersionExpressionParser):

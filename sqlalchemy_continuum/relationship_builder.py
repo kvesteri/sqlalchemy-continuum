@@ -1,7 +1,9 @@
 import sqlalchemy as sa
-from .table_builder import TableBuilder
+
+from .exc import ClassNotVersioned
 from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
+from .table_builder import TableBuilder
 from .utils import version_table, version_class, option
 
 
@@ -71,12 +73,17 @@ class RelationshipBuilder(object):
 
     def criteria(self, obj):
         direction = self.property.direction
-        if direction.name == 'ONETOMANY':
-            return self.one_to_many_criteria(obj)
-        elif direction.name == 'MANYTOMANY':
-            return self.many_to_many_criteria(obj)
-        elif direction.name == 'MANYTOONE':
-            return self.many_to_one_criteria(obj)
+
+        if self.versioned:
+            if direction.name == 'ONETOMANY':
+                return self.one_to_many_criteria(obj)
+            elif direction.name == 'MANYTOMANY':
+                return self.many_to_many_criteria(obj)
+            elif direction.name == 'MANYTOONE':
+                return self.many_to_one_criteria(obj)
+        else:
+            reflector = VersionExpressionReflector(obj)
+            return reflector(self.property.primaryjoin)
 
     def many_to_many_criteria(self, obj):
         tx_column = option(obj, 'transaction_column_name')
@@ -209,10 +216,14 @@ class RelationshipBuilder(object):
         parent object's RelationshipProperty.
         """
         self.local_cls = version_class(self.model)
+        self.versioned = False
         try:
             self.remote_cls = version_class(self.property.mapper.class_)
+            self.versioned = True
         except (AttributeError, KeyError):
             return
+        except ClassNotVersioned:
+            self.remote_cls = self.property.mapper.class_
 
         if self.property.secondary is not None:
             self.build_association_version_tables()

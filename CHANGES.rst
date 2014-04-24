@@ -4,10 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0-b5 (2014-04-xx)
-^^^^^^^^^^^^^^^^^^^
+1.0b5 (2014-04-xx)
+^^^^^^^^^^^^^^^^^^
 
 - Added order_by mapper arg ignoring for version class reflection if other than string argument is used
+- get_versioning_manager now throws ClassNotVersioned exception if first argument is not a versioned class
+- Fixed relationship reflection from versioned classes to non versioned classes (issue #52)
 - SQLAlchemy-Utils dependency updated to 0.25.4
 
 

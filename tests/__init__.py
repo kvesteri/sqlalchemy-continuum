@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
+    ClassNotVersioned,
     version_class,
     make_versioned,
     versioning_manager,
@@ -74,7 +75,7 @@ class TestCase(object):
         versioning_manager.transaction_cls = self.transaction_cls
 
         self.engine = create_engine(self.get_dns_from_driver(driver))
-        # self.engine.echo = True
+        self.engine.echo = True
         self.connection = self.engine.connect()
 
         self.create_models()
@@ -86,7 +87,7 @@ class TestCase(object):
         if hasattr(self, 'Tag'):
             try:
                 self.TagVersion = version_class(self.Tag)
-            except (AttributeError, KeyError):
+            except ClassNotVersioned:
                 pass
         self.create_tables()
 

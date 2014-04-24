@@ -1,8 +1,10 @@
 import sqlalchemy as sa
+from .exc import ClassNotVersioned
 from .manager import VersioningManager
 from .operation import Operation
 from .unit_of_work import UnitOfWork
 from .utils import (
+    ClassNotVersioned,
     changeset,
     get_versioning_manager,
     parent_class,
