@@ -78,6 +78,18 @@ class ManyToManyRelationshipsTestCase(TestCase):
         self.session.commit()
         assert len(article.versions[0].tags) == 2
 
+    def test_collection_with_multiple_entries(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        article.tags = [
+            self.Tag(name=u'some tag'),
+            self.Tag(name=u'another tag')
+        ]
+        self.session.commit()
+        assert len(article.versions[0].tags) == 2
+
     def test_delete_single_association(self):
         article = self.Article()
         article.name = u'Some article'
