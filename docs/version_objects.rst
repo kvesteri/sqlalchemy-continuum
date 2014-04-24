@@ -144,6 +144,10 @@ Relationships to non-versioned classes
 
 Let's take previous example of Articles and Categories. Now consider that only Article model is versioned:
 
+
+::
+
+
     class Article(Base):
         __tablename__ = 'article'
         __versioned__ = {}
@@ -160,16 +164,14 @@ Let's take previous example of Articles and Categories. Now consider that only A
         article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
         article = sa.orm.relationship(
             Article,
-            backref=sa.orm.backref(
-                'tags',
-                lazy='dynamic'
-            )
+            backref=sa.orm.backref('categories')
         )
+
 
 Here Article versions will still reflect the relationships of Article model but they will simply return Category objects instead of CategoryVersion objects:
 
 
-  ::
+::
 
 
     category = Category(name=u'Some category')
@@ -184,7 +186,7 @@ Here Article versions will still reflect the relationships of Article model but 
     session.commit()
 
     version = article.versions[0]
-    version.category.name                   # u'Some category'
+    version.category.name                   # u'Some other category'
     isinstance(version.category, Category)  # True
 
 
