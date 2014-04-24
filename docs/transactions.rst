@@ -72,9 +72,9 @@ This would execute the following SQL queries (on PostgreSQL)
 
 1. INSERT INTO article (name, content) VALUES (?, ?)
     params: ('Some article', 'Some content')
-2. INSERT INTO transaction_log (issued_at) VALUES (?)
+2. INSERT INTO transaction (issued_at) VALUES (?)
     params: (datetime.utcnow())
-3. INSERT INTO article_history (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
+3. INSERT INTO article_version (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
     params: (<article id from query 1>, 'Some article', 'Some content', <transaction id from query 2>)
 
 
