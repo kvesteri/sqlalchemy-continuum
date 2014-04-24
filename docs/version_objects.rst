@@ -132,11 +132,60 @@ Lastly we check the category relations of different article versions.
     session.commit()
 
 
-    article.versions[0].category.name = u'Some category'
-    article.versions[1].category.name = u'Some other category'
+    article.versions[0].category.name  # u'Some category'
+    article.versions[1].category.name  # u'Some other category'
 
 
 The logic how SQLAlchemy-Continuum builds these relationships is within the RelationshipBuilder class.
+
+
+Relationships to non versioned classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's take previous example of Articles and Categories. Now consider that only Article model is versioned:
+
+    class Article(Base):
+        __tablename__ = 'article'
+        __versioned__ = {}
+
+        id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+        name = sa.Column(sa.Unicode(255), nullable=False)
+
+
+    class Category(Base):
+        __tablename__ = 'tag'
+
+        id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+        name = sa.Column(sa.Unicode(255))
+        article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
+        article = sa.orm.relationship(
+            Article,
+            backref=sa.orm.backref(
+                'tags',
+                lazy='dynamic'
+            )
+        )
+
+Here Article versions will still reflect the relationships of Article model but they will simply return Category objects instead of CategoryVersion objects:
+
+
+  ::
+
+
+    category = Category(name=u'Some category')
+    article = Article(
+        name=u'Some article',
+        category=category
+    )
+    session.add(article)
+    session.commit()
+
+    article.category = Category(name=u'Some other category')
+    session.commit()
+
+    version = article.versions[0]
+    version.category.name                   # u'Some category'
+    isinstance(version.category, Category)  # True
 
 
 Dynamic relationships
