@@ -153,9 +153,10 @@ If the parent class has a dynamic relationship it will be reflected as a propert
         id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
         name = sa.Column(sa.Unicode(255), nullable=False)
 
+
     class Tag(Base):
         __tablename__ = 'tag'
-        __versioned__ = {}
+        __versioned__ = {}
 
         id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
         name = sa.Column(sa.Unicode(255))
@@ -177,5 +178,5 @@ If the parent class has a dynamic relationship it will be reflected as a propert
     tag_query = article.versions[0].tags
     tag_query.all()  # return all tags for given version
 
-    tag_query.count()  # return the tag count for given versoin
+    tag_query.count()  # return the tag count for given version
 
