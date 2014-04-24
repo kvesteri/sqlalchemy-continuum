@@ -139,7 +139,7 @@ Lastly we check the category relations of different article versions.
 The logic how SQLAlchemy-Continuum builds these relationships is within the RelationshipBuilder class.
 
 
-Relationships to non versioned classes
+Relationships to non-versioned classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's take previous example of Articles and Categories. Now consider that only Article model is versioned:
