@@ -4,9 +4,10 @@ from .manager import VersioningManager
 from .operation import Operation
 from .unit_of_work import UnitOfWork
 from .utils import (
-    ClassNotVersioned,
     changeset,
+    get_bind,
     get_versioning_manager,
+    is_modified,
     parent_class,
     transaction_class,
     vacuum,

@@ -1,6 +1,6 @@
 from pytest import raises
 
-from sqlalchemy_continuum.utils import get_bind
+from sqlalchemy_continuum import get_bind
 from tests import TestCase
 
 

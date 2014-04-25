@@ -1,4 +1,4 @@
-from sqlalchemy_continuum.utils import tx_column_name, version_class
+from sqlalchemy_continuum import tx_column_name, version_class
 
 from tests import TestCase, create_test_cases
 
