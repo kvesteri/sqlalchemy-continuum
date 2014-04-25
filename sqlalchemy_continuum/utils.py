@@ -25,7 +25,7 @@ def get_versioning_manager(obj_or_class):
     try:
         return cls.__versioning_manager__
     except AttributeError:
-        raise ClassNotVersioned(obj_or_class.__name__)
+        raise ClassNotVersioned(cls.__name__)
 
 
 def option(obj_or_class, option_name):
@@ -193,7 +193,7 @@ def is_versioned(obj_or_class):
                 obj_or_class, 'versioning'
             )
         )
-    except (AttributeError, KeyError):
+    except ClassNotVersioned:
         return False
 
 

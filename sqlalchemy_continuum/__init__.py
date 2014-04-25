@@ -10,6 +10,7 @@ from .utils import (
     is_modified,
     parent_class,
     transaction_class,
+    tx_column_name,
     vacuum,
     version_class,
 )
