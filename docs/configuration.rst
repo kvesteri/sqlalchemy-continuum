@@ -150,6 +150,27 @@ Example
         content = sa.Column(sa.UnicodeText)
 
 
+Customizing transaction user class
+----------------------------------
+
+By default Continuum tries to build a relationship between 'User' class and Transaction class. If you have differently named user class you can simply pass its name to make_versioned:
+
+
+::
+
+
+    make_versioned(user_cls='MyUserClass')
+
+
+
+If you don't want transactions to contain any user references you can also disable this feature.
+
+
+::
+
+    make_versioned(user_cls=None)
+
+
 Customizing versioned mappers
 -----------------------------
 

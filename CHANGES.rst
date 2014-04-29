@@ -8,7 +8,8 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^
 
 - Added order_by mapper arg ignoring for version class reflection if other than string argument is used
-- get_versioning_manager now throws ClassNotVersioned exception if first argument is not a versioned class
+- Added support for customizing the User class which the Transaction class should have relationship to (issue #53)
+- Changed get_versioning_manager to throw ClassNotVersioned exception if first argument is not a versioned class
 - Fixed relationship reflection from versioned classes to non versioned classes (issue #52)
 - SQLAlchemy-Utils dependency updated to 0.25.4
 

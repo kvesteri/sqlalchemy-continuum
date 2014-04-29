@@ -1,7 +1,8 @@
 import sqlalchemy as sa
-from .exc import ClassNotVersioned
+from .exc import ClassNotVersioned, ImproperlyConfigured
 from .manager import VersioningManager
 from .operation import Operation
+from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
 from .utils import (
     changeset,
@@ -27,7 +28,8 @@ def make_versioned(
     session=sa.orm.session.Session,
     manager=versioning_manager,
     plugins=None,
-    options=None
+    options=None,
+    user_cls='User'
 ):
     """
     This is the public API function of SQLAlchemy-Continuum for making certain
@@ -45,6 +47,10 @@ def make_versioned(
         Plugins to pass for versioning manager.
     :param options:
         A dictionary of VersioningManager options.
+    :param user_cls:
+        User class which the Transaction class should have relationship to.
+        This can either be a class or string name of a class for lazy
+        evaluation.
     """
     if plugins is not None:
         manager.plugins = plugins
@@ -52,6 +58,7 @@ def make_versioned(
     if options is not None:
         manager.options.update(options)
 
+    manager.user_cls = user_cls
     manager.apply_class_configuration_listeners(mapper)
     manager.track_operations(mapper)
     manager.track_session(session)

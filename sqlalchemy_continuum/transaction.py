@@ -1,6 +1,10 @@
 from datetime import datetime
+
+import six
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
+
+from .exc import ImproperlyConfigured
 from .factory import ModelFactory
 
 
@@ -58,8 +62,7 @@ class TransactionBase(object):
 class TransactionFactory(ModelFactory):
     model_name = 'Transaction'
 
-    def __init__(self, user=True, remote_addr=True):
-        self.user = user
+    def __init__(self, remote_addr=True):
         self.remote_addr = remote_addr
 
     def create_class(self, manager):
@@ -76,12 +79,28 @@ class TransactionFactory(ModelFactory):
             if self.remote_addr:
                 remote_addr = sa.Column(sa.String(50))
 
-            if self.user:
+            if manager.user_cls:
+                user_cls = manager.user_cls
+                registry = manager.declarative_base._decl_class_registry
+
+                if isinstance(user_cls, six.string_types):
+                    try:
+                        user_cls = registry[user_cls]
+                    except KeyError:
+                        raise ImproperlyConfigured(
+                            'Could not build relationship between Transaction'
+                            ' and %s. %s was not found in declarative class '
+                            'registry. Either configure VersioningManager to '
+                            'use different user class or disable this '
+                            'relationship ' % (user_cls, user_cls)
+                        )
                 user_id = sa.Column(
                     sa.Integer,
-                    sa.ForeignKey('user.id'),
+                    sa.ForeignKey(
+                        '%s.id' % user_cls.__tablename__
+                    ),
                     index=True
                 )
 
-                user = sa.orm.relationship('User')
+                user = sa.orm.relationship(user_cls)
         return Transaction

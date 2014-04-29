@@ -13,6 +13,7 @@ from tests import TestCase
 class TestFlaskPlugin(TestCase):
     plugins = [FlaskPlugin()]
     transaction_cls = TransactionFactory()
+    user_cls = 'User'
 
     def setup_method(self, method):
         TestCase.setup_method(self, method)

@@ -4,3 +4,7 @@ class VersioningError(Exception):
 
 class ClassNotVersioned(VersioningError):
     pass
+
+
+class ImproperlyConfigured(VersioningError):
+    pass
