@@ -4,7 +4,7 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0b5 (2014-04-xx)
+1.0b5 (2014-05-07)
 ^^^^^^^^^^^^^^^^^^
 
 - Added order_by mapper arg ignoring for version class reflection if other than string argument is used
