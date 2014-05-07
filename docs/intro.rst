@@ -82,12 +82,12 @@ When the models have been configured either by calling configure_mappers() or by
 
 ::
 
-    from sqlalchemy_continuum import history_class, parent_class
+    from sqlalchemy_continuum import version_class, parent_class
 
 
-    history_class(Article)  # ArticleHistory class
+    version_class(Article)  # ArticleHistory class
 
-    parent_class(history_class(Article))  # Article class
+    parent_class(version_class(Article))  # Article class
 
 
 Versions and transactions
