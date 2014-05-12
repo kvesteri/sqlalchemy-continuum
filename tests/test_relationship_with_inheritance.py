@@ -81,6 +81,6 @@ class TestJoinTableInheritanceWithRelationship(JoinTableInheritanceWithRelations
         self.session.add(textitem)
         self.session.commit()
 
-        assert textitem.versions[0].author.name == u'Article author'
-        assert article.versions[0].author.name == u'Blog author'
-        assert blogpost.versions[0].author.name == u'Textitem author'
+        assert textitem.versions[0].author.name == u'Textitem author'
+        assert article.versions[0].author.name == u'Article author'
+        assert blogpost.versions[0].author.name == u'Blog author'
