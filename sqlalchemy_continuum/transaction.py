@@ -1,5 +1,9 @@
 from datetime import datetime
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 import six
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
@@ -103,4 +107,22 @@ class TransactionFactory(ModelFactory):
                 )
 
                 user = sa.orm.relationship(user_cls)
+
+            def __repr__(self):
+                fields = ['id', 'issued_at', 'user']
+                field_values = OrderedDict()
+                for field in fields:
+                    if hasattr(self, field):
+                        field_values[field] = getattr(self, field)
+                return '<Transaction %s>' % ', '.join(
+                    (
+                        '%s=%r' % (field, value)
+                        if not isinstance(value, six.integer_types)
+                        # We want the following line to ensure that longs get
+                        # shown without the ugly L suffix on python 2.x
+                        # versions
+                        else '%s=%d' % (field, value)
+                        for field, value in field_values.items()
+                    )
+                )
         return Transaction

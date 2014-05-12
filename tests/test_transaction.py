@@ -25,3 +25,15 @@ class TestTransaction(TestCase):
         assert self.session.query(
             versioning_manager.transaction_cls
         ).count() == 1
+
+    def test_repr(self):
+        transaction = self.session.query(
+            versioning_manager.transaction_cls
+        ).first()
+        assert (
+            '<Transaction id=%d, issued_at=%r>' % (
+                transaction.id,
+                transaction.issued_at
+            ) ==
+            repr(transaction)
+        )

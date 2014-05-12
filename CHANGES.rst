@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.0 (2014-xx-xx)
+^^^^^^^^^^^^^^^^
+
+- Added __repr__ for Transaction class, issue #59
+
+
 1.0b5 (2014-05-07)
 ^^^^^^^^^^^^^^^^^^
 
