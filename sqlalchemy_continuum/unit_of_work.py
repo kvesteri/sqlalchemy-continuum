@@ -44,6 +44,19 @@ class UnitOfWork(object):
         )
 
     def process_before_flush(self, session):
+        """
+        Before flush processor for given session.
+
+        This method creates a version session which is later on used for the
+        creation of version objects. It also creates Transaction object for the
+        current transaction and invokes before_flush template method on all
+        plugins.
+
+        If the given session had no relevant modifications regarding versioned
+        objects this method does nothing.
+
+        :param session: SQLAlchemy session object
+        """
         if session == self.version_session:
             return
 
