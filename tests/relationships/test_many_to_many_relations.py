@@ -67,6 +67,19 @@ class ManyToManyRelationshipsTestCase(TestCase):
         self.session.commit()
         assert len(article.versions[0].tags) == 1
 
+    def test_single_insert_different_transactions(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.session.add(article)
+        self.session.commit()
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        self.session.add(article)
+        self.session.commit()
+        assert len(tag.versions[0].articles) == 1
+        assert len(article.versions[0].tags) == 1
+
     def test_multi_insert(self):
         article = self.Article()
         article.name = u'Some article'
