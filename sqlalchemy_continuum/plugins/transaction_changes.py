@@ -107,9 +107,6 @@ class TransactionChangesPlugin(Plugin):
                 primaryjoin=(
                     self.model_class.transaction_id == transaction_column
                 ),
-                foreign_keys=[self.model_class.transaction_id],
-                backref=option(parent_cls, 'relation_naming_function')(
-                    parent_cls.__name__
-                )
+                foreign_keys=[self.model_class.transaction_id]
             )
         parent_cls.__versioned__['transaction_changes'] = self.model_class

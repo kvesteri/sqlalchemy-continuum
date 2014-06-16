@@ -10,6 +10,8 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Added __repr__ for Transaction class, issue #59
 - Made transaction_cls of VersioningManager configurable.
 - Removed generic relationships from transaction class to versioned classes.
+- Removed generic relationships from transaction changes class to versioned classes.
+- Removed relation_naming_function (no longer needed)
 - Moved get_bind to SQLAlchemy-Utils
 - SQLAlchemy-Utils dependency updated to 0.26.2
 
