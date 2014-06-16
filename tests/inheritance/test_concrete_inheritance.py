@@ -4,7 +4,7 @@ from sqlalchemy_continuum import versioning_manager, version_class
 from tests import TestCase
 
 
-class TestSingleTableInheritance(TestCase):
+class TestConreteTableInheritance(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
@@ -56,12 +56,6 @@ class TestSingleTableInheritance(TestCase):
     def test_version_class_map(self):
         manager = self.TextItem.__versioning_manager__
         assert len(manager.version_class_map.keys()) == 3
-
-    def test_transaction_relations(self):
-        tx_log = versioning_manager.transaction_cls
-        assert tx_log.text_items
-        assert tx_log.articles
-        assert tx_log.blog_posts
 
     def test_each_class_has_distinct_version_class(self):
         assert self.TextItemVersion.__table__.name == 'text_item_version'

@@ -4,7 +4,9 @@ from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
 import sqlalchemy as sa
-from sqlalchemy_continuum import make_versioned, remove_versioning
+from sqlalchemy_continuum import (
+    make_versioned, remove_versioning, versioning_manager
+)
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
 from tests import TestCase
@@ -174,6 +176,8 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
 
         self.db = SQLAlchemy()
         make_versioned()
+
+        versioning_manager.transaction_cls = TransactionFactory()
 
         self.create_models()
 

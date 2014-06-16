@@ -13,9 +13,7 @@ class TestTransaction(TestCase):
         self.session.commit()
 
     def test_relationships(self):
-        tx = self.article.versions[0].transaction
-        assert tx.id == self.article.versions[0].transaction_id
-        assert tx.articles == [self.article.versions[0]]
+        assert self.article.versions[0].transaction
 
     def test_only_saves_transaction_if_actual_modifications(self):
         self.article.name = u'Some article'

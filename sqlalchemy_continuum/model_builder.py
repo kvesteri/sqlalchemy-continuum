@@ -60,19 +60,15 @@ class ModelBuilder(object):
                 viewonly=True
             )
 
-    def build_transaction_relationship(self, tx_log_class):
+    def build_transaction_relationship(self, tx_class):
         """
         Builds a relationship between currently built version class and
         Transaction class.
 
-        :param tx_log_class: Transaction class
+        :param tx_class: Transaction class
         """
         # Only define transaction relation if it doesn't already exist in
         # parent class.
-
-        backref_name = option(self.model, 'relation_naming_function')(
-            self.model.__name__
-        )
 
         transaction_column = getattr(
             self.version_class,
@@ -81,20 +77,9 @@ class ModelBuilder(object):
 
         if not hasattr(self.version_class, 'transaction'):
             self.version_class.transaction = sa.orm.relationship(
-                tx_log_class,
-                primaryjoin=tx_log_class.id == transaction_column,
+                tx_class,
+                primaryjoin=tx_class.id == transaction_column,
                 foreign_keys=[transaction_column],
-                backref=backref_name
-            )
-        else:
-            setattr(
-                tx_log_class,
-                backref_name,
-                sa.orm.relationship(
-                    self.version_class,
-                    primaryjoin=tx_log_class.id == transaction_column,
-                    foreign_keys=[transaction_column]
-                )
             )
 
     def find_closest_versioned_parent(self):
@@ -191,7 +176,7 @@ class ModelBuilder(object):
             args
         )
 
-    def __call__(self, table, tx_log_class):
+    def __call__(self, table, tx_class):
         """
         Build history model and relationships to parent model, transaction
         log model.
@@ -203,7 +188,7 @@ class ModelBuilder(object):
         self.model.__versioning_manager__ = self.manager
         self.version_class = self.build_model(table)
         self.build_parent_relationship()
-        self.build_transaction_relationship(tx_log_class)
+        self.build_transaction_relationship(tx_class)
         self.version_class.__versioning_manager__ = self.manager
         self.manager.version_class_map[self.model] = self.version_class
         self.manager.parent_class_map[self.version_class] = self.model

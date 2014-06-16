@@ -38,29 +38,22 @@ class TransactionBase(object):
         """
         manager = self.__versioning_manager__
         tuples = set(manager.version_class_map.items())
-        entities = []
+        entities = {}
+
+        session = sa.orm.object_session(self)
 
         for class_, version_class in tuples:
-
             if class_.__name__ not in self.entity_names:
                 continue
 
-            try:
-                value = getattr(
-                    self,
-                    manager.options['relation_naming_function'](
-                        class_.__name__
-                    )
-                )
-            except AttributeError:
-                continue
+            tx_column = manager.option(class_, 'transaction_column_name')
 
-            if value:
-                entities.append((
-                    version_class,
-                    value
-                ))
-        return dict(entities)
+            entities[version_class] = (
+                session
+                .query(version_class)
+                .filter(getattr(version_class, tx_column) == self.id)
+            ).all()
+        return entities
 
 
 class TransactionFactory(ModelFactory):

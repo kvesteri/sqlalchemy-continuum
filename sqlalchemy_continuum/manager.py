@@ -72,6 +72,8 @@ class VersioningManager(object):
         self.reset()
         if transaction_cls is not None:
             self.transaction_cls = transaction_cls
+        else:
+            self.transaction_cls = TransactionFactory()
         if user_cls is not None:
             self.user_cls = user_cls
 
@@ -117,11 +119,9 @@ class VersioningManager(object):
         """
         self.tables = {}
         self.pending_classes = []
-        self.association_tables = set([])
-        self.association_version_tables = set([])
+        self.association_tables = set()
+        self.association_version_tables = set()
         self.declarative_base = None
-        self.user_cls = None
-        self.transaction_cls = TransactionFactory()
         self.version_class_map = {}
         self.parent_class_map = {}
         self.session_listeners = {
