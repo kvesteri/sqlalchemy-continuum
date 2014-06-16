@@ -13,6 +13,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Removed generic relationships from transaction changes class to versioned classes.
 - Removed relation_naming_function (no longer needed)
 - Moved get_bind to SQLAlchemy-Utils
+- Removed inflection package from dependencies (no longer needed)
 - SQLAlchemy-Utils dependency updated to 0.26.2
 
 

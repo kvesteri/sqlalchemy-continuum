@@ -126,11 +126,6 @@ Here is a full list of configuration options:
 * operation_type_column_name (default: 'operation_type')
     The name of the operation type column (used by history tables).
 
-* relation_naming_function (default: lambda a: pluralize(underscore(a)))
-    The relation naming function that is being used for generating the relationship names between various generated models.
-
-    For example lets say you have versioned class called 'User'. By default Continuum builds relationship from TransactionLog with name 'users' that points to User class.
-
 * strategy (default: 'validity')
     The versioning strategy to use. Either 'validity' or 'subquery'
 
