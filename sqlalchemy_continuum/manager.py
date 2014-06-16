@@ -212,6 +212,12 @@ class VersioningManager(object):
             sa.event.listen(mapper, event_name, listener)
 
     def remove_class_configuration_listeners(self, mapper):
+        """
+        Remove versioning class configuration listeners from specified mapper.
+
+        :param mapper:
+            mapper to remove class configuration listeners from
+        """
         for event_name, listener in self.class_config_listeners.items():
             sa.event.remove(mapper, event_name, listener)
 
@@ -309,6 +315,13 @@ class VersioningManager(object):
             return uow
 
     def before_flush(self, session, flush_context, instances):
+        """
+        Before flush listener for SQLAlchemy sessions. If this manager has
+        versioning enabled this listener invokes the process before flush of
+        associated UnitOfWork object.
+
+        :param session: SQLAlchemy session
+        """
         if not self.options['versioning']:
             return
 
