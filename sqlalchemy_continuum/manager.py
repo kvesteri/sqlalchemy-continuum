@@ -4,7 +4,7 @@ from inflection import underscore, pluralize
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils.functions import is_auto_assigned_date_column
+from sqlalchemy_utils.functions import get_bind, is_auto_assigned_date_column
 from sqlalchemy_utils.types import TSVectorType
 
 from .builder import Builder
@@ -13,7 +13,7 @@ from .operation import Operation
 from .plugins import PluginCollection
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
-from .utils import get_bind, is_modified, is_versioned
+from .utils import is_modified, is_versioned
 
 
 def tracked_operation(func):

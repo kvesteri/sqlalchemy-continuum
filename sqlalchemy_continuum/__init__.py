@@ -6,7 +6,6 @@ from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
 from .utils import (
     changeset,
-    get_bind,
     get_versioning_manager,
     is_modified,
     parent_class,

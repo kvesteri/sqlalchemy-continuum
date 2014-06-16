@@ -61,23 +61,6 @@ def end_tx_attr(obj):
     )
 
 
-def get_bind(obj):
-    if hasattr(obj, 'bind'):
-        conn = obj.bind
-    else:
-        try:
-            conn = object_session(obj).bind
-        except UnmappedInstanceError:
-            conn = obj
-
-    if not hasattr(conn, 'execute'):
-        raise TypeError(
-            'This method accepts only Session, Engine, Connection and '
-            'declarative model objects.'
-        )
-    return conn
-
-
 def parent_class(version_cls):
     """
     Return the parent class for given version model class.

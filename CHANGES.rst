@@ -4,10 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0 (2014-xx-xx)
+1.0 (2014-06-16)
 ^^^^^^^^^^^^^^^^
 
 - Added __repr__ for Transaction class, issue #59
+- Made transaction_cls of VersioningManager configurable.
+- Removed generic relationships from transaction class to versioned classes.
+- Moved get_bind to SQLAlchemy-Utils
+- SQLAlchemy-Utils dependency updated to 0.26.2
 
 
 1.0b5 (2014-05-07)
