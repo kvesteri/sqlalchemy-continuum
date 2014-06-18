@@ -8,6 +8,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^
 
 - Fixed an issue where deleting an object with deferred columns would throw ObjectDeletedError
+- Made viewonly relationships with association tables not register the association table to versioning manager registry.
 
 
 1.0 (2014-06-16)

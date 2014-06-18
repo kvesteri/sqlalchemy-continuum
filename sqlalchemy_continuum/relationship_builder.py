@@ -225,7 +225,7 @@ class RelationshipBuilder(object):
         except ClassNotVersioned:
             self.remote_cls = self.property.mapper.class_
 
-        if self.property.secondary is not None:
+        if self.property.secondary is not None and not self.property.viewonly:
             self.build_association_version_tables()
 
             for column_pair in self.property.local_remote_pairs:

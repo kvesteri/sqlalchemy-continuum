@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import versioning_manager
 
 from tests import TestCase, create_test_cases
 
@@ -152,3 +153,54 @@ class ManyToManyRelationshipsTestCase(TestCase):
 
 
 create_test_cases(ManyToManyRelationshipsTestCase)
+
+
+class TestManyToManyRelationshipWithViewOnly(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_tag = sa.Table(
+            'article_tag',
+            self.Model.metadata,
+            sa.Column(
+                'article_id',
+                sa.Integer,
+                sa.ForeignKey('article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'tag_id',
+                sa.Integer,
+                sa.ForeignKey('tag.id'),
+                primary_key=True
+            )
+        )
+
+        class Tag(self.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        Tag.articles = sa.orm.relationship(
+            Article,
+            secondary=article_tag,
+            viewonly=True
+        )
+
+        self.article_tag = article_tag
+        self.Article = Article
+        self.Tag = Tag
+
+    def test_does_not_add_association_table_to_manager_registry(self):
+        assert self.article_tag not in versioning_manager.association_tables
