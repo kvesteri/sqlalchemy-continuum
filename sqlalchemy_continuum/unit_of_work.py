@@ -304,5 +304,8 @@ class UnitOfWork(object):
             Version object to assign the attribute values to
         """
         for prop in versioned_column_properties(parent_obj):
-            value = getattr(parent_obj, prop.key)
+            try:
+                value = getattr(parent_obj, prop.key)
+            except sa.orm.exc.ObjectDeletedError:
+                value = None
             setattr(version_obj, prop.key, value)

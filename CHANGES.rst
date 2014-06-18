@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.0.1 (2014-06-xx)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed an issue where deleting an object with deferred columns would throw ObjectDeletedError
+
+
 1.0 (2014-06-16)
 ^^^^^^^^^^^^^^^^
 
