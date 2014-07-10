@@ -3,9 +3,9 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
 
-from .table_builder import TableBuilder
 from .model_builder import ModelBuilder
 from .relationship_builder import RelationshipBuilder
+from .table_builder import TableBuilder
 
 
 class Builder(object):
@@ -111,6 +111,12 @@ class Builder(object):
                     and cls not in self.manager.pending_classes):
                 self.manager.pending_classes.append(cls)
                 self.manager.metadata = cls.metadata
+
+        if hasattr(cls, '__version_parent__'):
+            parent = cls.__version_parent__
+            self.manager.version_class_map[parent] = cls
+            self.manager.parent_class_map[cls] = parent
+            del cls.__version_parent__
 
     def configure_versioned_classes(self):
         """

@@ -2,9 +2,7 @@ from inspect import isclass
 from collections import defaultdict
 
 import sqlalchemy as sa
-from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import get_history
-from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import naturally_equivalent, identity
@@ -118,7 +116,11 @@ def version_class(model):
 
     .. seealso:: :func:`parent_class`
     """
-    return get_versioning_manager(model).version_class_map[model]
+    manager = get_versioning_manager(model)
+    try:
+        return manager.version_class_map[model]
+    except KeyError:
+        return model
 
 
 def version_table(table):

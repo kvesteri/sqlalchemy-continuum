@@ -4,10 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.0.2 (2014-xx-xx)
+1.1.0 (2014-07-10)
 ^^^^^^^^^^^^^^^^^^
 
 - Allowed easier overriding of PropertyModTracker column creation
+- Rewrote join table inheritance handling schematics (now working with SA 0.9.6)
 
 
 1.0.1 (2014-06-18)

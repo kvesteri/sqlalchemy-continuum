@@ -1,10 +1,79 @@
 from copy import copy
 import six
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import column_property
 from sqlalchemy_utils.functions import get_declarative_base
-from .expression_reflector import VersionExpressionReflector
+
+from .expression_reflector import VersionExpressionParser
 from .utils import option
 from .version import VersionClassBase
+
+
+def find_closest_versioned_parent(manager, model):
+    """
+    Finds the closest versioned parent for current parent model.
+    """
+    for class_ in model.__bases__:
+        if class_ in manager.version_class_map:
+            return manager.version_class_map[class_]
+
+
+def get_base_class(manager, model):
+    """
+    Returns all base classes for history model.
+    """
+    return (
+        option(model, 'base_classes')
+        or
+        (get_declarative_base(model), )
+    )
+
+
+def version_base(manager, parent_cls, base_class_factory=None):
+    if base_class_factory is None:
+        base_class_factory = get_base_class
+
+    VersionBase = find_closest_versioned_parent(manager, parent_cls)
+
+    if not VersionBase:
+        VersionBase = type(
+            'VersionBase',
+            (base_class_factory(manager, parent_cls) + (VersionClassBase, )),
+            {'__abstract__': True}
+        )
+
+    return VersionBase
+
+
+def copy_mapper_args(model):
+    args = {}
+    if hasattr(model, '__mapper_args__'):
+        arg_names = (
+            'with_polymorphic',
+            'polymorphic_identity',
+            'concrete'
+        )
+        for arg in arg_names:
+            if arg in model.__mapper_args__:
+                args[arg] = (
+                    model.__mapper_args__[arg]
+                )
+
+        if 'order_by' in model.__mapper_args__:
+            arg = model.__mapper_args__['order_by']
+            # Only allow string based order_by reflection to version
+            # classes.
+            if isinstance(arg, six.string_types):
+                args['order_by'] = arg
+
+        if 'polymorphic_on' in model.__mapper_args__:
+            column = model.__mapper_args__['polymorphic_on']
+            if isinstance(column, six.string_types):
+                args['polymorphic_on'] = column
+            else:
+                args['polymorphic_on'] = column.key
+    return args
 
 
 class ModelBuilder(object):
@@ -94,6 +163,7 @@ class ModelBuilder(object):
         """
         Returns all base classes for history model.
         """
+        return (version_base(self.manager, self.model), )
         parents = (
             self.find_closest_versioned_parent()
             or option(self.model, 'base_classes')
@@ -101,74 +171,86 @@ class ModelBuilder(object):
         )
         return parents + (VersionClassBase, )
 
-    def copy_polymorphism_args(self):
-        args = {}
-        if hasattr(self.model, '__mapper_args__'):
-            arg_names = (
-                'with_polymorphic',
-                'polymorphic_identity',
-                'concrete'
-            )
-            for arg in arg_names:
-                if arg in self.model.__mapper_args__:
-                    args[arg] = (
-                        self.model.__mapper_args__[arg]
-                    )
-
-            if 'order_by' in self.model.__mapper_args__:
-                arg = self.model.__mapper_args__['order_by']
-                # Only allow string based order_by reflection to version
-                # classes.
-                if isinstance(arg, six.string_types):
-                    args['order_by'] = arg
-
-            if 'polymorphic_on' in self.model.__mapper_args__:
-                column = self.model.__mapper_args__['polymorphic_on']
-                if isinstance(column, six.string_types):
-                    args['polymorphic_on'] = column
-                else:
-                    args['polymorphic_on'] = column.key
-        return args
-
-    def inheritance_args(self, table):
+    def inheritance_args(self, cls, version_table, table):
         """
         Return mapper inheritance args for currently built history model.
         """
         args = {}
-        parent_tuple = self.find_closest_versioned_parent()
-        if parent_tuple:
-            # The version classes do not contain foreign keys, hence we need
-            # to map inheritance condition manually for classes that use
-            # joined table inheritance
-            parent = parent_tuple[0]
 
-            if parent.__table__.name != table.name:
-                reflector = VersionExpressionReflector(self.model)
-                mapper = sa.inspect(self.model)
-                inherit_condition = reflector(mapper.inherit_condition)
+        if not sa.inspect(self.model).single:
+            parent_tuple = self.find_closest_versioned_parent()
+            if parent_tuple:
+                # The version classes do not contain foreign keys, hence we
+                # need to map inheritance condition manually for classes that
+                # use joined table inheritance
+                parent = parent_tuple[0]
 
-                args['inherit_condition'] = sa.and_(
-                    inherit_condition,
-                    '%s.transaction_id = %s_version.transaction_id' % (
-                        parent.__table__.name,
-                        self.model.__table__.name
+                if parent.__table__.name != table.name:
+                    mapper = sa.inspect(self.model)
+
+                    reflector = VersionExpressionParser()
+                    inherit_condition = reflector(
+                        mapper.inherit_condition
                     )
-                )
-        args.update(self.copy_polymorphism_args())
 
+                    args['inherit_condition'] = sa.and_(
+                        inherit_condition,
+                        parent.__table__.c.transaction_id ==
+                        cls.__table__.c.transaction_id
+                    )
+                    args['inherit_foreign_keys'] = [
+                        version_table.c[column.key]
+                        for column in sa.inspect(self.model).columns
+                        if column.primary_key
+                    ]
+
+        args.update(copy_mapper_args(self.model))
+
+        return args
+
+    def get_inherited_denormalized_columns(self, table):
+        parent = find_closest_versioned_parent(self.manager, self.model)
+        mapper = sa.inspect(self.model)
+
+        args = {}
+
+        if parent and not (mapper.single or mapper.concrete):
+            columns = [
+                'end_transaction_id',
+                'operation_type',
+                'transaction_id'
+            ]
+            for column in columns:
+                args[column] = column_property(
+                    table.c[column],
+                    parent.__table__.c[column]
+                )
         return args
 
     def build_model(self, table):
         """
         Build history model class.
         """
-        mapper_args = {}
-        mapper_args.update(self.inheritance_args(table))
-        args = {
-            '__mapper_args__': mapper_args
-        }
-        if not sa.inspect(self.model).single:
+        args = {}
+
+        @declared_attr
+        def mapper_args(cls):
+            mapper_args = {}
+            mapper_args.update(self.inheritance_args(
+                cls, table, self.model.__table__)
+            )
+            return mapper_args
+
+        args['__mapper_args__'] = mapper_args
+        args['__versioning_manager__'] = self.manager
+        args['__version_parent__'] = self.model
+
+        parent = find_closest_versioned_parent(self.manager, self.model)
+
+        if not parent or parent.__table__.name != table.name:
             args['__table__'] = table
+
+        args.update(self.get_inherited_denormalized_columns(table))
 
         return type(
             '%sVersion' % self.model.__name__,
@@ -189,7 +271,4 @@ class ModelBuilder(object):
         self.version_class = self.build_model(table)
         self.build_parent_relationship()
         self.build_transaction_relationship(tx_class)
-        self.version_class.__versioning_manager__ = self.manager
-        self.manager.version_class_map[self.model] = self.version_class
-        self.manager.parent_class_map[self.version_class] = self.model
         return self.version_class

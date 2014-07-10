@@ -5,16 +5,6 @@ from .utils import tx_column_name, end_tx_column_name
 
 
 def parent_identity(obj_or_class):
-    if (
-        isinstance(obj_or_class, sa.sql.selectable.Alias) or
-        isinstance(obj_or_class, sa.Table)
-    ):
-        return tuple(
-            column
-            for column in obj_or_class.c
-            if column.name != 'transaction_id'
-            and column.primary_key
-        )
     return tuple(
         getattr(obj_or_class, column_key)
         for column_key in get_primary_keys(obj_or_class).keys()
@@ -71,7 +61,10 @@ class VersionObjectFetcher(object):
         if alias is None:
             alias = sa.orm.aliased(obj)
             table = alias.__table__
-            attrs = alias
+            if hasattr(alias, 'c'):
+                attrs = alias.c
+            else:
+                attrs = alias
         else:
             table = alias.original
             attrs = alias.c
@@ -88,7 +81,11 @@ class VersionObjectFetcher(object):
                         getattr(attrs, tx_column_name(obj)),
                         getattr(obj, tx_column_name(obj))
                     ),
-                    *eqmap(parent_identity, (alias, obj))
+                    *[
+                        getattr(attrs, pk) == getattr(obj, pk)
+                        for pk in get_primary_keys(obj.__class__)
+                        if pk != tx_column_name(obj)
+                    ]
                 )
             )
             .correlate(table)

@@ -94,7 +94,7 @@ class TestCase(object):
         self.create_tables()
 
         Session = sessionmaker(bind=self.connection)
-        self.session = Session()
+        self.session = Session(autoflush=False)
 
     def create_tables(self):
         self.Model.metadata.create_all(self.connection)
@@ -137,9 +137,18 @@ class TestCase(object):
 
 
 setting_variants = {
-    'versioning_strategy': ['subquery', 'validity'],
-    'transaction_column_name': ['transaction_id', 'tx_id'],
-    'end_transaction_column_name': ['end_transaction_id', 'end_tx_id']
+    'versioning_strategy': [
+        'subquery',
+        'validity',
+    ],
+    'transaction_column_name': [
+        'transaction_id',
+        'tx_id'
+    ],
+    'end_transaction_column_name': [
+        'end_transaction_id',
+        'end_tx_id'
+    ]
 }
 
 

@@ -1,8 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils import identity
-from .fetcher import parent_criteria
+from sqlalchemy_utils import get_primary_keys, identity
 from .operation import Operations
 from .utils import (
     end_tx_column_name,
@@ -238,10 +237,12 @@ class UnitOfWork(object):
                                 class_,
                                 tx_column_name(version_obj)
                             ) == subquery,
-                            *parent_criteria(
-                                version_obj,
-                                class_.__table__
-                            )
+                            *[
+                                getattr(version_obj, pk) ==
+                                getattr(class_.__table__.c, pk)
+                                for pk in get_primary_keys(class_)
+                                if pk != tx_column_name(class_)
+                            ]
                         )
                     )
                 )

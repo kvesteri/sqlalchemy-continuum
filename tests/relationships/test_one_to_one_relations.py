@@ -50,21 +50,6 @@ class OneToOneRelationshipsTestCase(TestCase):
 
         assert article.versions[0].author == user.versions[0]
 
-    def test_multiple_parent_and_relation_versions(self):
-        article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        user = self.User(name=u'Some user')
-        article.author = user
-        self.session.add(article)
-        self.session.commit()
-        user.name = u'Someone else'
-        self.session.commit()
-
-        article.name = u'Updated article'
-
-        assert article.versions[1].author == user.versions[1]
-
     def test_multiple_consecutive_inserts_and_removes(self):
         article = self.Article()
         article.name = u'Some article'

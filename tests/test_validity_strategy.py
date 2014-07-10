@@ -54,13 +54,76 @@ class TestValidityStrategy(TestCase):
         )
 
 
+# class TestSomething(TestCase):
+#     def create_models(self):
+#         class TextItem(self.Model):
+#             __tablename__ = 'text_item'
+#             __versioned__ = {
+#                 'base_classes': (self.Model, ),
+#                 'strategy': 'validity',
+#             }
+#             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+#             tx_id = sa.Column(sa.Integer, primary_key=True)
+
+#             discriminator = sa.Column(
+#                 sa.Unicode(100)
+#             )
+#             title = sa.Column(sa.String)
+
+#             __mapper_args__ = {
+#                 'polymorphic_on': discriminator,
+#             }
+
+#         articles = sa.Table(
+#             'article',
+#             self.Model.metadata,
+#             sa.Column(
+#                 'id',
+#                 sa.Integer,
+#                 sa.ForeignKey(TextItem.id),
+#                 primary_key=True
+#             ),
+#             sa.Column(
+#                 'tx_id',
+#                 sa.Integer,
+#                 primary_key=True
+#             ),
+#             sa.Column('title', sa.String)
+#         )
+
+#         from sqlalchemy.orm import column_property
+
+#         class Article(TextItem):
+#             __table__ = articles
+#             __mapper_args__ = {
+#                 'polymorphic_identity': u'article',
+#             }
+#             tx_id = column_property(
+#                 articles.c.tx_id, TextItem.__table__.c.tx_id
+#             )
+#             title = column_property(
+#                 articles.c.title, TextItem.__table__.c.title
+#             )
+#         self.TextItem = TextItem
+#         self.Article = Article
+
+#     def test_something(self):
+#         self.session.add(self.Article(id=1, tx_id=1, title='mjoo'))
+#         self.session.commit()
+
+#         self.session.execute("UPDATE text_item SET title = 'asdsadas'")
+
+#         article = self.session.query(self.Article).first()
+#         print article.title
+
+
 class TestJoinTableInheritanceWithValidityVersioning(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
             __versioned__ = {
                 'base_classes': (self.Model, ),
-                'strategy': 'validity'
+                'strategy': 'validity',
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
