@@ -19,7 +19,6 @@ class VersionExpressionParser(ExpressionParser):
             return table.c[column.name]
 
 
-
 class VersionExpressionReflector(VersionExpressionParser):
     def __init__(self, parent):
         self.parent = parent
