@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy_utils import get_column_key
 
 
 class ColumnReflector(object):
@@ -90,21 +89,15 @@ class ColumnReflector(object):
                 continue
 
             reflected_column = self.reflect_column(column)
-            if self.model:
-                yield get_column_key(self.model, column), reflected_column
-            else:
-                yield reflected_column.key, reflected_column
+            yield reflected_column
 
         # Only yield internal version columns if parent model is not using
         # single table inheritance
         if not self.model or not sa.inspect(self.model).single:
-            yield self.transaction_column.key, self.transaction_column
+            yield self.transaction_column
             if self.option('strategy') == 'validity':
-                yield (
-                    self.end_transaction_column.key,
-                    self.end_transaction_column
-                )
-            yield self.operation_type_column.key, self.operation_type_column
+                yield self.end_transaction_column
+            yield self.operation_type_column
 
 
 class TableBuilder(object):
@@ -138,7 +131,7 @@ class TableBuilder(object):
     @property
     def columns(self):
         return list(
-            column for _, column in
+            column for column in
             ColumnReflector(self.manager, self.parent_table, self.model)
         )
 
