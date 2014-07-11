@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_utils import get_column_key
 
 
 class ColumnReflector(object):
@@ -104,13 +105,6 @@ class ColumnReflector(object):
                     self.end_transaction_column
                 )
             yield self.operation_type_column.key, self.operation_type_column
-
-
-def get_column_key(model, column):
-    for key, c in sa.inspect(model).columns.items():
-        if c is column:
-            return key
-    return None
 
 
 class TableBuilder(object):
