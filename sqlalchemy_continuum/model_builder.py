@@ -151,25 +151,11 @@ class ModelBuilder(object):
                 foreign_keys=[transaction_column],
             )
 
-    def find_closest_versioned_parent(self):
-        """
-        Finds the closest versioned parent for current parent model.
-        """
-        for class_ in self.model.__bases__:
-            if class_ in self.manager.version_class_map:
-                return (self.manager.version_class_map[class_], )
-
     def base_classes(self):
         """
         Returns all base classes for history model.
         """
         return (version_base(self.manager, self.model), )
-        parents = (
-            self.find_closest_versioned_parent()
-            or option(self.model, 'base_classes')
-            or (get_declarative_base(self.model), )
-        )
-        return parents + (VersionClassBase, )
 
     def inheritance_args(self, cls, version_table, table):
         """
@@ -178,13 +164,13 @@ class ModelBuilder(object):
         args = {}
 
         if not sa.inspect(self.model).single:
-            parent_tuple = self.find_closest_versioned_parent()
-            if parent_tuple:
+            parent = find_closest_versioned_parent(
+                self.manager, self.model
+            )
+            if parent:
                 # The version classes do not contain foreign keys, hence we
                 # need to map inheritance condition manually for classes that
                 # use joined table inheritance
-                parent = parent_tuple[0]
-
                 if parent.__table__.name != table.name:
                     mapper = sa.inspect(self.model)
 
