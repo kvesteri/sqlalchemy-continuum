@@ -4,6 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.0.3 (2014-07-16)
+^^^^^^^^^^^^^^^^^^
+
+- Added __repr__ for Operations class
+- Fixed an issue where assigning unmodified object's attributes in user defined before flush listener would raise TypeError in UnitOfWork
+
+
 1.0.2 (2014-07-11)
 ^^^^^^^^^^^^^^^^^^
 

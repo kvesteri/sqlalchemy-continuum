@@ -59,6 +59,9 @@ class Operations(object):
     def __nonzero__(self):
         return self.__bool__()
 
+    def __repr__(self):
+        return repr(self.objects)
+
     @property
     def entities(self):
         """

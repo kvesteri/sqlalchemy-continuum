@@ -87,6 +87,11 @@ class UnitOfWork(object):
         if not self.current_transaction:
             return
 
+        if not self.version_session:
+            self.version_session = sa.orm.session.Session(
+                bind=session.connection()
+            )
+
         self.make_versions(session)
 
     def create_transaction(self, session):
