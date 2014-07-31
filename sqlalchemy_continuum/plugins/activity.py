@@ -165,7 +165,7 @@ activity.
 
 
 Now if we wanted to find all the changes that affected given article we could
-do so by searching trhough all the activities where either the object or
+do so by searching through all the activities where either the object or
 target is the given article.
 
 
