@@ -91,3 +91,16 @@ Resources
    :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
 .. |Downloads| image:: https://pypip.in/d/SQLAlchemy-Continuum/badge.png
    :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
+
+
+More information
+----------------
+
+- http://en.wikipedia.org/wiki/Slowly_changing_dimension
+- http://en.wikipedia.org/wiki/Change_data_capture
+- http://en.wikipedia.org/wiki/Anchor_Modeling
+- http://en.wikipedia.org/wiki/Shadow_table
+- https://wiki.postgresql.org/wiki/Audit_trigger
+- https://wiki.postgresql.org/wiki/Audit_trigger_91plus
+- http://kosalads.blogspot.fi/2014/06/implement-audit-functionality-in.html
+- https://github.com/2ndQuadrant/pgaudit
