@@ -26,8 +26,8 @@ keys and values to the meta property of Transaction class.
     article = Article()
     session.add(article)
 
-    uow = unit_of_work(session)
-    tx = uow.create_transaction()
+    uow = versioning_manager.unit_of_work(session)
+    tx = uow.create_transaction(session)
     tx.meta = {u'some_key': u'some value'}
     session.commit()
 
