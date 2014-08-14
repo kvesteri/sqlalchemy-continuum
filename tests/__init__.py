@@ -39,6 +39,25 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
+def get_dns_from_driver(driver):
+    if driver == 'postgres':
+        return 'postgres://postgres@localhost/sqlalchemy_continuum_test'
+    elif driver == 'mysql':
+        return 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
+    elif driver == 'sqlite':
+        return 'sqlite:///:memory:'
+    else:
+        raise Exception('Unknown driver given: %r' % driver)
+
+
+def get_driver_name(driver):
+    return driver[0:-len('-native')] if driver.endswith('-native') else driver
+
+
+def uses_native_versioning():
+    return os.environ.get('DB', 'sqlite').endswith('-native')
+
+
 class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
@@ -51,32 +70,24 @@ class TestCase(object):
     @property
     def options(self):
         return {
+            'native_versioning': uses_native_versioning(),
             'base_classes': (self.Model, ),
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
         }
 
-    def get_dns_from_driver(self, driver):
-        if driver == 'postgres':
-            return 'postgres://postgres@localhost/sqlalchemy_continuum_test'
-        elif driver == 'mysql':
-            return 'mysql+pymysql://travis@localhost/sqlalchemy_continuum_test'
-        elif driver == 'sqlite':
-            return 'sqlite:///:memory:'
-        else:
-            raise Exception('Unknown driver given: %r' % driver)
-
     def setup_method(self, method):
         self.Model = declarative_base()
         make_versioned(options=self.options)
 
         driver = os.environ.get('DB', 'sqlite')
+        driver = get_driver_name(driver)
         versioning_manager.plugins = self.plugins
         versioning_manager.transaction_cls = self.transaction_cls
         versioning_manager.user_cls = self.user_cls
 
-        self.engine = create_engine(self.get_dns_from_driver(driver))
+        self.engine = create_engine(get_dns_from_driver(driver))
         # self.engine.echo = True
         self.connection = self.engine.connect()
 

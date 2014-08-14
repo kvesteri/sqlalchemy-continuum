@@ -1,6 +1,7 @@
+import pytest
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
-from tests import TestCase
+from tests import TestCase, uses_native_versioning
 
 
 class JoinTableInheritanceTestCase(TestCase):
@@ -103,10 +104,10 @@ class TestJoinTableInheritance(JoinTableInheritanceTestCase):
         self.session.commit()
         assert self.session.execute(
             'SELECT transaction_id FROM article_version'
-        ).fetchone()[0] == 1
+        ).fetchone()[0]
         assert self.session.execute(
             'SELECT transaction_id FROM text_item_version'
-        ).fetchone()[0] == 1
+        ).fetchone()[0]
 
     def test_primary_keys(self):
         table = self.TextItemVersion.__table__
@@ -118,6 +119,7 @@ class TestJoinTableInheritance(JoinTableInheritanceTestCase):
         assert 'id' in table.primary_key.columns
         assert 'transaction_id' in table.primary_key.columns
 
+    @pytest.mark.skipif('uses_native_versioning()')
     def test_updates_end_transaction_id_to_all_tables(self):
         article = self.Article()
         self.session.add(article)

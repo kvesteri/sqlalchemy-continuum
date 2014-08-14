@@ -18,7 +18,6 @@ def compile_big_integer(element, compiler, **kw):
 
 
 class TransactionBase(object):
-    id = sa.Column(sa.types.BigInteger, primary_key=True, autoincrement=True)
     issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
     @property
@@ -72,6 +71,19 @@ class TransactionFactory(ModelFactory):
         ):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
+
+            if manager.options['native_versioning']:
+                id = sa.Column(
+                    sa.types.BigInteger,
+                    primary_key=True,
+                    autoincrement=False
+                )
+            else:
+                id = sa.Column(
+                    sa.types.BigInteger,
+                    primary_key=True,
+                    autoincrement=True
+                )
 
             if self.remote_addr:
                 remote_addr = sa.Column(sa.String(50))

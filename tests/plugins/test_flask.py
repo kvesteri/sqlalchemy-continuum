@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, url_for
 from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
@@ -9,7 +11,7 @@ from sqlalchemy_continuum import (
 )
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
-from tests import TestCase
+from tests import TestCase, get_driver_name, get_dns_from_driver
 
 
 class TestFlaskPlugin(TestCase):
@@ -184,7 +186,9 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         sa.orm.configure_mappers()
 
         self.app = Flask(__name__)
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = get_dns_from_driver(
+            get_driver_name(os.environ.get('DB', 'sqlite'))
+        )
         self.db.init_app(self.app)
         self.app.secret_key = 'secret'
         self.app.debug = True
@@ -195,7 +199,10 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
 
     def teardown_method(self, method):
         remove_versioning()
+        self.db.session.remove()
         self.db.drop_all()
+        self.db.session.close_all()
+        self.db.engine.dispose()
         self.context.pop()
         self.context = None
         self.client = None

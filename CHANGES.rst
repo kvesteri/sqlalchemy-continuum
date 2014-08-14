@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.1.0 (2014-xx-xx)
+^^^^^^^^^^^^^^^^^^
+
+- Add optional native trigger based versioning for PostgreSQL dialect
+
+
 1.0.3 (2014-07-16)
 ^^^^^^^^^^^^^^^^^^
 

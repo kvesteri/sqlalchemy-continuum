@@ -8,6 +8,7 @@ from .utils import (
     changeset,
     get_versioning_manager,
     is_modified,
+    is_session_modified,
     parent_class,
     transaction_class,
     tx_column_name,
@@ -16,7 +17,7 @@ from .utils import (
 )
 
 
-__version__ = '1.0.3'
+__version__ = '1.1.0'
 
 
 versioning_manager = VersioningManager()

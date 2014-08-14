@@ -80,7 +80,8 @@ class ColumnReflector(object):
             index=True
         )
 
-    def __iter__(self):
+    @property
+    def reflected_parent_columns(self):
         for column in self.parent_table.c:
             if (
                 self.model and
@@ -90,6 +91,10 @@ class ColumnReflector(object):
 
             reflected_column = self.reflect_column(column)
             yield reflected_column
+
+    def __iter__(self):
+        for column in self.reflected_parent_columns:
+            yield column
 
         # Only yield internal version columns if parent model is not using
         # single table inheritance

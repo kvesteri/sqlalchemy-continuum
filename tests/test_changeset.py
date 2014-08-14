@@ -37,8 +37,15 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
     def test_changeset_for_history_that_does_not_have_first_insert(self):
         tx_log_class = get_versioning_manager(self.Article).transaction_cls
         tx_log = tx_log_class(issued_at=sa.func.now())
+        if self.options['native_versioning']:
+            tx_log.id = sa.func.txid_current()
+
         self.session.add(tx_log)
         self.session.commit()
+
+        # Needed when using native versioning
+        self.session.expunge_all()
+        tx_log = self.session.query(tx_log_class).first()
 
         self.session.execute(
             '''INSERT INTO article_version

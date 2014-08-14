@@ -1,7 +1,8 @@
+import pytest
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 from sqlalchemy_continuum.plugins import ActivityPlugin
-from tests import TestCase, QueryPool
+from tests import TestCase, QueryPool, uses_native_versioning
 
 
 class ActivityTestCase(TestCase):
@@ -99,6 +100,7 @@ class TestActivity(ActivityTestCase):
 
 
 class TestObjectTxIdGeneration(ActivityTestCase):
+    @pytest.mark.skipif('uses_native_versioning()')
     def test_does_not_query_db_if_version_obj_in_session(self):
         article = self.create_article()
         self.session.flush()
@@ -121,6 +123,7 @@ class TestObjectTxIdGeneration(ActivityTestCase):
 
 
 class TestTargetTxIdGeneration(ActivityTestCase):
+    @pytest.mark.skipif('uses_native_versioning()')
     def test_does_not_query_db_if_version_obj_in_session(self):
         article = self.create_article()
         self.session.flush()

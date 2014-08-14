@@ -101,6 +101,11 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         self.current_transaction = self.manager.transaction_cls()
+        if self.manager.options['native_versioning']:
+            self.current_transaction.id = session.execute(
+                'SELECT txid_current()'
+            ).scalar()
+
         self.manager.plugins.before_create_tx_object(self, session)
         session.add(self.current_transaction)
         self.manager.plugins.after_create_tx_object(self, session)
@@ -169,7 +174,10 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        if not self.manager.options['versioning']:
+        if (
+            not self.manager.options['versioning'] or
+            self.manager.options['native_versioning']
+        ):
             return
 
         for key, operation in copy(self.operations).items():

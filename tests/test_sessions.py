@@ -18,21 +18,24 @@ class TestSessions(TestCase):
 
         self.session.commit()
         self.session2.commit()
-        assert article.versions[-1].transaction_id == 1
-        assert article2.versions[-1].transaction_id == 2
+        assert article.versions[-1].transaction_id
+        assert (
+            article2.versions[-1].transaction_id >
+            article.versions[-1].transaction_id
+        )
 
     def test_manual_transaction_creation(self):
         uow = versioning_manager.unit_of_work(self.session)
         transaction = uow.create_transaction(self.session)
         self.session.flush()
-        assert transaction.id == 1
+        assert transaction.id
         article = self.Article(name=u'Session1 article')
         self.session.add(article)
         self.session.flush()
-        assert uow.current_transaction.id == 1
+        assert uow.current_transaction.id
 
         self.session.commit()
-        assert article.versions[-1].transaction_id == 1
+        assert article.versions[-1].transaction_id
 
     def test_commit_without_objects(self):
         self.session.commit()
