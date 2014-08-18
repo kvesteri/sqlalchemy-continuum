@@ -88,6 +88,13 @@ class SQLConstruct(object):
             self.excluded_columns = []
 
     @property
+    def table_name(self):
+        if self.table.schema:
+            return '%s."%s"' % (self.table.schema, self.table.name)
+        else:
+            return '"' + self.table.name + '"'
+
+    @property
     def version_table_name(self):
         version_table_name = self.version_table_name_format % self.table.name
         if self.table.schema:
@@ -292,31 +299,24 @@ def get_validity_sql(class_, tables, params):
     return ''.join(str(class_(table, **params)) for table in tables)
 
 
-class PostgreSQLTriggerBuilder(SQLConstruct):
-    def trigger_ddl(self, cls):
-        table = cls.__table__
-        if table.schema:
-            table_name = '%s."%s"' % (table.schema, table.name)
-        else:
-            table_name = '"' + table.name + '"'
-        return sa.schema.DDL(
-            trigger_sql.format(
-                trigger_name='%s_trigger' % table.name,
-                table_name=table_name,
-                procedure_name='%s_audit' % table.name
-            )
+class CreateTriggerSQL(SQLConstruct):
+    def __str__(self):
+        return trigger_sql.format(
+            trigger_name='%s_trigger' % self.table.name,
+            table_name=self.table_name,
+            procedure_name='%s_audit' % self.table.name
         )
 
-    def trigger_function_ddl(self, cls):
-        table = cls.__table__
 
+class CreateTriggerFunctionSQL(SQLConstruct):
+    def __str__(self):
         args = self.copy_args()
         tables = self.update_validity_for_tables
         after_insert = get_validity_sql(InsertValiditySQL, tables, args)
         after_update = get_validity_sql(UpdateValiditySQL, tables, args)
         after_delete = get_validity_sql(DeleteValiditySQL, tables, args)
-        sql = procedure_sql.format(
-            procedure_name='%s_audit' % table.name,
+        return procedure_sql.format(
+            procedure_name='%s_audit' % self.table.name,
             after_insert=after_insert,
             after_update=after_update,
             after_delete=after_delete,
@@ -324,24 +324,24 @@ class PostgreSQLTriggerBuilder(SQLConstruct):
             upsert_update=UpdateUpsertSQL(**args),
             upsert_delete=DeleteUpsertSQL(**args)
         )
-        return sa.schema.DDL(sql)
 
-    def add_native_versioning_triggers(self, cls):
-        sa.event.listen(
-            cls.__table__,
-            'after_create',
-            self.trigger_function_ddl(cls)
+
+def create_versioning_triggers(manager, cls):
+    sa.event.listen(
+        cls.__table__,
+        'after_create',
+        sa.schema.DDL(str(CreateTriggerFunctionSQL.for_manager(manager, cls)))
+    )
+    sa.event.listen(
+        cls.__table__,
+        'after_create',
+        sa.schema.DDL(str(CreateTriggerSQL.for_manager(manager, cls)))
+    )
+    sa.event.listen(
+        cls.__table__,
+        'after_drop',
+        sa.schema.DDL(
+            'DROP FUNCTION IF EXISTS %s()' %
+            '%s_audit' % cls.__table__.name,
         )
-        sa.event.listen(
-            cls.__table__,
-            'after_create',
-            self.trigger_ddl(cls)
-        )
-        sa.event.listen(
-            cls.__table__,
-            'after_drop',
-            sa.schema.DDL(
-                'DROP FUNCTION IF EXISTS %s()' %
-                '%s_audit' % cls.__table__.name,
-            )
-        )
+    )
