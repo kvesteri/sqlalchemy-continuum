@@ -1,7 +1,7 @@
 import pytest
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
-from tests import TestCase, uses_native_versioning
+from tests import TestCase, uses_native_versioning, create_test_cases
 
 
 class JoinTableInheritanceTestCase(TestCase):
@@ -52,10 +52,6 @@ class JoinTableInheritanceTestCase(TestCase):
         self.ArticleVersion = version_class(self.Article)
         self.BlogPostVersion = version_class(self.BlogPost)
 
-
-class TestJoinTableInheritance(JoinTableInheritanceTestCase):
-    versioning_strategy = 'validity'
-
     def test_each_class_has_distinct_version_table(self):
         assert self.TextItemVersion.__table__.name == 'text_item_version'
         assert self.ArticleVersion.__table__.name == 'article_version'
@@ -79,9 +75,11 @@ class TestJoinTableInheritance(JoinTableInheritanceTestCase):
         assert type(blogpost.versions[0]) == self.BlogPostVersion
 
     def test_all_tables_contain_transaction_id_column(self):
-        assert 'transaction_id' in self.TextItemVersion.__table__.c
-        assert 'transaction_id' in self.ArticleVersion.__table__.c
-        assert 'transaction_id' in self.BlogPostVersion.__table__.c
+        tx_column = self.options['transaction_column_name']
+
+        assert tx_column in self.TextItemVersion.__table__.c
+        assert tx_column in self.ArticleVersion.__table__.c
+        assert tx_column in self.BlogPostVersion.__table__.c
 
     def test_with_polymorphic(self):
         article = self.Article()
@@ -99,28 +97,31 @@ class TestJoinTableInheritance(JoinTableInheritanceTestCase):
         self.session.commit()
 
     def test_assign_transaction_id_to_both_parent_and_child_tables(self):
+        tx_column = self.options['transaction_column_name']
         article = self.Article()
         self.session.add(article)
         self.session.commit()
         assert self.session.execute(
-            'SELECT transaction_id FROM article_version'
+            'SELECT %s FROM article_version' % tx_column
         ).fetchone()[0]
         assert self.session.execute(
-            'SELECT transaction_id FROM text_item_version'
+            'SELECT %s FROM text_item_version' % tx_column
         ).fetchone()[0]
 
     def test_primary_keys(self):
+        tx_column = self.options['transaction_column_name']
         table = self.TextItemVersion.__table__
         assert len(table.primary_key.columns)
         assert 'id' in table.primary_key.columns
-        assert 'transaction_id' in table.primary_key.columns
+        assert tx_column in table.primary_key.columns
         table = self.ArticleVersion.__table__
         assert len(table.primary_key.columns)
         assert 'id' in table.primary_key.columns
-        assert 'transaction_id' in table.primary_key.columns
+        assert tx_column in table.primary_key.columns
 
     @pytest.mark.skipif('uses_native_versioning()')
     def test_updates_end_transaction_id_to_all_tables(self):
+        end_tx_column = self.options['end_transaction_column_name']
         article = self.Article()
         self.session.add(article)
         self.session.commit()
@@ -128,10 +129,14 @@ class TestJoinTableInheritance(JoinTableInheritanceTestCase):
         self.session.commit()
         assert article.versions.count() == 2
         assert self.session.execute(
-            'SELECT end_transaction_id FROM text_item_version '
-            'ORDER BY transaction_id LIMIT 1'
+            'SELECT %s FROM text_item_version '
+            'ORDER BY transaction_id LIMIT 1' % end_tx_column
         ).scalar()
         assert self.session.execute(
-            'SELECT end_transaction_id FROM article_version '
-            'ORDER BY transaction_id LIMIT 1'
+            'SELECT %s FROM article_version '
+            'ORDER BY transaction_id LIMIT 1' % end_tx_column
         ).scalar()
+
+
+create_test_cases(JoinTableInheritanceTestCase)
+

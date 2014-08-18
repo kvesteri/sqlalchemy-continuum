@@ -178,11 +178,13 @@ class ModelBuilder(object):
                     inherit_condition = reflector(
                         mapper.inherit_condition
                     )
-
+                    tx_column_name = self.manager.options[
+                        'transaction_column_name'
+                    ]
                     args['inherit_condition'] = sa.and_(
                         inherit_condition,
-                        parent.__table__.c.transaction_id ==
-                        cls.__table__.c.transaction_id
+                        getattr(parent.__table__.c, tx_column_name) ==
+                        getattr(cls.__table__.c, tx_column_name)
                     )
                     args['inherit_foreign_keys'] = [
                         version_table.c[column.key]
@@ -202,10 +204,16 @@ class ModelBuilder(object):
 
         if parent and not (mapper.single or mapper.concrete):
             columns = [
-                'end_transaction_id',
-                'operation_type',
-                'transaction_id'
+                self.manager.option(self.model, 'operation_type_column_name'),
+                self.manager.option(self.model, 'transaction_column_name')
             ]
+            if self.manager.option(self.model, 'strategy') == 'validity':
+                columns.append(
+                    self.manager.option(
+                        self.model,
+                        'end_transaction_column_name'
+                    )
+                )
             for column in columns:
                 args[column] = column_property(
                     table.c[column],

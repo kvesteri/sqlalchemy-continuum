@@ -1,9 +1,9 @@
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager, version_class
-from tests import TestCase
+from tests import TestCase, create_test_cases
 
 
-class TestSingleTableInheritance(TestCase):
+class SingleTableInheritanceTestCase(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
@@ -78,3 +78,6 @@ class TestSingleTableInheritance(TestCase):
         ).first()
         assert transaction.entity_names == [u'Article']
         assert transaction.changed_entities
+
+
+create_test_cases(SingleTableInheritanceTestCase)
