@@ -84,6 +84,8 @@ class SQLConstruct(object):
         self.use_property_mod_tracking = use_property_mod_tracking
         self.table = table
         self.excluded_columns = excluded_columns
+        if update_validity_for_tables is None:
+            self.update_validity_for_tables = []
         if self.excluded_columns is None:
             self.excluded_columns = []
 
@@ -164,7 +166,7 @@ class UpsertSQL(SQLConstruct):
             setattr(self, key, getattr(self, 'build_%s' % key)())
 
     def build_column_names(self):
-        column_names = [c.name for c in self.columns]
+        column_names = ['"%s"' % c.name for c in self.columns]
         if self.use_property_mod_tracking:
             column_names += [
                 '%s_mod' % c.name for c in self.columns_without_pks
@@ -173,13 +175,13 @@ class UpsertSQL(SQLConstruct):
 
     def build_primary_key_criteria(self):
         return [
-            '{name} = NEW.{name}'.format(name=c.name)
+            '"{name}" = NEW."{name}"'.format(name=c.name)
             for c in self.columns if c.primary_key
         ]
 
     def build_update_values(self):
         parent_columns = [
-            '{name} = NEW.{name}'.format(name=c.name)
+            '"{name}" = NEW."{name}"'.format(name=c.name)
             for c in self.columns
         ]
         mod_columns = []
@@ -203,7 +205,7 @@ class UpsertSQL(SQLConstruct):
         return values
 
     def build_values(self):
-        return ['NEW.%s' % c.name for c in self.columns]
+        return ['NEW."%s"' % c.name for c in self.columns]
 
     def build_mod_tracking_values(self):
         return []
@@ -227,18 +229,18 @@ class DeleteUpsertSQL(UpsertSQL):
 
     def build_primary_key_criteria(self):
         return [
-            '{name} = OLD.{name}'.format(name=c.name)
+            '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.pk_columns
         ]
 
     def build_update_values(self):
         return [
-            '{name} = OLD.{name}'.format(name=c.name)
+            '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
 
     def build_values(self):
-        return ['OLD.%s' % c.name for c in self.columns]
+        return ['OLD."%s"' % c.name for c in self.columns]
 
 
 class InsertUpsertSQL(UpsertSQL):
@@ -253,8 +255,8 @@ class UpdateUpsertSQL(UpsertSQL):
 
     def build_mod_tracking_values(self):
         return [
-            'NOT ((OLD.{0} IS NULL AND NEW.{0} IS NULL) '
-            'OR (OLD.{0} = NEW.{0}))'
+            'NOT ((OLD."{0}" IS NULL AND NEW."{0}" IS NULL) '
+            'OR (OLD."{0}" = NEW."{0}"))'
             .format(c.name) for c in self.columns_without_pks
         ]
 
@@ -263,7 +265,7 @@ class ValiditySQL(SQLConstruct):
     @property
     def primary_key_criteria(self):
         return ' AND '.join(
-            '{name} = NEW.{name}'.format(name=c.name)
+            '"{name}" = NEW."{name}"'.format(name=c.name)
             for c in self.pk_columns
         )
 
@@ -289,7 +291,7 @@ class DeleteValiditySQL(ValiditySQL):
     @property
     def primary_key_criteria(self):
         return ' AND '.join(
-            '{name} = OLD.{name}'.format(name=c.name)
+            '{name} = OLD."{name}"'.format(name=c.name)
             for c in self.pk_columns
         )
 
