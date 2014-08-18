@@ -24,7 +24,9 @@ class Builder(object):
                 cls.__versioning_manager__ = self.manager
 
                 if cls.__table__ not in processed_tables:
-                    trigger_builder = PostgreSQLTriggerBuilder(self.manager)
+                    trigger_builder = (
+                        PostgreSQLTriggerBuilder.for_manager(self.manager, cls)
+                    )
                     trigger_builder.add_native_versioning_triggers(cls)
                     processed_tables.add(cls.__table__)
 

@@ -1,8 +1,6 @@
 import sqlalchemy as sa
 
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
-from sqlalchemy_continuum.table_builder import ColumnReflector
-from sqlalchemy_continuum.utils import get_versioning_manager, option
 
 
 trigger_sql = """
@@ -53,9 +51,9 @@ UPDATE {version_table_name} SET {end_transaction_column} = txid_current()
 WHERE
     {transaction_column} = (
         SELECT MIN({transaction_column}) FROM {version_table_name}
-        WHERE {end_transaction_column} IS NULL AND {primary_key_condition}
+        WHERE {end_transaction_column} IS NULL AND {primary_key_criteria}
     ) AND
-    {primary_key_condition};
+    {primary_key_criteria};
 """
 
 
@@ -66,15 +64,85 @@ def uses_property_mod_tracking(manager):
     )
 
 
-def get_version_table_name(cls, table):
-    manager = get_versioning_manager(cls)
-    version_table_name = manager.option(cls, 'table_name') % table.name
-    if table.schema:
-        version_table_name = '%s.%s' % (table.schema, version_table_name)
-    return version_table_name
+class SQLConstruct(object):
+    def __init__(
+        self,
+        table,
+        transaction_column_name,
+        operation_type_column_name,
+        version_table_name_format,
+        excluded_columns=None,
+        update_validity_for_tables=None,
+        use_property_mod_tracking=False,
+        end_transaction_column_name=None,
+    ):
+        self.update_validity_for_tables = update_validity_for_tables
+        self.operation_type_column_name = operation_type_column_name
+        self.transaction_column_name = transaction_column_name
+        self.end_transaction_column_name = end_transaction_column_name
+        self.version_table_name_format = version_table_name_format
+        self.use_property_mod_tracking = use_property_mod_tracking
+        self.table = table
+        self.excluded_columns = excluded_columns
+        if self.excluded_columns is None:
+            self.excluded_columns = []
+
+    @property
+    def version_table_name(self):
+        version_table_name = self.version_table_name_format % self.table.name
+        if self.table.schema:
+            version_table_name = '%s.%s' % (
+                self.table.schema, version_table_name
+            )
+        return version_table_name
+
+    @classmethod
+    def for_manager(self, manager, cls):
+        strategy = manager.option(cls, 'strategy')
+        operation_type_column = manager.option(
+            cls,
+            'operation_type_column_name'
+        )
+        excluded_columns =  [
+            c.name for c in cls.__table__.c
+            if manager.is_excluded_column(cls, c)
+        ]
+        return self(
+            update_validity_for_tables=(
+                sa.inspect(cls).tables if strategy == 'validity' else []
+            ),
+            version_table_name_format=manager.option(cls, 'table_name'),
+            operation_type_column_name=operation_type_column,
+            transaction_column_name=manager.option(
+                cls, 'transaction_column_name'
+            ),
+            end_transaction_column_name=manager.option(
+                cls, 'end_transaction_column_name'
+            ),
+            use_property_mod_tracking=uses_property_mod_tracking(manager),
+            excluded_columns=excluded_columns,
+            table=cls.__table__
+        )
+
+    @property
+    def columns(self):
+        return [c for c in self.table.c if c.name not in self.excluded_columns]
+
+    @property
+    def columns_without_pks(self):
+        return [c for c in self.columns if not c.primary_key]
+
+    @property
+    def pk_columns(self):
+        return [c for c in self.columns if c.primary_key]
+
+    def copy_args(self):
+        return {
+            k: v for k, v in self.__dict__.items() if not k.startswith('__')
+        }
 
 
-class UpsertSQL(object):
+class UpsertSQL(SQLConstruct):
     builders = {
         'update_values': ', ',
         'insert_values': ', ',
@@ -82,26 +150,15 @@ class UpsertSQL(object):
         'primary_key_criteria': ' AND ',
     }
 
-    def __init__(self, manager, cls, table):
-        self.cls = cls
-        self.table = table
-        self.manager = manager
-        self.operation_type_column = option(
-            self.cls, 'operation_type_column_name'
-        )
-        reflector = ColumnReflector(manager, table, cls)
-        self.columns = list(reflector.reflected_parent_columns)
-        self.columns_without_pks = [
-            c for c in self.columns if not c.primary_key
-        ]
-        self.pk_columns = [c for c in self.columns if c.primary_key]
+    def __init__(self, *args, **kwargs):
+        SQLConstruct.__init__(self, *args, **kwargs)
 
         for key in self.builders:
             setattr(self, key, getattr(self, 'build_%s' % key)())
 
     def build_column_names(self):
         column_names = [c.name for c in self.columns]
-        if uses_property_mod_tracking(self.manager):
+        if self.use_property_mod_tracking:
             column_names += [
                 '%s_mod' % c.name for c in self.columns_without_pks
             ]
@@ -114,27 +171,27 @@ class UpsertSQL(object):
         ]
 
     def build_update_values(self):
-        parent_columns = tuple(
+        parent_columns = [
             '{name} = NEW.{name}'.format(name=c.name)
             for c in self.columns
-        )
-        mod_columns = tuple()
-        if uses_property_mod_tracking(self.manager):
-            mod_columns = tuple(
+        ]
+        mod_columns = []
+        if self.use_property_mod_tracking:
+            mod_columns = [
                 '{0}_mod = NOT ((OLD.{0} IS NULL AND NEW.{0} IS NULL) '
                 'OR (OLD.{0} = NEW.{0}))'.format(c.name)
                 for c in self.columns_without_pks
-            )
+            ]
 
         return (
-            ('%s = 1' % self.operation_type_column, ) +
+            ['%s = 1' % self.operation_type_column_name] +
             parent_columns +
             mod_columns
         )
 
     def build_insert_values(self):
         values = self.build_values()
-        if uses_property_mod_tracking(self.manager):
+        if self.use_property_mod_tracking:
             values += self.build_mod_tracking_values()
         return values
 
@@ -146,17 +203,16 @@ class UpsertSQL(object):
 
     def __str__(self):
         params = dict(
-            version_table_name=get_version_table_name(self.cls, self.table),
-            transaction_column=self.manager.option(
-                self.cls, 'transaction_column_name'
-            ),
+            version_table_name=self.version_table_name,
+            transaction_column=self.transaction_column_name,
             operation_type=self.operation_type,
-            operation_type_column=self.operation_type_column
+            operation_type_column=self.operation_type_column_name
         )
         for key, join_operator in self.builders.items():
             params[key] = join_operator.join(getattr(self, key))
 
-        return upsert_cte_sql.format(**params)
+        sql = upsert_cte_sql.format(**params)
+        return sql
 
 
 class DeleteUpsertSQL(UpsertSQL):
@@ -196,10 +252,47 @@ class UpdateUpsertSQL(UpsertSQL):
         ]
 
 
-class PostgreSQLTriggerBuilder(object):
-    def __init__(self, manager):
-        self.manager = manager
+class ValiditySQL(SQLConstruct):
+    @property
+    def primary_key_criteria(self):
+        return ' AND '.join(
+            '{name} = NEW.{name}'.format(name=c.name)
+            for c in self.pk_columns
+        )
 
+    def __str__(self):
+        params = dict(
+            version_table_name=self.version_table_name,
+            transaction_column=self.transaction_column_name,
+            end_transaction_column=self.end_transaction_column_name,
+            primary_key_criteria=self.primary_key_criteria
+        )
+        return validity_sql.format(**params)
+
+
+class InsertValiditySQL(ValiditySQL):
+    pass
+
+
+class UpdateValiditySQL(ValiditySQL):
+    pass
+
+
+class DeleteValiditySQL(ValiditySQL):
+    @property
+    def primary_key_criteria(self):
+        return ' AND '.join(
+            '{name} = OLD.{name}'.format(name=c.name)
+            for c in self.pk_columns
+        )
+
+def get_validity_sql(class_, tables, params):
+    params = params.copy()
+    del params['table']
+    return ''.join(str(class_(table, **params)) for table in tables)
+
+
+class PostgreSQLTriggerBuilder(SQLConstruct):
     def trigger_ddl(self, cls):
         table = cls.__table__
         if table.schema:
@@ -214,65 +307,22 @@ class PostgreSQLTriggerBuilder(object):
             )
         )
 
-    def get_version_table_name(self, cls, table):
-        version_table_name = (
-            self.manager.option(cls, 'table_name') % table.name
-        )
-        if table.schema:
-            version_table_name = '%s.%s' % (table.schema, version_table_name)
-        return version_table_name
-
     def trigger_function_ddl(self, cls):
         table = cls.__table__
-        reflector = ColumnReflector(self.manager, table, cls)
-        columns = list(reflector.reflected_parent_columns)
 
-        update_primary_key_condition = ' AND '.join(
-            '{name} = NEW.{name}'.format(name=c.name)
-            for c in columns if c.primary_key
-        )
-        delete_primary_key_condition = ' AND '.join(
-            '{name} = OLD.{name}'.format(name=c.name)
-            for c in columns if c.primary_key
-        )
-        after_delete = ''
-        after_insert = ''
-        after_update = ''
-
-        if self.manager.option(cls, 'strategy') == 'validity':
-            for table in sa.inspect(cls).tables:
-                version_table_name = self.get_version_table_name(cls, table)
-                sql = validity_sql.format(
-                    version_table_name=version_table_name,
-                    end_transaction_column=self.manager.option(
-                        cls, 'end_transaction_column_name'
-                    ),
-                    transaction_column=self.manager.option(
-                        cls, 'transaction_column_name'
-                    ),
-                    primary_key_condition=update_primary_key_condition
-                )
-                after_insert += sql
-                after_update += sql
-                after_delete += validity_sql.format(
-                    version_table_name=version_table_name,
-                    end_transaction_column=self.manager.option(
-                        cls, 'end_transaction_column_name'
-                    ),
-                    transaction_column=self.manager.option(
-                        cls, 'transaction_column_name'
-                    ),
-                    primary_key_condition=delete_primary_key_condition
-                )
-
+        args = self.copy_args()
+        tables = self.update_validity_for_tables
+        after_insert = get_validity_sql(InsertValiditySQL, tables, args)
+        after_update = get_validity_sql(UpdateValiditySQL, tables, args)
+        after_delete = get_validity_sql(DeleteValiditySQL, tables, args)
         sql = procedure_sql.format(
             procedure_name='%s_audit' % table.name,
             after_insert=after_insert,
             after_update=after_update,
             after_delete=after_delete,
-            upsert_insert=InsertUpsertSQL(self.manager, cls, table),
-            upsert_update=UpdateUpsertSQL(self.manager, cls, table),
-            upsert_delete=DeleteUpsertSQL(self.manager, cls, table)
+            upsert_insert=InsertUpsertSQL(**args),
+            upsert_update=UpdateUpsertSQL(**args),
+            upsert_delete=DeleteUpsertSQL(**args)
         )
         return sa.schema.DDL(sql)
 
