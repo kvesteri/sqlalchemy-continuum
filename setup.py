@@ -58,7 +58,8 @@ setup(
     long_description=__doc__,
     packages=[
         'sqlalchemy_continuum',
-        'sqlalchemy_continuum.plugins'
+        'sqlalchemy_continuum.plugins',
+        'sqlalchemy_continuum.dialects'
     ],
     zip_safe=False,
     include_package_data=True,
