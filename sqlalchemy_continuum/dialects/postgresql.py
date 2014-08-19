@@ -146,9 +146,9 @@ class SQLConstruct(object):
         return [c for c in self.columns if c.primary_key]
 
     def copy_args(self):
-        return {
-            k: v for k, v in self.__dict__.items() if not k.startswith('__')
-        }
+        return dict(
+            (k, v) for k, v in self.__dict__.items() if not k.startswith('__')
+        )
 
 
 class UpsertSQL(SQLConstruct):
