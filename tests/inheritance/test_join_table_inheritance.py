@@ -121,20 +121,25 @@ class JoinTableInheritanceTestCase(TestCase):
 
     @pytest.mark.skipif('uses_native_versioning()')
     def test_updates_end_transaction_id_to_all_tables(self):
+        if self.options['strategy'] == 'subquery':
+            pytest.skip()
+
         end_tx_column = self.options['end_transaction_column_name']
+        tx_column = self.options['transaction_column_name']
         article = self.Article()
         self.session.add(article)
         self.session.commit()
         article.name = u'Updated article'
         self.session.commit()
         assert article.versions.count() == 2
+
         assert self.session.execute(
             'SELECT %s FROM text_item_version '
-            'ORDER BY transaction_id LIMIT 1' % end_tx_column
+            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
         ).scalar()
         assert self.session.execute(
             'SELECT %s FROM article_version '
-            'ORDER BY transaction_id LIMIT 1' % end_tx_column
+            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
         ).scalar()
 
 
