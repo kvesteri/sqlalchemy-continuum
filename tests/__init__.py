@@ -66,10 +66,12 @@ class TestCase(object):
     plugins = [TransactionChangesPlugin(), TransactionMetaPlugin()]
     transaction_cls = TransactionFactory()
     user_cls = None
+    create_models = True
 
     @property
     def options(self):
         return {
+            'create_models': self.create_models,
             'native_versioning': uses_native_versioning(),
             'base_classes': (self.Model, ),
             'strategy': self.versioning_strategy,
