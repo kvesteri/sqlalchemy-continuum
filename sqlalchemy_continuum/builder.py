@@ -10,24 +10,33 @@ from .table_builder import TableBuilder
 
 
 class Builder(object):
-    def build_tables(self):
+    def build_triggers(self):
         """
-        Build tables for version models based on classes that were collected
-        during class instrumentation process.
+        Build native database versioning triggers for all versioned models that
+        were collected during class instrumentation process.
         """
         processed_tables = set()
         for cls in self.manager.pending_classes:
             if not self.manager.option(cls, 'versioning'):
                 continue
 
-            if self.manager.options['native_versioning']:
+            if self.manager.option(cls, 'native_versioning'):
                 cls.__versioning_manager__ = self.manager
 
                 if cls.__table__ not in processed_tables:
                     create_versioning_triggers(self.manager, cls)
                     processed_tables.add(cls.__table__)
 
-            if self.manager.options['create_models']:
+    def build_tables(self):
+        """
+        Build tables for version models based on classes that were collected
+        during class instrumentation process.
+        """
+        for cls in self.manager.pending_classes:
+            if not self.manager.option(cls, 'versioning'):
+                continue
+
+            if self.manager.option(cls, 'create_tables'):
                 inherited_table = None
                 for class_ in self.manager.tables:
                     if (issubclass(cls, class_) and
@@ -66,11 +75,6 @@ class Builder(object):
         during class instrumentation process.
         """
         if self.manager.pending_classes:
-            cls = self.manager.pending_classes[0]
-            self.manager.declarative_base = get_declarative_base(cls)
-            self.manager.create_transaction_model()
-            self.manager.plugins.after_build_tx_class(self.manager)
-
             for cls in self.manager.pending_classes:
                 if not self.manager.option(cls, 'versioning'):
                     continue
@@ -128,6 +132,13 @@ class Builder(object):
             self.manager.parent_class_map[cls] = parent
             del cls.__version_parent__
 
+    def build_transaction_class(self):
+        if self.manager.pending_classes:
+            cls = self.manager.pending_classes[0]
+            self.manager.declarative_base = get_declarative_base(cls)
+            self.manager.create_transaction_model()
+            self.manager.plugins.after_build_tx_class(self.manager)
+
     def configure_versioned_classes(self):
         """
         Configures all versioned classes that were collected during
@@ -143,9 +154,12 @@ class Builder(object):
         if not self.manager.options['versioning']:
             return
 
+        self.build_triggers()
         self.build_tables()
+        self.build_transaction_class()
 
         if not self.manager.options['create_models']:
+            self.manager.pending_classes = []
             return
 
         self.build_models()

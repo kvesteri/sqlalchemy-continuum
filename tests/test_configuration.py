@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises, skip
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_continuum import (
@@ -52,7 +52,7 @@ class TestWithUnknownUserClass(object):
 
 
 class TestWithCreateModelsAsFalse(TestCase):
-    create_models = False
+    should_create_models = False
 
     def create_models(self):
         class Article(self.Model):
@@ -84,3 +84,18 @@ class TestWithCreateModelsAsFalse(TestCase):
 
     def test_does_not_create_models(self):
         assert 'class' not in self.Article.__versioned__
+
+    def test_insert(self):
+        if self.options['native_versioning'] is False:
+            skip()
+        article = self.Article(name=u'Some article')
+        self.session.add(article)
+        self.session.commit()
+
+        version = dict(
+            self.session.execute('SELECT * FROM article_version')
+            .fetchone()
+        )
+        assert version['transaction_id'] > 0
+        assert version['id'] == article.id
+        assert version['name'] == u'Some article'
