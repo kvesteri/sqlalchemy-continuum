@@ -187,8 +187,7 @@ class UpsertSQL(SQLConstruct):
         mod_columns = []
         if self.use_property_mod_tracking:
             mod_columns = [
-                '{0}_mod = NOT ((OLD.{0} IS NULL AND NEW.{0} IS NULL) '
-                'OR (OLD.{0} = NEW.{0}))'.format(c.name)
+                '{0}_mod = OLD."{0}" IS DISTINCT FROM NEW."{0}"'.format(c.name)
                 for c in self.columns_without_pks
             ]
 
@@ -258,8 +257,7 @@ class UpdateUpsertSQL(UpsertSQL):
 
     def build_mod_tracking_values(self):
         return [
-            'NOT ((OLD."{0}" IS NULL AND NEW."{0}" IS NULL) '
-            'OR (OLD."{0}" = NEW."{0}"))'
+            'OLD."{0}" IS DISTINCT FROM NEW."{0}"'
             .format(c.name) for c in self.columns_without_pks
         ]
 
