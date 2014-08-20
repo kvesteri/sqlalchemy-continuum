@@ -27,23 +27,24 @@ class Builder(object):
                     create_versioning_triggers(self.manager, cls)
                     processed_tables.add(cls.__table__)
 
-            inherited_table = None
-            for class_ in self.manager.tables:
-                if (issubclass(cls, class_) and
-                        cls.__table__ == class_.__table__):
-                    inherited_table = self.manager.tables[class_]
-                    break
+            if self.manager.options['create_models']:
+                inherited_table = None
+                for class_ in self.manager.tables:
+                    if (issubclass(cls, class_) and
+                            cls.__table__ == class_.__table__):
+                        inherited_table = self.manager.tables[class_]
+                        break
 
-            builder = TableBuilder(
-                self.manager,
-                cls.__table__,
-                model=cls
-            )
-            if inherited_table is not None:
-                self.manager.tables[class_] = builder(inherited_table)
-            else:
-                table = builder()
-                self.manager.tables[cls] = table
+                builder = TableBuilder(
+                    self.manager,
+                    cls.__table__,
+                    model=cls
+                )
+                if inherited_table is not None:
+                    self.manager.tables[class_] = builder(inherited_table)
+                else:
+                    table = builder()
+                    self.manager.tables[cls] = table
 
     def closest_matching_table(self, model):
         """
@@ -64,6 +65,9 @@ class Builder(object):
         Build declarative version models based on classes that were collected
         during class instrumentation process.
         """
+        if not self.manager.options['create_models']:
+            return
+
         if self.manager.pending_classes:
             cls = self.manager.pending_classes[0]
             self.manager.declarative_base = get_declarative_base(cls)
@@ -95,6 +99,9 @@ class Builder(object):
 
         :param version_classes: list of generated version classes
         """
+        if not self.manager.options['create_models']:
+            pass
+
         for cls in version_classes:
             if not self.manager.option(cls, 'versioning'):
                 continue

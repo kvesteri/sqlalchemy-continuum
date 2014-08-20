@@ -7,9 +7,10 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 1.1.0 (2014-xx-xx)
 ^^^^^^^^^^^^^^^^^^
 
-- Add optional native trigger based versioning for PostgreSQL dialect
-- Fix custom transaction column name handling with models using joined table inheritance
-- Fix subquery strategy support for models using joined table inheritance
+- Added optional native trigger based versioning for PostgreSQL dialect
+- Added create_models option
+- Fixed custom transaction column name handling with models using joined table inheritance
+- Fixed subquery strategy support for models using joined table inheritance
 
 
 1.0.3 (2014-07-16)

@@ -83,6 +83,7 @@ class VersioningManager(object):
             'exclude': [],
             'include': [],
             'native_versioning': False,
+            'create_models': True,
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',

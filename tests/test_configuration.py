@@ -51,4 +51,17 @@ class TestWithUnknownUserClass(object):
             factory(versioning_manager)
 
 
+class TestWithCreateModelsAsFalse(TestCase):
+    def create_models(self):
+        class TextItem(self.Model):
+            __tablename__ = 'text_item'
+            __versioned__ = {
+                'create_models': False
+            }
 
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+
+        self.TextItem = TextItem
+
+    def test_does_not_create_models(self):
+        assert 'class' not in self.TextItem.__versioned__
