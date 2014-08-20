@@ -31,8 +31,8 @@ class TestVersionedModelWithoutVersioning(TestCase):
         self.session.commit()
 
 
-class TestWithUnknownUserClass(TestCase):
-    def test_something(self):
+class TestWithUnknownUserClass(object):
+    def test_raises_improperly_configured_error(self):
         self.Model = declarative_base()
 
         class TextItem(self.Model):
@@ -50,8 +50,5 @@ class TestWithUnknownUserClass(TestCase):
         with raises(ImproperlyConfigured):
             factory(versioning_manager)
 
-    def teardown_method(self, method):
-        pass
 
-    def setup_method(self, method):
-        pass
+
