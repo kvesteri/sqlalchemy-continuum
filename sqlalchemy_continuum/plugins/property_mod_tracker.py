@@ -46,8 +46,11 @@ class PropertyModTrackerPlugin(Plugin):
                     columns.append(self.create_mod_column(column))
 
     def after_create_version_object(self, uow, parent_obj, version_obj):
+        session = sa.orm.object_session(parent_obj)
+        is_deleted = parent_obj in session.deleted
+
         for prop in versioned_column_properties(parent_obj):
-            if has_changes(parent_obj, prop.key):
+            if has_changes(parent_obj, prop.key) or is_deleted:
                 setattr(
                     version_obj,
                     prop.key + self.column_suffix,

@@ -32,12 +32,36 @@ class TestPropertyModificationsTracking(TestCase):
         UserVersion = version_class(self.User)
         assert 'id_mod' not in UserVersion.__table__.c
 
-    def test_mod_properties_get_updated(self):
+    def test_mod_properties_with_insert(self):
         user = self.User(name=u'John')
         self.session.add(user)
         self.session.commit()
 
         assert user.versions[-1].name_mod
+
+    def test_mod_properties_with_update(self):
+        user = self.User(name=u'John')
+        self.session.add(user)
+        self.session.commit()
+        user.age = 14
+        self.session.commit()
+        assert user.versions[-1].age_mod
+        assert not user.versions[-1].name_mod
+
+    def test_mod_properties_with_delete(self):
+        user = self.User(name=u'John')
+        self.session.add(user)
+        self.session.commit()
+        self.session.delete(user)
+        self.session.commit()
+        UserVersion = version_class(self.User)
+        version = (
+            self.session
+            .query(UserVersion)
+            .order_by(sa.desc(UserVersion.transaction_id))
+        ).first()
+        assert version.age_mod
+        assert version.name_mod
 
 
 class TestChangeSetWithPropertyModPlugin(TestCase):

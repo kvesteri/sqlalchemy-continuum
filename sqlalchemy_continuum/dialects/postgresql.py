@@ -233,6 +233,9 @@ class DeleteUpsertSQL(UpsertSQL):
             for c in self.pk_columns
         ]
 
+    def build_mod_tracking_values(self):
+        return ['True'] * len(self.columns_without_pks)
+
     def build_update_values(self):
         return [
             '"{name}" = OLD."{name}"'.format(name=c.name)
