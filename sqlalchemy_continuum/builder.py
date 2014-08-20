@@ -65,9 +65,6 @@ class Builder(object):
         Build declarative version models based on classes that were collected
         during class instrumentation process.
         """
-        if not self.manager.options['create_models']:
-            return
-
         if self.manager.pending_classes:
             cls = self.manager.pending_classes[0]
             self.manager.declarative_base = get_declarative_base(cls)
@@ -99,9 +96,6 @@ class Builder(object):
 
         :param version_classes: list of generated version classes
         """
-        if not self.manager.options['create_models']:
-            pass
-
         for cls in version_classes:
             if not self.manager.option(cls, 'versioning'):
                 continue
@@ -150,6 +144,10 @@ class Builder(object):
             return
 
         self.build_tables()
+
+        if not self.manager.options['create_models']:
+            return
+
         self.build_models()
 
         # Create copy of all pending versioned classes so that we can inspect
