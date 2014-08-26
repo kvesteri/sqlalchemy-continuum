@@ -187,7 +187,8 @@ class UpsertSQL(SQLConstruct):
         mod_columns = []
         if self.use_property_mod_tracking:
             mod_columns = [
-                '{0}_mod = OLD."{0}" IS DISTINCT FROM NEW."{0}"'.format(c.name)
+                '{0}_mod = {0}_mod OR OLD."{0}" IS DISTINCT FROM NEW."{0}"'
+                .format(c.name)
                 for c in self.columns_without_pks
             ]
 

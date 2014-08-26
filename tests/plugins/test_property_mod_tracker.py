@@ -63,6 +63,26 @@ class TestPropertyModificationsTracking(TestCase):
         assert version.age_mod
         assert version.name_mod
 
+    def test_consequtive_insert_and_update(self):
+        user = self.User(name=u'John')
+        self.session.add(user)
+        self.session.flush()
+        user.age = 15
+        self.session.commit()
+        assert user.versions[-1].age_mod
+        assert user.versions[-1].name_mod
+
+    def test_consequtive_update_and_update(self):
+        user = self.User(name=u'John')
+        self.session.add(user)
+        self.session.commit()
+        user.name = u'Jack'
+        self.session.flush()
+        user.age = 15
+        self.session.commit()
+        assert user.versions[-1].age_mod
+        assert user.versions[-1].name_mod
+
 
 class TestChangeSetWithPropertyModPlugin(TestCase):
     plugins = [PropertyModTrackerPlugin()]
