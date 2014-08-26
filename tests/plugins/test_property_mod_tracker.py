@@ -150,3 +150,22 @@ class TestWithAssociationTables(TestCase):
         column = ArticleVersion.__table__.c['name_mod']
         assert not column.nullable
         assert isinstance(column.type, sa.Boolean)
+
+
+class TestModTrackingWithRelationships(TestCase):
+    plugins = [PropertyModTrackerPlugin()]
+
+    def test_with_insert(self):
+        tag = self.Tag(article=self.Article(name=u'Some article'))
+        self.session.add(tag)
+        self.session.commit()
+        assert tag.versions[-1]
+
+    def test_with_update(self):
+        tag = self.Tag(article=self.Article(name=u'Some article'))
+        self.session.add(tag)
+        self.session.commit()
+        tag.article = None
+        self.session.commit()
+
+        assert tag.versions[-1].article_id_mod
