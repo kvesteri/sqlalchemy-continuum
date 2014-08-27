@@ -11,6 +11,12 @@ changeset
 .. autofunction:: changeset
 
 
+count_versions
+--------------
+
+.. autofunction:: count_versions
+
+
 get_versioning_manager
 ----------------------
 

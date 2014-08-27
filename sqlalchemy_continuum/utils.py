@@ -333,6 +333,44 @@ def is_session_modified(session):
     )
 
 
+def count_versions(obj):
+    """
+    Return the number of versions given object has. This function works even
+    when obj has `create_models` and `create_tables` versioned settings
+    disabled.
+
+    ::
+
+        article = Article(name=u'Some article')
+
+        count_versions(article)  # 0
+
+        session.add(article)
+        session.commit()
+
+        count_versions(article)  # 1
+
+
+    :param obj: SQLAlchemy declarative model object
+    """
+    session = sa.orm.object_session(obj)
+    if session is None:
+        # If object is transient, we assume it has no version history.
+        return 0
+    manager = get_versioning_manager(obj)
+    table_name = manager.option(obj, 'table_name') % obj.__table__.name
+    from sqlalchemy_utils import get_primary_keys
+    criteria = [
+        '%s = %r' % (pk, getattr(obj, pk))
+        for pk in get_primary_keys(obj)
+    ]
+    query = 'SELECT COUNT(1) FROM %s WHERE %s' % (
+        table_name,
+        ' AND '.join(criteria)
+    )
+    return session.execute(query).scalar()
+
+
 def changeset(obj):
     """
     Return a humanized changeset for given SQLAlchemy declarative object. With
