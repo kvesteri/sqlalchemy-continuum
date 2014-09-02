@@ -84,12 +84,12 @@ class TestCase(object):
         make_versioned(options=self.options)
 
         driver = os.environ.get('DB', 'sqlite')
-        driver = get_driver_name(driver)
+        self.driver = get_driver_name(driver)
         versioning_manager.plugins = self.plugins
         versioning_manager.transaction_cls = self.transaction_cls
         versioning_manager.user_cls = self.user_cls
 
-        self.engine = create_engine(get_dns_from_driver(driver))
+        self.engine = create_engine(get_dns_from_driver(self.driver))
         # self.engine.echo = True
         self.connection = self.engine.connect()
 
