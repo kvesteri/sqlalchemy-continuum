@@ -5,7 +5,11 @@ import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
-from sqlalchemy_utils.functions import naturally_equivalent, identity
+from sqlalchemy_utils.functions import (
+    get_primary_keys,
+    identity,
+    naturally_equivalent,
+)
 
 from .exc import ClassNotVersioned
 
@@ -359,7 +363,6 @@ def count_versions(obj):
         return 0
     manager = get_versioning_manager(obj)
     table_name = manager.option(obj, 'table_name') % obj.__table__.name
-    from sqlalchemy_utils import get_primary_keys
     criteria = [
         '%s = %r' % (pk, getattr(obj, pk))
         for pk in get_primary_keys(obj)

@@ -111,6 +111,8 @@ class TestCase(object):
 
         Session = sessionmaker(bind=self.connection)
         self.session = Session(autoflush=False)
+        if driver == 'postgres-native':
+            self.session.execute('CREATE EXTENSION IF NOT EXISTS hstore')
 
     def create_tables(self):
         self.Model.metadata.create_all(self.connection)

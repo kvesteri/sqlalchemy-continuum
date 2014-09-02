@@ -11,7 +11,7 @@ class ExoticOperationCombosTestCase(TestCase):
         self.session.commit()
 
         self.session.delete(article)
-        article2 = self.Article(id=article.id, name=u'Some article')
+        article2 = self.Article(id=article.id, name=u'Some article 2')
         self.session.add(article2)
         self.session.commit()
         assert article2.versions.count() == 2

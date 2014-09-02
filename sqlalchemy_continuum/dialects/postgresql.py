@@ -34,6 +34,11 @@ BEGIN
         {after_insert}
         {upsert_insert}
     ELSIF (TG_OP = 'UPDATE') THEN
+        IF (hstore(NEW.*) - hstore(OLD.*) - ARRAY[{excluded_columns}]::text[])
+            = hstore('')
+        THEN
+            RETURN NULL;
+        END IF;
         {after_update}
         {upsert_update}
     ELSIF (TG_OP = 'DELETE') THEN
@@ -319,8 +324,12 @@ class CreateTriggerFunctionSQL(SQLConstruct):
         after_insert = get_validity_sql(InsertValiditySQL, tables, args)
         after_update = get_validity_sql(UpdateValiditySQL, tables, args)
         after_delete = get_validity_sql(DeleteValiditySQL, tables, args)
-        return procedure_sql.format(
+
+        sql = procedure_sql.format(
             procedure_name='%s_audit' % self.table.name,
+            excluded_columns=', '.join(
+                "'%s'" % c for c in self.excluded_columns
+            ),
             after_insert=after_insert,
             after_update=after_update,
             after_delete=after_delete,
@@ -328,6 +337,7 @@ class CreateTriggerFunctionSQL(SQLConstruct):
             upsert_update=UpdateUpsertSQL(**args),
             upsert_delete=DeleteUpsertSQL(**args)
         )
+        return sql
 
 
 def create_versioning_triggers(manager, cls):

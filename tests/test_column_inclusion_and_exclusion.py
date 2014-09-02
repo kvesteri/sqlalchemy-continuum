@@ -104,3 +104,11 @@ class TestColumnExclusion(TestCase):
         self.session.commit()
 
         assert item.versions[0].name == u'Some textitem'
+
+    def test_does_not_create_record_if_only_excluded_column_updated(self):
+        item = self.TextItem(name=u'Some textitem')
+        self.session.add(item)
+        self.session.commit()
+        item.content = u'Some content'
+        self.session.commit()
+        assert item.versions.count() == 1
