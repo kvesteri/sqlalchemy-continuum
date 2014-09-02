@@ -98,7 +98,10 @@ class TestCase(object):
         sa.orm.configure_mappers()
 
         if hasattr(self, 'Article'):
-            self.ArticleVersion = version_class(self.Article)
+            try:
+                self.ArticleVersion = version_class(self.Article)
+            except ClassNotVersioned:
+                pass
         if hasattr(self, 'Tag'):
             try:
                 self.TagVersion = version_class(self.Tag)
