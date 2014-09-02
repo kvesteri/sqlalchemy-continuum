@@ -352,6 +352,8 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session object
         """
+        if session.transaction.nested:
+            return
         conn = session.bind
         if conn in self.units_of_work:
             uow = self.units_of_work[conn]
