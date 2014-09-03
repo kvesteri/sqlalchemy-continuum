@@ -340,7 +340,7 @@ class CreateTriggerFunctionSQL(SQLConstruct):
         return sql
 
 
-def create_versioning_triggers(manager, cls):
+def create_versioning_trigger_listeners(manager, cls):
     sa.event.listen(
         cls.__table__,
         'after_create',
@@ -358,4 +358,57 @@ def create_versioning_triggers(manager, cls):
             'DROP FUNCTION IF EXISTS %s()' %
             '%s_audit' % cls.__table__.name,
         )
+    )
+
+
+def sync_trigger(conn, table_name):
+    meta = sa.MetaData()
+    version_table = sa.Table(
+        table_name,
+        meta,
+        autoload=True,
+        autoload_with=conn
+    )
+    parent_table = sa.Table(
+        table_name[0:-len('_version')],
+        meta,
+        autoload=True,
+        autoload_with=conn
+    )
+    excluded_columns = (
+        set(c.name for c in parent_table.c) -
+        set(c.name for c in version_table.c if not c.name.endswith('_mod'))
+    )
+    drop_trigger(conn, table_name)
+    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
+
+
+def create_trigger(
+    conn,
+    table,
+    transaction_column_name='transaction_id',
+    operation_type_column_name='operation_type',
+    version_table_name_format='%s_version',
+    excluded_columns=None,
+    use_property_mod_tracking=True,
+    end_transaction_column_name=None,
+):
+    params = dict(
+        table=table,
+        update_validity_for_tables=[],
+        transaction_column_name=transaction_column_name,
+        operation_type_column_name=operation_type_column_name,
+        version_table_name_format=version_table_name_format,
+        excluded_columns=excluded_columns,
+        use_property_mod_tracking=use_property_mod_tracking,
+        end_transaction_column_name=end_transaction_column_name,
+    )
+    conn.execute(str(CreateTriggerFunctionSQL(**params)))
+    conn.execute(str(CreateTriggerSQL(**params)))
+
+
+def drop_trigger(conn, table_name):
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
+    conn.execute(
+        'DROP TRIGGER IF EXISTS %s_trigger ON %s' % (table_name, table_name)
     )

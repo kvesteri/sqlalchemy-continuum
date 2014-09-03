@@ -3,7 +3,7 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
 
-from .dialects.postgresql import create_versioning_triggers
+from .dialects.postgresql import create_versioning_trigger_listeners
 from .model_builder import ModelBuilder
 from .relationship_builder import RelationshipBuilder
 from .table_builder import TableBuilder
@@ -24,7 +24,7 @@ class Builder(object):
                 cls.__versioning_manager__ = self.manager
 
                 if cls.__table__ not in processed_tables:
-                    create_versioning_triggers(self.manager, cls)
+                    create_versioning_trigger_listeners(self.manager, cls)
                     processed_tables.add(cls.__table__)
 
     def build_tables(self):
