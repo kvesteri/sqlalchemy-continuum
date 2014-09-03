@@ -11,7 +11,7 @@ Native versioning creates SQL triggers for all versioned models. These triggers 
 Usage
 -----
 
-Just use `native_versioning=True` configuration option and create appropriate functions and triggers by using the :mod:`sqlalchemy_continuum.dialects.postgresql` module.
+For enabling native versioning you need to set `native_versioning` configuration option as `True`.
 
 ::
 
@@ -19,13 +19,14 @@ Just use `native_versioning=True` configuration option and create appropriate fu
 
 
 
+Schema migrations
+-----------------
+
+When making schema migrations (for example adding new columns to version tables) you need to remember to call sync_trigger in order to keep the version trigger up-to-date.
+
 ::
 
-    from sqlalchemy_continuum.dialects.postgresql import (
-        CreateTriggerFunctionSQL, CreateTriggerSQL
-    )
+    from sqlalchemy_continuum.dialects.postgresql import sync_trigger
 
-    function_sql = str(CreateTriggerFunctionSQL(my_versioned_table))
-    session.execute(query)
-    trigger_sql = str(CreateTriggerSQL(my_versioned_table))
-    session.execute(query)
+
+    sync_trigger(conn, 'article_version')
