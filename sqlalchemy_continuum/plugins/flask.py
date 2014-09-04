@@ -55,6 +55,8 @@ class FlaskPlugin(Plugin):
                 ' running pip install Flask'
             )
 
-    def before_create_tx_object(self, uow, session):
-        uow.current_transaction.user_id = fetch_current_user_id()
-        uow.current_transaction.remote_addr = fetch_remote_addr()
+    def transaction_args(self, uow, session):
+        return {
+            'user_id': fetch_current_user_id(),
+            'remote_addr': fetch_remote_addr()
+        }

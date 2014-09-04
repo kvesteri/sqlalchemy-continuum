@@ -36,7 +36,7 @@ class TestDeleteWithDeferredColumn(TestCase):
 
         self.TextItem = TextItem
 
-    def test_pop_with_delete(self):
+    def test_insert_and_delete(self):
         item = self.TextItem()
         self.session.add(item)
         self.session.commit()

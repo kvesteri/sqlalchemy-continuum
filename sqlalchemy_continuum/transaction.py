@@ -72,17 +72,16 @@ class TransactionFactory(ModelFactory):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
 
+            id = sa.Column(
+                sa.types.BigInteger,
+                primary_key=True,
+                autoincrement=True
+            )
+
             if manager.options['native_versioning']:
-                id = sa.Column(
+                native_tx_id = sa.Column(
                     sa.types.BigInteger,
-                    primary_key=True,
-                    autoincrement=False
-                )
-            else:
-                id = sa.Column(
-                    sa.types.BigInteger,
-                    primary_key=True,
-                    autoincrement=True
+                    index=True
                 )
 
             if self.remote_addr:

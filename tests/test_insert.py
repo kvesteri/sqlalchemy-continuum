@@ -1,3 +1,6 @@
+import sqlalchemy as sa
+from sqlalchemy_continuum import count_versions
+
 from tests import TestCase
 
 
@@ -35,3 +38,44 @@ class TestInsert(TestCase):
         self.session.commit()
         assert article.versions.count() == 1
         assert article2.versions.count() == 1
+
+
+class TestInsertWithDeferredColumn(TestCase):
+    def create_models(self):
+        class TextItem(self.Model):
+            __tablename__ = 'text_item'
+            __versioned__ = {}
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.orm.deferred(sa.Column(sa.Unicode(255)))
+
+        self.TextItem = TextItem
+
+    def test_insert(self):
+        item = self.TextItem()
+        self.session.add(item)
+        self.session.commit()
+        assert count_versions(item) == 1
+
+
+class TestInsertNonVersionedObject(TestCase):
+    def create_models(self):
+        class TextItem(self.Model):
+            __tablename__ = 'text_item'
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.orm.deferred(sa.Column(sa.Unicode(255)))
+
+        class Tag(self.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {}
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.orm.deferred(sa.Column(sa.Unicode(255)))
+
+        self.TextItem = TextItem
+
+    def test_does_not_create_transaction(self):
+        item = self.TextItem()
+        self.session.add(item)
+        self.session.commit()
+        query = 'SELECT COUNT(1) FROM transaction'
+
+        assert self.session.execute(query).scalar() == 0

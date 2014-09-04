@@ -92,10 +92,9 @@ class TestFlaskPlugin(TestCase):
 
 class TestFlaskPluginWithoutRequestContext(TestCase):
     plugins = [FlaskPlugin()]
+    user_cls = 'User'
 
     def create_models(self):
-        TestCase.create_models(self)
-
         class User(self.Model):
             __tablename__ = 'user'
             __versioned__ = {
@@ -105,6 +104,8 @@ class TestFlaskPluginWithoutRequestContext(TestCase):
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
         self.User = User
+
+        TestCase.create_models(self)
 
     def test_versioning_outside_request(self):
         user = self.User(name=u'Rambo')

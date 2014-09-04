@@ -13,7 +13,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Fixed custom transaction column name handling with models using joined table inheritance
 - Fixed subquery strategy support for models using joined table inheritance
 - Fixed savepoint handling
-
+- Replaced plugin template methods before_create_tx_object and after_create_tx_object with transaction_args to better cope with native versioning
 
 1.0.3 (2014-07-16)
 ^^^^^^^^^^^^^^^^^^

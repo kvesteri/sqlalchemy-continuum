@@ -1,3 +1,4 @@
+from itertools import chain
 from inspect import isclass
 from collections import defaultdict
 
@@ -279,7 +280,10 @@ def is_modified_or_deleted(obj):
     :param obj: SQLAlchemy declarative model object
     """
     session = sa.orm.object_session(obj)
-    return is_modified(obj) or obj in session.deleted
+    return is_versioned(obj) and (
+        is_modified(obj) or
+        obj in chain(session.deleted, session.new)
+    )
 
 
 def is_modified(obj):

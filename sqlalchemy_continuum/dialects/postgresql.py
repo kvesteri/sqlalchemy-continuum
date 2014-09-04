@@ -15,17 +15,25 @@ WITH upsert as
     UPDATE {version_table_name}
     SET {update_values}
     WHERE
-        {transaction_column} = txid_current() AND
+        {transaction_column} = (
+            SELECT MAX(id) FROM {transaction_table_name}
+            WHERE native_tx_id = txid_current()
+        )
+        AND
         {primary_key_criteria}
     RETURNING *
 )
 INSERT INTO {version_table_name}
 ({transaction_column}, {operation_type_column}, {column_names})
-SELECT * FROM
-    (VALUES (txid_current(), {operation_type}, {insert_values})) AS columns
+SELECT
+    (
+        SELECT MAX(id) FROM {transaction_table_name}
+        WHERE native_tx_id = txid_current()
+    ),
+    {operation_type},
+    {insert_values}
 WHERE NOT EXISTS (SELECT 1 FROM upsert);
 """
-
 
 procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
@@ -52,7 +60,11 @@ LANGUAGE plpgsql
 """
 
 validity_sql = """
-UPDATE {version_table_name} SET {end_transaction_column} = txid_current()
+UPDATE {version_table_name}
+SET {end_transaction_column} = (
+    SELECT MAX(id) FROM {transaction_table_name}
+    WHERE native_tx_id = txid_current()
+)
 WHERE
     {transaction_column} = (
         SELECT MIN({transaction_column}) FROM {version_table_name}
@@ -100,6 +112,13 @@ class SQLConstruct(object):
             return '%s."%s"' % (self.table.schema, self.table.name)
         else:
             return '"' + self.table.name + '"'
+
+    @property
+    def transaction_table_name(self):
+        if self.table.schema:
+            return '%s.transaction' % self.table.schema
+        else:
+            return 'transaction'
 
     @property
     def version_table_name(self):
@@ -220,7 +239,8 @@ class UpsertSQL(SQLConstruct):
             version_table_name=self.version_table_name,
             transaction_column=self.transaction_column_name,
             operation_type=self.operation_type,
-            operation_type_column=self.operation_type_column_name
+            operation_type_column=self.operation_type_column_name,
+            transaction_table_name=self.transaction_table_name,
         )
         for key, join_operator in self.builders.items():
             params[key] = join_operator.join(getattr(self, key))
@@ -279,6 +299,7 @@ class ValiditySQL(SQLConstruct):
     def __str__(self):
         params = dict(
             version_table_name=self.version_table_name,
+            transaction_table_name=self.transaction_table_name,
             transaction_column=self.transaction_column_name,
             end_transaction_column=self.end_transaction_column_name,
             primary_key_criteria=self.primary_key_criteria
