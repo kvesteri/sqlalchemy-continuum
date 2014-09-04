@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import count_versions
+from sqlalchemy_continuum import count_versions, versioning_manager
 
 from tests import TestCase
 
@@ -76,6 +76,7 @@ class TestInsertNonVersionedObject(TestCase):
         item = self.TextItem()
         self.session.add(item)
         self.session.commit()
-        query = 'SELECT COUNT(1) FROM transaction'
 
-        assert self.session.execute(query).scalar() == 0
+        assert self.session.query(
+            versioning_manager.transaction_cls
+        ).count() == 0
