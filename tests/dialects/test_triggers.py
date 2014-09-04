@@ -1,14 +1,21 @@
 import os
 
+import pytest
 import sqlalchemy as sa
 
 from sqlalchemy_continuum.dialects.postgresql import (
     drop_trigger,
     sync_trigger
 )
-from tests import get_dns_from_driver, get_driver_name, QueryPool
+from tests import (
+    get_dns_from_driver,
+    get_driver_name,
+    QueryPool,
+    uses_native_versioning
+)
 
 
+@pytest.mark.skipif('not uses_native_versioning()')
 class TestTriggerSyncing(object):
     def setup_method(self, method):
         driver = os.environ.get('DB', 'sqlite')
