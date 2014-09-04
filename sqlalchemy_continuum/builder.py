@@ -92,7 +92,7 @@ class Builder(object):
                         version_cls
                     )
 
-        self.manager.plugins.after_build_models(self.manager)
+            self.manager.plugins.after_build_models(self.manager)
 
     def build_relationships(self, version_classes):
         """

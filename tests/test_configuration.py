@@ -99,3 +99,21 @@ class TestWithCreateModelsAsFalse(TestCase):
         assert version['transaction_id'] > 0
         assert version['id'] == article.id
         assert version['name'] == u'Some article'
+
+
+class TestWithoutAnyVersionedModels(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+            content = sa.Column(sa.UnicodeText)
+            description = sa.Column(sa.UnicodeText)
+
+        self.Article = Article
+
+    def test_insert(self):
+        article = self.Article(name=u'Some article')
+        self.session.add(article)
+        self.session.commit()
