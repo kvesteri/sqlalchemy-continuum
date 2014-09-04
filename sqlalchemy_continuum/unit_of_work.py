@@ -119,7 +119,7 @@ class UnitOfWork(object):
             self.current_transaction = session.query(Transaction).get(id)
         else:
             self.current_transaction = Transaction()
-            for key, value in args:
+            for key, value in args.items():
                 setattr(self.current_transaction, key, value)
             session.add(self.current_transaction)
         return self.current_transaction
