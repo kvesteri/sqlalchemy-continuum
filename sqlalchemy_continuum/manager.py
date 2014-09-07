@@ -355,7 +355,7 @@ class VersioningManager(object):
         conn = session.bind
         if conn in self.units_of_work:
             uow = self.units_of_work[conn]
-            uow.reset()
+            uow.reset(session)
 
     def append_association_operation(self, conn, table_name, params, op):
         """

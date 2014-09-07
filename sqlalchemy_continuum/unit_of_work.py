@@ -17,7 +17,7 @@ class UnitOfWork(object):
         self.manager = manager
         self.reset()
 
-    def reset(self):
+    def reset(self, session=None):
         """
         Reset the internal state of this UnitOfWork object. Normally this is
         called after transaction has been committed or rolled back.
