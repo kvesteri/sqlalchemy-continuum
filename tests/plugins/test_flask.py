@@ -11,7 +11,12 @@ from sqlalchemy_continuum import (
 )
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
-from tests import TestCase, get_driver_name, get_dns_from_driver
+from tests import (
+    TestCase,
+    get_driver_name,
+    get_dns_from_driver,
+    uses_native_versioning
+)
 
 
 class TestFlaskPlugin(TestCase):
@@ -181,12 +186,16 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         make_versioned()
 
         versioning_manager.transaction_cls = TransactionFactory()
+        versioning_manager.options['native_versioning'] = (
+            uses_native_versioning()
+        )
 
         self.create_models()
 
         sa.orm.configure_mappers()
 
         self.app = Flask(__name__)
+        # self.app.config['SQLALCHEMY_ECHO'] = True
         self.app.config['SQLALCHEMY_DATABASE_URI'] = get_dns_from_driver(
             get_driver_name(os.environ.get('DB', 'sqlite'))
         )
