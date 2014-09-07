@@ -1,5 +1,4 @@
 from copy import copy
-from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy_utils import get_primary_keys, identity
@@ -107,21 +106,20 @@ class UnitOfWork(object):
 
         Transaction = self.manager.transaction_cls
         if self.manager.options['native_versioning']:
-            args.update(
-                {
-                    'native_tx_id': sa.select([sa.func.txid_current()]),
-                    'issued_at': datetime.now()
-                }
+            args['native_tx_id'] = sa.select([sa.func.txid_current()])
+
+        self.current_transaction = Transaction()
+        for key, value in args.items():
+            setattr(self.current_transaction, key, value)
+        if not self.version_session:
+            self.version_session = sa.orm.session.Session(
+                bind=session.connection()
             )
-            table = Transaction.__table__
-            insert = table.insert().values(args).returning(Transaction.id)
-            id = session.execute(insert).scalar()
-            self.current_transaction = session.query(Transaction).get(id)
-        else:
-            self.current_transaction = Transaction()
-            for key, value in args.items():
-                setattr(self.current_transaction, key, value)
-            session.add(self.current_transaction)
+        self.version_session.add(self.current_transaction)
+        self.version_session.flush()
+        self.version_session.expunge(self.current_transaction)
+        session.add(self.current_transaction)
+
         return self.current_transaction
 
     def get_or_create_version_object(self, target):

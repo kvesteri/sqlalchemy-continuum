@@ -3,7 +3,7 @@ from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils.functions import get_bind, is_auto_assigned_date_column
+from sqlalchemy_utils.functions import is_auto_assigned_date_column
 from sqlalchemy_utils.types import TSVectorType
 
 from .builder import Builder
@@ -294,19 +294,17 @@ class VersioningManager(object):
         """
         uow.operations.add_delete(target)
 
-    def unit_of_work(self, obj):
+    def unit_of_work(self, session):
         """
         Return the associated SQLAlchemy-Continuum UnitOfWork object for given
-        SQLAlchemy connection or session or declarative model object.
+        SQLAlchemy session object.
 
         If no UnitOfWork object exists for given object then this method tries
         to create one.
 
-        :param obj:
-            Either a SQLAlchemy declarative model object or SQLAlchemy
-            connection object or SQLAlchemy session object
+        :param session: SQLAlchemy session object
         """
-        conn = get_bind(obj)
+        conn = session.connection()
 
         if conn in self.units_of_work:
             return self.units_of_work[conn]
