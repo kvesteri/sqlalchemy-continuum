@@ -45,17 +45,3 @@ class TestUnitOfWork(TestCase):
     def test_with_session_arg(self):
         uow = versioning_manager.unit_of_work(self.session)
         assert isinstance(uow, UnitOfWork)
-
-    def test_with_connection_arg(self):
-        uow = versioning_manager.unit_of_work(self.session.bind)
-        assert isinstance(uow, UnitOfWork)
-
-    def test_with_entity_arg(self):
-        article = self.Article()
-        self.session.add(article)
-        uow = versioning_manager.unit_of_work(article)
-        assert isinstance(uow, UnitOfWork)
-
-    def test_raises_type_error_for_unknown_type(self):
-        with raises(TypeError):
-            versioning_manager.unit_of_work(None)
