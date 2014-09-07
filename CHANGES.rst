@@ -4,9 +4,10 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.1.0 (2014-09-02)
+1.1.0 (2014-09-xx)
 ^^^^^^^^^^^^^^^^^^
 
+- Added Python 3.4 to test suite
 - Added optional native trigger based versioning for PostgreSQL dialect
 - Added create_models option
 - Added count_versions utility function
