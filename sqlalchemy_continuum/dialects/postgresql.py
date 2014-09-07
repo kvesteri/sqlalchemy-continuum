@@ -383,6 +383,20 @@ def create_versioning_trigger_listeners(manager, cls):
 
 
 def sync_trigger(conn, table_name):
+    """
+    Synchronizes versioning trigger for given table with given connection.
+
+    ::
+
+
+        sync_trigger(conn, 'my_table')
+
+
+    :param conn: SQLAlchemy connection object
+    :param table_name: Name of the table to synchronize versioning trigger for
+
+    .. versionadded: 1.1.0
+    """
     meta = sa.MetaData()
     version_table = sa.Table(
         table_name,
