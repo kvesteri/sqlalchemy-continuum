@@ -15,10 +15,7 @@ WITH upsert as
     UPDATE {version_table_name}
     SET {update_values}
     WHERE
-        {transaction_column} = (
-            SELECT MAX(id) FROM {transaction_table_name}
-            WHERE native_tx_id = txid_current()
-        )
+        {transaction_column} = transaction_id_value
         AND
         {primary_key_criteria}
     RETURNING *
@@ -37,7 +34,17 @@ WHERE NOT EXISTS (SELECT 1 FROM upsert);
 
 procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
+DECLARE transaction_id_value INT;
 BEGIN
+    transaction_id_value = (
+        SELECT MAX(id) FROM {transaction_table_name}
+        WHERE native_tx_id = txid_current()
+    );
+    IF (transaction_id_value IS NULL) THEN
+        INSERT INTO transaction (native_tx_id)
+        VALUES (txid_current()) RETURNING id INTO transaction_id_value;
+    END IF;
+
     IF (TG_OP = 'INSERT') THEN
         {after_insert}
         {upsert_insert}
@@ -61,10 +68,7 @@ LANGUAGE plpgsql
 
 validity_sql = """
 UPDATE {version_table_name}
-SET {end_transaction_column} = (
-    SELECT MAX(id) FROM {transaction_table_name}
-    WHERE native_tx_id = txid_current()
-)
+SET {end_transaction_column} = transaction_id_value
 WHERE
     {transaction_column} = (
         SELECT MIN({transaction_column}) FROM {version_table_name}
@@ -351,6 +355,7 @@ class CreateTriggerFunctionSQL(SQLConstruct):
             excluded_columns=', '.join(
                 "'%s'" % c for c in self.excluded_columns
             ),
+            transaction_table_name=self.transaction_table_name,
             after_insert=after_insert,
             after_update=after_update,
             after_delete=after_delete,
