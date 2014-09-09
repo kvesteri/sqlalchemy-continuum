@@ -107,6 +107,9 @@ class UnitOfWork(object):
         Transaction = self.manager.transaction_cls
         if self.manager.options['native_versioning']:
             args['native_tx_id'] = sa.select([sa.func.txid_current()])
+            session.execute('''
+            CREATE TEMP TABLE continuum_temp_transaction (id BIGINT)
+            ON COMMIT DROP''')
 
         self.current_transaction = Transaction()
         for key, value in args.items():
@@ -119,6 +122,11 @@ class UnitOfWork(object):
         self.version_session.flush()
         self.version_session.expunge(self.current_transaction)
         session.add(self.current_transaction)
+        if self.manager.options['native_versioning']:
+            session.execute('''
+            INSERT INTO continuum_temp_transaction (id)
+            VALUES (:id)''', {'id': self.current_transaction.id}
+            )
 
         return self.current_transaction
 

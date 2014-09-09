@@ -33,14 +33,19 @@ procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    transaction_id_value = (
-        SELECT MAX(id) FROM {transaction_table_name}
-        WHERE native_tx_id = txid_current()
-    );
-    IF (transaction_id_value IS NULL) THEN
-        INSERT INTO transaction (native_tx_id)
-        VALUES (txid_current()) RETURNING id INTO transaction_id_value;
-    END IF;
+    BEGIN
+        transaction_id_value = (SELECT id FROM continuum_temp_transaction);
+    EXCEPTION
+        WHEN others THEN
+            INSERT INTO transaction (native_tx_id)
+            VALUES (txid_current()) RETURNING id INTO transaction_id_value;
+
+            CREATE TEMP TABLE continuum_temp_transaction (id BIGINT)
+            ON COMMIT DROP;
+
+            INSERT INTO continuum_temp_transaction (id)
+            VALUES (transaction_id_value);
+    END;
 
     IF (TG_OP = 'INSERT') THEN
         {after_insert}
