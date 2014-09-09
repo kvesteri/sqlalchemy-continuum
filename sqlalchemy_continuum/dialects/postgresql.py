@@ -23,10 +23,7 @@ WITH upsert as
 INSERT INTO {version_table_name}
 ({transaction_column}, {operation_type_column}, {column_names})
 SELECT
-    (
-        SELECT MAX(id) FROM {transaction_table_name}
-        WHERE native_tx_id = txid_current()
-    ),
+    transaction_id_value,
     {operation_type},
     {insert_values}
 WHERE NOT EXISTS (SELECT 1 FROM upsert);
