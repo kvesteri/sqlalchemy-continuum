@@ -164,12 +164,6 @@ class UnitOfWork(object):
             for key, value in values.items():
                 set_committed_value(self.current_transaction, key, value)
 
-            state = sa.inspect(self.current_transaction)
-            state.key = (
-                Transaction, (values['id'],)
-            )
-            state.session_id = session.hash_key
-
             session.execute(
                 '''
                 CREATE TEMP TABLE IF NOT EXISTS continuum_temp_transaction
@@ -184,7 +178,6 @@ class UnitOfWork(object):
                 {'id': self.current_transaction.id}
             )
         else:
-
             for key, value in args.items():
                 setattr(self.current_transaction, key, value)
             if not self.version_session:
@@ -195,8 +188,17 @@ class UnitOfWork(object):
             self.version_session.flush()
             self.version_session.expunge(self.current_transaction)
 
-        session.merge(self.current_transaction, load=False)
+        self.merge_transaction(session, self.current_transaction)
         return self.current_transaction
+
+    def merge_transaction(self, session, transaction):
+        Transaction = self.manager.transaction_cls
+        state = sa.inspect(self.current_transaction)
+        state.key = (
+            Transaction, (self.current_transaction.id,)
+        )
+        state.session_id = session.hash_key
+        session.merge(self.current_transaction, load=False)
 
     def get_or_create_version_object(self, target):
         """
