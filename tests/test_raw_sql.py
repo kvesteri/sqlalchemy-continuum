@@ -22,3 +22,10 @@ class TestRawSQL(TestCase):
         assert self.session.execute(
             "SELECT COUNT(1) FROM transaction"
         ).scalar() == 1
+
+    def test_raw_statement_with_objects(self):
+        self.session.execute(
+            "INSERT INTO article (name) VALUES ('some article')"
+        )
+        self.session.add(self.Article(name=u'some other article'))
+        self.session.commit()

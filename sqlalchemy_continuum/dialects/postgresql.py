@@ -40,7 +40,8 @@ BEGIN
             INSERT INTO transaction (native_tx_id)
             VALUES (txid_current()) RETURNING id INTO transaction_id_value;
 
-            CREATE TEMP TABLE continuum_temp_transaction (id BIGINT)
+            CREATE TEMP TABLE continuum_temp_transaction
+            (id BIGINT, PRIMARY KEY(id))
             ON COMMIT DROP;
 
             INSERT INTO continuum_temp_transaction (id)

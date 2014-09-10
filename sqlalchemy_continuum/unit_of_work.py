@@ -11,6 +11,53 @@ from .utils import (
     versioned_column_properties
 )
 
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm.attributes import set_committed_value
+from sqlalchemy.schema import DDLElement
+
+
+class Parenthesis(DDLElement):
+    def __init__(self, element):
+        self.element = element
+
+    def __getattr__(self, attr):
+        return getattr(self.element, attr)
+
+
+@compiles(Parenthesis)
+def visit_alter_column(element, compiler, **kw):
+    return '(%s)' % compiler.process(element.element)
+
+
+def select_or_insert(table, select_values, insert_values):
+    from sqlalchemy.sql.expression import CTE, exists
+
+    criteria = [
+        getattr(table.c, key) == sa.text(str(value))
+        for key, value in insert_values.items() if value is not None
+    ]
+
+    select = (
+        sa.select(select_values, from_obj=table)
+        .where(sa.and_(*criteria))
+    )
+    insert = (
+        table.insert()
+        .from_select(
+            insert_values.keys(),
+            sa.select(insert_values.values())
+            .where(~ exists(select))
+        )
+        .returning(*map(sa.text, select_values))
+    )
+    insert_cte = CTE(
+        Parenthesis(insert),
+        name='new_row'
+    )
+    query = sa.select(select_values, from_obj=insert_cte).union(select)
+    return query
+
 
 class UnitOfWork(object):
     def __init__(self, manager):
@@ -105,29 +152,50 @@ class UnitOfWork(object):
             args.update(plugin.transaction_args(self, session))
 
         Transaction = self.manager.transaction_cls
-        if self.manager.options['native_versioning']:
-            args['native_tx_id'] = sa.select([sa.func.txid_current()])
-            session.execute('''
-            CREATE TEMP TABLE continuum_temp_transaction (id BIGINT)
-            ON COMMIT DROP''')
-
+        table = Transaction.__table__
         self.current_transaction = Transaction()
-        for key, value in args.items():
-            setattr(self.current_transaction, key, value)
-        if not self.version_session:
-            self.version_session = sa.orm.session.Session(
-                bind=session.connection()
-            )
-        self.version_session.add(self.current_transaction)
-        self.version_session.flush()
-        self.version_session.expunge(self.current_transaction)
-        session.add(self.current_transaction)
-        if self.manager.options['native_versioning']:
-            session.execute('''
-            INSERT INTO continuum_temp_transaction (id)
-            VALUES (:id)''', {'id': self.current_transaction.id}
-            )
 
+        if self.manager.options['native_versioning']:
+            args['native_tx_id'] = sa.func.txid_current()
+            query = select_or_insert(table, ['*'], args)
+            query_string = str(query.compile(dialect=postgresql.dialect()))
+
+            values = session.execute(query_string).fetchone()
+            for key, value in values.items():
+                set_committed_value(self.current_transaction, key, value)
+
+            state = sa.inspect(self.current_transaction)
+            state.key = (
+                Transaction, (values['id'],)
+            )
+            state.session_id = session.hash_key
+
+            session.execute(
+                '''
+                CREATE TEMP TABLE IF NOT EXISTS continuum_temp_transaction
+                (id BIGINT, PRIMARY KEY(id))
+                ON COMMIT DROP
+                '''
+            )
+            session.execute('''
+                INSERT INTO continuum_temp_transaction (id)
+                SELECT :id WHERE NOT EXISTS
+                (SELECT 1 FROM continuum_temp_transaction WHERE id = :id)''',
+                {'id': self.current_transaction.id}
+            )
+        else:
+
+            for key, value in args.items():
+                setattr(self.current_transaction, key, value)
+            if not self.version_session:
+                self.version_session = sa.orm.session.Session(
+                    bind=session.connection()
+                )
+            self.version_session.add(self.current_transaction)
+            self.version_session.flush()
+            self.version_session.expunge(self.current_transaction)
+
+        session.merge(self.current_transaction, load=False)
         return self.current_transaction
 
     def get_or_create_version_object(self, target):
