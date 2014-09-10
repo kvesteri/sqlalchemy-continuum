@@ -89,9 +89,10 @@ def test_versioning(
 
     start = time()
 
-    for i in range(500):
-        session.add(Article(name=u'Article', tags=[Tag(), Tag()]))
-    session.commit()
+    for i in range(20):
+        for i in range(20):
+            session.add(Article(name=u'Article', tags=[Tag(), Tag()]))
+        session.commit()
 
     print 'Testing with:'
     print '   native_versioning=%r' % native_versioning
