@@ -1,16 +1,22 @@
 import pytest
+from sqlalchemy_continuum import versioning_manager
+
 from tests import TestCase, uses_native_versioning
 
 
 @pytest.mark.skipif('not uses_native_versioning()')
 class TestRawSQL(TestCase):
+    def assert_has_single_transaction(self):
+        assert (
+            self.session.query(versioning_manager.transaction_cls)
+            .count() == 1
+        )
+
     def test_single_statement(self):
         self.session.execute(
             "INSERT INTO article (name) VALUES ('some article')"
         )
-        assert self.session.execute(
-            "SELECT COUNT(1) FROM transaction"
-        ).scalar() == 1
+        self.assert_has_single_transaction()
 
     def test_multiple_statements(self):
         self.session.execute(
@@ -19,9 +25,7 @@ class TestRawSQL(TestCase):
         self.session.execute(
             "INSERT INTO article (name) VALUES ('some article')"
         )
-        assert self.session.execute(
-            "SELECT COUNT(1) FROM transaction"
-        ).scalar() == 1
+        self.assert_has_single_transaction()
 
     def test_flush_after_raw_insert(self):
         self.session.execute(
@@ -29,9 +33,7 @@ class TestRawSQL(TestCase):
         )
         self.session.add(self.Article(name=u'some other article'))
         self.session.commit()
-        assert self.session.execute(
-            "SELECT COUNT(1) FROM transaction"
-        ).scalar() == 1
+        self.assert_has_single_transaction()
 
     def test_raw_insert_after_flush(self):
         self.session.add(self.Article(name=u'some other article'))
@@ -40,6 +42,4 @@ class TestRawSQL(TestCase):
             "INSERT INTO article (name) VALUES ('some article')"
         )
         self.session.commit()
-        assert self.session.execute(
-            "SELECT COUNT(1) FROM transaction"
-        ).scalar() == 1
+        self.assert_has_single_transaction()

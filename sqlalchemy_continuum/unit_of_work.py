@@ -140,15 +140,19 @@ class UnitOfWork(object):
 
         self.make_versions(session)
 
+    def transaction_args(self, session):
+        args = {}
+        for plugin in self.manager.plugins:
+            args.update(plugin.transaction_args(self, session))
+        return args
+
     def create_transaction(self, session):
         """
         Create transaction object for given SQLAlchemy session.
 
         :param session: SQLAlchemy session object
         """
-        args = {}
-        for plugin in self.manager.plugins:
-            args.update(plugin.transaction_args(self, session))
+        args = self.transaction_args(session)
 
         Transaction = self.manager.transaction_cls
         table = Transaction.__table__

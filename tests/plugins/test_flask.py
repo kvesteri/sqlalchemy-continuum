@@ -115,8 +115,9 @@ class TestFlaskPlugin(TestCase):
         self.session.commit()
         self.login(user)
         self.client.get(url_for('.test_raw_sql_and_flush'))
-        query = 'SELECT COUNT(1) FROM transaction'
-        assert self.session.execute(query).scalar() == 2
+        assert (
+            self.session.query(versioning_manager.transaction_cls).count() == 2
+        )
 
 
 class TestFlaskPluginWithoutRequestContext(TestCase):
