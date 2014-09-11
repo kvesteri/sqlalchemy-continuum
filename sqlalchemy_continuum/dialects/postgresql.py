@@ -29,23 +29,30 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM upsert);
 """
 
+temporary_transaction_sql = """
+CREATE TEMP TABLE {temporary_transaction_table}
+({transaction_table_columns})
+ON COMMIT DROP;
+"""
+
+insert_temporary_transaction_sql = """
+INSERT INTO {temporary_transaction_table} ({transaction_table_columns})
+VALUES ({transaction_values});
+"""
+
 procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
     BEGIN
-        transaction_id_value = (SELECT id FROM continuum_temp_transaction);
+        transaction_id_value = (SELECT id FROM temporary_transaction);
     EXCEPTION
         WHEN others THEN
             INSERT INTO transaction (native_tx_id)
             VALUES (txid_current()) RETURNING id INTO transaction_id_value;
 
-            CREATE TEMP TABLE continuum_temp_transaction
-            (id BIGINT, PRIMARY KEY(id))
-            ON COMMIT DROP;
-
-            INSERT INTO continuum_temp_transaction (id)
-            VALUES (transaction_id_value);
+            {temporary_transaction_sql}
+            {insert_temporary_transaction_sql}
     END;
 
     IF (TG_OP = 'INSERT') THEN
@@ -126,6 +133,13 @@ class SQLConstruct(object):
             return '%s.transaction' % self.table.schema
         else:
             return 'transaction'
+
+    @property
+    def temporary_transaction_table_name(self):
+        if self.table.schema:
+            return '%s.temporary_transaction' % self.table.schema
+        else:
+            return 'temporary_transaction'
 
     @property
     def version_table_name(self):
@@ -345,6 +359,23 @@ class CreateTriggerSQL(SQLConstruct):
         )
 
 
+class CreateTemporaryTransactionTableSQL(SQLConstruct):
+    def __str__(self):
+        return temporary_transaction_sql.format(
+            temporary_transaction_table=self.temporary_transaction_table_name,
+            transaction_table_columns='id BIGINT, PRIMARY KEY(id)'
+        )
+
+
+class InsertTemporaryTransactionSQL(SQLConstruct):
+    def __str__(self):
+        return insert_temporary_transaction_sql.format(
+            temporary_transaction_table=self.temporary_transaction_table_name,
+            transaction_table_columns='id',
+            transaction_values='transaction_id_value'
+        )
+
+
 class CreateTriggerFunctionSQL(SQLConstruct):
     def __str__(self):
         args = self.copy_args()
@@ -362,6 +393,12 @@ class CreateTriggerFunctionSQL(SQLConstruct):
             after_insert=after_insert,
             after_update=after_update,
             after_delete=after_delete,
+            temporary_transaction_sql=(
+                CreateTemporaryTransactionTableSQL(**args)
+            ),
+            insert_temporary_transaction_sql=(
+                InsertTemporaryTransactionSQL(**args)
+            ),
             upsert_insert=InsertUpsertSQL(**args),
             upsert_update=UpdateUpsertSQL(**args),
             upsert_delete=DeleteUpsertSQL(**args)

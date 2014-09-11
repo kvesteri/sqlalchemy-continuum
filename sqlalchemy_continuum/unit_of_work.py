@@ -1,6 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
+from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy_utils import get_primary_keys, identity
 from .operation import Operations
 from .utils import (
@@ -10,52 +11,6 @@ from .utils import (
     tx_column_name,
     versioned_column_properties
 )
-
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm.attributes import set_committed_value
-from sqlalchemy.schema import DDLElement
-from sqlalchemy.sql.expression import CTE, exists
-
-
-class Parenthesis(DDLElement):
-    def __init__(self, element):
-        self.element = element
-
-    def __getattr__(self, attr):
-        return getattr(self.element, attr)
-
-
-@compiles(Parenthesis)
-def visit_alter_column(element, compiler, **kw):
-    return '(%s)' % compiler.process(element.element)
-
-
-def select_or_insert(table, select_values, insert_values, select_criteria):
-    criteria = [
-        getattr(table.c, key) == sa.text(str(value))
-        for key, value in select_criteria.items() if value is not None
-    ]
-
-    select = (
-        sa.select(select_values, from_obj=table)
-        .where(sa.and_(*criteria))
-    )
-    insert = (
-        table.insert()
-        .from_select(
-            insert_values.keys(),
-            sa.select(insert_values.values())
-            .where(~ exists(select))
-        )
-        .returning(*map(sa.text, select_values))
-    )
-    insert_cte = CTE(
-        Parenthesis(insert),
-        name='new_row'
-    )
-    query = sa.select(select_values, from_obj=insert_cte).union(select)
-    return query
 
 
 class UnitOfWork(object):
@@ -159,33 +114,44 @@ class UnitOfWork(object):
         self.current_transaction = Transaction()
 
         if self.manager.options['native_versioning']:
-            criteria = {'native_tx_id': sa.func.txid_current()}
-            args.update(criteria)
-            query = select_or_insert(
-                table,
-                ['*'],
-                args,
-                criteria
-            )
-            query_string = str(query.compile(dialect=postgresql.dialect()))
-
-            values = session.execute(query_string).fetchone()
-            for key, value in values.items():
-                set_committed_value(self.current_transaction, key, value)
-
-            session.execute(
+            has_transaction_initialized = bool(session.execute(
+                '''SELECT 1 FROM pg_catalog.pg_class
+                WHERE relname = 'temporary_transaction'
                 '''
-                CREATE TEMP TABLE IF NOT EXISTS continuum_temp_transaction
-                (id BIGINT, PRIMARY KEY(id))
-                ON COMMIT DROP
-                '''
-            )
-            session.execute('''
-                INSERT INTO continuum_temp_transaction (id)
-                SELECT :id WHERE NOT EXISTS
-                (SELECT 1 FROM continuum_temp_transaction WHERE id = :id)''',
-                {'id': self.current_transaction.id}
-            )
+            ).scalar())
+            if has_transaction_initialized:
+                tx_id = (
+                    session.execute('SELECT id FROM temporary_transaction')
+                    .scalar()
+                )
+                set_committed_value(self.current_transaction, 'id', tx_id)
+            else:
+                criteria = {'native_tx_id': sa.func.txid_current()}
+                args.update(criteria)
+
+                query = (
+                    table.insert()
+                    .values(**args)
+                    .returning(*map(sa.text, list(args.keys()) + ['id']))
+                )
+
+                values = session.execute(query).fetchone()
+                for key, value in values.items():
+                    set_committed_value(self.current_transaction, key, value)
+
+                session.execute(
+                    '''
+                    CREATE TEMP TABLE temporary_transaction
+                    (id BIGINT, PRIMARY KEY(id))
+                    ON COMMIT DROP
+                    '''
+                )
+                session.execute('''
+                    INSERT INTO temporary_transaction (id)
+                    VALUES (:id)
+                    ''',
+                    {'id': self.current_transaction.id}
+                )
             self.merge_transaction(session, self.current_transaction)
         else:
             for key, value in args.items():
