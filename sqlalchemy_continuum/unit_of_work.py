@@ -15,6 +15,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.schema import DDLElement
+from sqlalchemy.sql.expression import CTE, exists
 
 
 class Parenthesis(DDLElement):
@@ -30,12 +31,10 @@ def visit_alter_column(element, compiler, **kw):
     return '(%s)' % compiler.process(element.element)
 
 
-def select_or_insert(table, select_values, insert_values):
-    from sqlalchemy.sql.expression import CTE, exists
-
+def select_or_insert(table, select_values, insert_values, select_criteria):
     criteria = [
         getattr(table.c, key) == sa.text(str(value))
-        for key, value in insert_values.items() if value is not None
+        for key, value in select_criteria.items() if value is not None
     ]
 
     select = (
@@ -156,8 +155,14 @@ class UnitOfWork(object):
         self.current_transaction = Transaction()
 
         if self.manager.options['native_versioning']:
-            args['native_tx_id'] = sa.func.txid_current()
-            query = select_or_insert(table, ['*'], args)
+            criteria = {'native_tx_id': sa.func.txid_current()}
+            args.update(criteria)
+            query = select_or_insert(
+                table,
+                ['*'],
+                args,
+                criteria
+            )
             query_string = str(query.compile(dialect=postgresql.dialect()))
 
             values = session.execute(query_string).fetchone()

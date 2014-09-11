@@ -75,11 +75,26 @@ class TestFlaskPlugin(TestCase):
         self.User = User
 
     def setup_views(self):
-        @self.app.route('/')
-        def index():
+        @self.app.route('/simple-flush')
+        def test_simple_flush():
             article = self.Article()
             article.name = u'Some article'
             self.session.add(article)
+            self.session.commit()
+            return ''
+
+        @self.app.route('/raw-sql-and-flush')
+        def test_raw_sql_and_flush():
+            self.session.execute(
+                "INSERT INTO article (name) VALUES ('some article')"
+            )
+            article = self.Article()
+            article.name = u'Some article'
+            self.session.add(article)
+            self.session.flush()
+            self.session.execute(
+                "INSERT INTO article (name) VALUES ('some article')"
+            )
             self.session.commit()
             return ''
 
@@ -88,11 +103,20 @@ class TestFlaskPlugin(TestCase):
         self.session.add(user)
         self.session.commit()
         self.login(user)
-        self.client.get(url_for('.index'))
+        self.client.get(url_for('.test_simple_flush'))
 
         article = self.session.query(self.Article).first()
         tx = article.versions[-1].transaction
         assert tx.user.id == user.id
+
+    def test_raw_sql_and_flush(self):
+        user = self.User(name=u'Rambo')
+        self.session.add(user)
+        self.session.commit()
+        self.login(user)
+        self.client.get(url_for('.test_raw_sql_and_flush'))
+        query = 'SELECT COUNT(1) FROM transaction'
+        assert self.session.execute(query).scalar() == 2
 
 
 class TestFlaskPluginWithoutRequestContext(TestCase):
