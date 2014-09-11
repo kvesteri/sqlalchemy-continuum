@@ -177,6 +177,7 @@ class UnitOfWork(object):
                 (SELECT 1 FROM continuum_temp_transaction WHERE id = :id)''',
                 {'id': self.current_transaction.id}
             )
+            self.merge_transaction(session, self.current_transaction)
         else:
             for key, value in args.items():
                 setattr(self.current_transaction, key, value)
@@ -187,8 +188,7 @@ class UnitOfWork(object):
             self.version_session.add(self.current_transaction)
             self.version_session.flush()
             self.version_session.expunge(self.current_transaction)
-
-        self.merge_transaction(session, self.current_transaction)
+            session.add(self.current_transaction)
         return self.current_transaction
 
     def merge_transaction(self, session, transaction):
@@ -197,7 +197,19 @@ class UnitOfWork(object):
         state.key = (
             Transaction, (self.current_transaction.id,)
         )
-        state.session_id = session.hash_key
+
+        if hasattr(session, 'hash_key'):
+            session_id = session.hash_key
+        else:
+            # We need this hack when user is using for example
+            # Flask-SQLAlchemy's scoped session
+            objs = list(session)
+            if not objs:
+                raise Exception('Could not get session id.')
+
+            session_id = sa.inspect(objs[0]).session_id
+
+        state.session_id = session_id
         session.merge(self.current_transaction, load=False)
 
     def get_or_create_version_object(self, target):

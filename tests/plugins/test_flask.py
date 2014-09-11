@@ -235,3 +235,14 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.db.session.add(article)
         self.db.session.commit()
         assert len(article.versions[0].tags) == 1
+
+    def test_create_transaction_with_scoped_session(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.db.session.add(article)
+        uow = versioning_manager.unit_of_work(self.db.session)
+        transaction = uow.create_transaction(self.db.session)
+        assert transaction.id
+
+
