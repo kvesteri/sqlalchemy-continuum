@@ -47,13 +47,16 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         self.session.expunge_all()
         tx_log = self.session.query(tx_log_class).first()
 
-        self.session.execute(
-            '''INSERT INTO article_version
-            (id, %s, name, content, operation_type)
-            VALUES
-            (1, %d, 'something', 'some content', 1)
-            ''' % (self.transaction_column_name, tx_log.id)
+        query = self.ArticleVersion.__table__.insert().values(
+            {
+                'id': 1,
+                self.transaction_column_name: tx_log.id,
+                'name': u'something',
+                'content': u'something',
+                'operation_type': 1
+            },
         )
+        self.session.execute(query)
 
         assert self.session.query(self.ArticleVersion).first().changeset == {}
 

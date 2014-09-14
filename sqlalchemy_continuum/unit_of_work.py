@@ -1,7 +1,6 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy_utils import get_primary_keys, identity
 from .operation import Operations
 from .utils import (
@@ -110,82 +109,19 @@ class UnitOfWork(object):
         args = self.transaction_args(session)
 
         Transaction = self.manager.transaction_cls
-        table = Transaction.__table__
         self.current_transaction = Transaction()
 
-        if self.manager.options['native_versioning']:
-            has_transaction_initialized = bool(session.execute(
-                '''SELECT 1 FROM pg_catalog.pg_class
-                WHERE relname = 'temporary_transaction'
-                '''
-            ).scalar())
-            if has_transaction_initialized:
-                tx_id = (
-                    session.execute('SELECT id FROM temporary_transaction')
-                    .scalar()
-                )
-                set_committed_value(self.current_transaction, 'id', tx_id)
-            else:
-                criteria = {'native_tx_id': sa.func.txid_current()}
-                args.update(criteria)
-
-                query = (
-                    table.insert()
-                    .values(**args)
-                    .returning(*map(sa.text, list(args.keys()) + ['id']))
-                )
-
-                values = session.execute(query).fetchone()
-                for key, value in values.items():
-                    set_committed_value(self.current_transaction, key, value)
-
-                session.execute(
-                    '''
-                    CREATE TEMP TABLE temporary_transaction
-                    (id BIGINT, PRIMARY KEY(id))
-                    ON COMMIT DROP
-                    '''
-                )
-                session.execute('''
-                    INSERT INTO temporary_transaction (id)
-                    VALUES (:id)
-                    ''',
-                    {'id': self.current_transaction.id}
-                )
-            self.merge_transaction(session, self.current_transaction)
-        else:
-            for key, value in args.items():
-                setattr(self.current_transaction, key, value)
-            if not self.version_session:
-                self.version_session = sa.orm.session.Session(
-                    bind=session.connection()
-                )
-            self.version_session.add(self.current_transaction)
-            self.version_session.flush()
-            self.version_session.expunge(self.current_transaction)
-            session.add(self.current_transaction)
+        for key, value in args.items():
+            setattr(self.current_transaction, key, value)
+        if not self.version_session:
+            self.version_session = sa.orm.session.Session(
+                bind=session.connection()
+            )
+        self.version_session.add(self.current_transaction)
+        self.version_session.flush()
+        self.version_session.expunge(self.current_transaction)
+        session.add(self.current_transaction)
         return self.current_transaction
-
-    def merge_transaction(self, session, transaction):
-        Transaction = self.manager.transaction_cls
-        state = sa.inspect(self.current_transaction)
-        state.key = (
-            Transaction, (self.current_transaction.id,)
-        )
-
-        if hasattr(session, 'hash_key'):
-            session_id = session.hash_key
-        else:
-            # We need this hack when user is using for example
-            # Flask-SQLAlchemy's scoped session
-            objs = list(session)
-            if not objs:
-                raise Exception('Could not get session id.')
-
-            session_id = sa.inspect(objs[0]).session_id
-
-        state.session_id = session_id
-        session.merge(self.current_transaction, load=False)
 
     def get_or_create_version_object(self, target):
         """

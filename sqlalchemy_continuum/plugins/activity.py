@@ -215,6 +215,11 @@ class ActivityFactory(ModelFactory):
         """
         Create Activity class.
         """
+        if manager.options['native_versioning']:
+            type_ = sa.String
+        else:
+            type_ = sa.BigInteger
+
         class Activity(
             manager.declarative_base,
             ActivityBase
@@ -223,7 +228,7 @@ class ActivityFactory(ModelFactory):
             manager = self
 
             transaction_id = sa.Column(
-                sa.BigInteger,
+                type_,
                 index=True,
                 nullable=False
             )
@@ -234,13 +239,13 @@ class ActivityFactory(ModelFactory):
 
             object_id = sa.Column(sa.BigInteger)
 
-            object_tx_id = sa.Column(sa.BigInteger)
+            object_tx_id = sa.Column(type_)
 
             target_type = sa.Column(sa.String(255))
 
             target_id = sa.Column(sa.BigInteger)
 
-            target_tx_id = sa.Column(sa.BigInteger)
+            target_tx_id = sa.Column(type_)
 
             def _calculate_tx_id(self, obj):
                 session = sa.orm.object_session(self)

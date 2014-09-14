@@ -1,5 +1,6 @@
+import pytest
 from sqlalchemy_continuum import versioning_manager
-from tests import TestCase
+from tests import TestCase, uses_native_versioning
 
 
 class TestTransaction(TestCase):
@@ -29,9 +30,22 @@ class TestTransaction(TestCase):
             versioning_manager.transaction_cls
         ).first()
         assert (
-            '<Transaction id=%d, issued_at=%r>' % (
+            '<Transaction id=%r, issued_at=%r>' % (
                 transaction.id,
                 transaction.issued_at
             ) ==
             repr(transaction)
         )
+
+
+@pytest.mark.skipif('not uses_native_versioning()')
+class TestNativeVersioning(TestCase):
+    def test_transaction_id_collision(self):
+        tx_id = self.session.execute('SELECT txid_current()').scalar()
+        self.session.execute(
+            'INSERT INTO transaction (id) VALUES (%d)' % (tx_id + 1)
+        )
+        self.session.commit()
+        self.article = self.Article(name=u'Some article')
+        self.session.add(self.article)
+        self.session.commit()

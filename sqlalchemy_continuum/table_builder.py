@@ -60,9 +60,14 @@ class ColumnReflector(object):
         Returns transaction column. By default the name of this column is
         'transaction_id'.
         """
+        if self.option('native_versioning'):
+            type_ = sa.String
+        else:
+            type_ = sa.BigInteger
+
         return sa.Column(
             self.option('transaction_column_name'),
-            sa.BigInteger,
+            type_,
             primary_key=True,
             index=True,
             autoincrement=False  # This is needed for MySQL
@@ -74,9 +79,14 @@ class ColumnReflector(object):
         Returns end_transaction column. By default the name of this column is
         'end_transaction_id'.
         """
+        if self.option('native_versioning'):
+            type_ = sa.String
+        else:
+            type_ = sa.BigInteger
+
         return sa.Column(
             self.option('end_transaction_column_name'),
-            sa.BigInteger,
+            type_,
             index=True
         )
 

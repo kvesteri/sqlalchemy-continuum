@@ -56,10 +56,6 @@ from ..factory import ModelFactory
 
 
 class TransactionMetaBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
     key = sa.Column(sa.Unicode(255), primary_key=True)
     value = sa.Column(sa.UnicodeText)
 
@@ -71,11 +67,22 @@ class TransactionMetaFactory(ModelFactory):
         """
         Create TransactionMeta class.
         """
+        if manager.options['native_versioning']:
+            type_ = sa.String
+        else:
+            type_ = sa.BigInteger
+
         class TransactionMeta(
             manager.declarative_base,
             TransactionMetaBase
         ):
             __tablename__ = 'transaction_meta'
+
+            transaction_id = sa.Column(
+                type_,
+                primary_key=True,
+                autoincrement=False
+            )
 
         TransactionMeta.transaction = sa.orm.relationship(
             manager.transaction_cls,

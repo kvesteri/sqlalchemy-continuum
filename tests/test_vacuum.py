@@ -1,8 +1,10 @@
+import pytest
 from sqlalchemy_continuum import vacuum
 
-from tests import TestCase
+from tests import TestCase, uses_native_versioning
 
 
+@pytest.mark.skipif('uses_native_versioning()')
 class TestVacuum(TestCase):
     def test_deletes_futile_versions(self):
         history_objects = [
