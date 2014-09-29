@@ -380,11 +380,13 @@ class VersioningManager(object):
         Track association operations and adds the generated history
         association operations to pending_statements list.
         """
-        if not self.options['versioning']:
+        if (
+            not self.options['versioning'] and
+            not self.options['native_versioning']
+        ):
             return
 
         op = None
-
         if context.isinsert:
             op = Operation.INSERT
         elif context.isdelete:
