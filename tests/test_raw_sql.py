@@ -13,10 +13,11 @@ class TestRawSQL(TestCase):
         )
 
     def test_single_statement(self):
+        query = 'SELECT transaction_id FROM article_version'
         self.session.execute(
             "INSERT INTO article (name) VALUES ('some article')"
         )
-        self.assert_has_single_transaction()
+        assert self.session.execute(query).scalar()
 
     def test_multiple_statements(self):
         self.session.execute(
@@ -25,7 +26,8 @@ class TestRawSQL(TestCase):
         self.session.execute(
             "INSERT INTO article (name) VALUES ('some article')"
         )
-        self.assert_has_single_transaction()
+        query = 'SELECT transaction_id FROM article_version'
+        assert self.session.execute(query).scalar()
 
     def test_flush_after_raw_insert(self):
         self.session.execute(

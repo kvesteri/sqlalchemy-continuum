@@ -29,14 +29,6 @@ from ..factory import ModelFactory
 from ..utils import option
 
 
-class TransactionChangesBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
-    entity_name = sa.Column(sa.Unicode(255), primary_key=True)
-
-
 class TransactionChangesFactory(ModelFactory):
     model_name = 'TransactionChanges'
 
@@ -44,11 +36,20 @@ class TransactionChangesFactory(ModelFactory):
         """
         Create TransactionChanges class.
         """
-        class TransactionChanges(
-            manager.declarative_base,
-            TransactionChangesBase
-        ):
+        if manager.options['native_versioning']:
+            type_ = sa.String
+        else:
+            type_ = sa.BigInteger
+
+        class TransactionChanges(manager.declarative_base):
             __tablename__ = 'transaction_changes'
+
+            transaction_id = sa.Column(
+                type_,
+                primary_key=True,
+                autoincrement=False
+            )
+            entity_name = sa.Column(sa.Unicode(255), primary_key=True)
 
         TransactionChanges.transaction = sa.orm.relationship(
             manager.transaction_cls,

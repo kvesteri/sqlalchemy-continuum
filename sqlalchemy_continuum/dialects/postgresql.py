@@ -42,18 +42,9 @@ VALUES ({transaction_values});
 
 procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
-DECLARE transaction_id_value INT;
+DECLARE transaction_id_value VARCHAR;
 BEGIN
-    BEGIN
-        transaction_id_value = (SELECT id FROM temporary_transaction);
-    EXCEPTION
-        WHEN others THEN
-            INSERT INTO transaction (native_tx_id)
-            VALUES (txid_current()) RETURNING id INTO transaction_id_value;
-
-            {temporary_transaction_sql}
-            {insert_temporary_transaction_sql}
-    END;
+    transaction_id_value = (SELECT {transaction_id_generator});
 
     IF (TG_OP = 'INSERT') THEN
         {after_insert}
@@ -86,6 +77,14 @@ WHERE
     ) AND
     {primary_key_criteria};
 """
+
+
+# Instead of SQLAlchemy expression constructs we use simple SQL for performance
+# reasons.
+tx_id_generator = sa.text(
+    "CONCAT(EXTRACT(EPOCH from pg_postmaster_start_time()) * 10000, "
+    "':', txid_current())"
+)
 
 
 def uses_property_mod_tracking(manager):
@@ -386,6 +385,7 @@ class CreateTriggerFunctionSQL(SQLConstruct):
 
         sql = procedure_sql.format(
             procedure_name='%s_audit' % self.table.name,
+            transaction_id_generator=str(tx_id_generator),
             excluded_columns=', '.join(
                 "'%s'" % c for c in self.excluded_columns
             ),

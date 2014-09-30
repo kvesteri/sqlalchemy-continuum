@@ -8,6 +8,7 @@ import six
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 
+from .dialects.postgresql import tx_id_generator
 from .exc import ImproperlyConfigured
 from .factory import ModelFactory
 
@@ -72,16 +73,18 @@ class TransactionFactory(ModelFactory):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
 
-            id = sa.Column(
-                sa.types.BigInteger,
-                primary_key=True,
-                autoincrement=True
-            )
-
             if manager.options['native_versioning']:
-                native_tx_id = sa.Column(
+                id = sa.Column(
+                    sa.types.String,
+                    primary_key=True,
+                    autoincrement=False,
+                    server_default=tx_id_generator,
+                )
+            else:
+                id = sa.Column(
                     sa.types.BigInteger,
-                    index=True
+                    primary_key=True,
+                    autoincrement=True
                 )
 
             if self.remote_addr:
