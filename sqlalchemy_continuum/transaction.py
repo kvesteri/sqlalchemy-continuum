@@ -125,12 +125,6 @@ class TransactionFactory(ModelFactory):
                 autoincrement=True
             )
 
-            if manager.options['native_versioning']:
-                native_tx_id = sa.Column(
-                    sa.types.BigInteger,
-                    index=True
-                )
-
             if self.remote_addr:
                 remote_addr = sa.Column(sa.String(50))
 

@@ -1,7 +1,6 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy_utils import get_primary_keys, identity
 from .operation import Operations
 from .utils import (
