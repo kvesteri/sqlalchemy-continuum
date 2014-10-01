@@ -57,7 +57,6 @@ def test_versioning(
 
     engine = create_engine(dns)
     # engine.echo = True
-    connection = engine.connect()
 
     class Article(Model):
         __tablename__ = 'article'
@@ -78,6 +77,8 @@ def test_versioning(
 
 
     sa.orm.configure_mappers()
+
+    connection = engine.connect()
 
     Model.metadata.create_all(connection)
 

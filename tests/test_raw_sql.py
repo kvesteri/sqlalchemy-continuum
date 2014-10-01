@@ -12,21 +12,6 @@ class TestRawSQL(TestCase):
             .count() == 1
         )
 
-    def test_single_statement(self):
-        self.session.execute(
-            "INSERT INTO article (name) VALUES ('some article')"
-        )
-        self.assert_has_single_transaction()
-
-    def test_multiple_statements(self):
-        self.session.execute(
-            "INSERT INTO article (name) VALUES ('some article')"
-        )
-        self.session.execute(
-            "INSERT INTO article (name) VALUES ('some article')"
-        )
-        self.assert_has_single_transaction()
-
     def test_flush_after_raw_insert(self):
         self.session.execute(
             "INSERT INTO article (name) VALUES ('some article')"

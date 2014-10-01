@@ -91,11 +91,13 @@ class TestCase(object):
 
         self.engine = create_engine(get_dns_from_driver(self.driver))
         # self.engine.echo = True
-        self.connection = self.engine.connect()
-
         self.create_models()
 
         sa.orm.configure_mappers()
+
+        self.connection = self.engine.connect()
+
+
 
         if hasattr(self, 'Article'):
             try:

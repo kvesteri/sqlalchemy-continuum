@@ -30,9 +30,9 @@ WHERE NOT EXISTS (SELECT 1 FROM upsert);
 """
 
 temporary_transaction_sql = """
-CREATE TEMP TABLE {temporary_transaction_table}
+CREATE TEMP TABLE IF NOT EXISTS {temporary_transaction_table}
 ({transaction_table_columns})
-ON COMMIT DROP;
+ON COMMIT DELETE ROWS;
 """
 
 insert_temporary_transaction_sql = """
@@ -40,20 +40,20 @@ INSERT INTO {temporary_transaction_table} ({transaction_table_columns})
 VALUES ({transaction_values});
 """
 
+temp_transaction_trigger_sql = """
+CREATE TRIGGER transaction_trigger
+AFTER INSERT ON {transaction_table}
+FOR EACH ROW EXECUTE PROCEDURE transaction_temp_table_generator()
+"""
+
 procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    BEGIN
-        transaction_id_value = (SELECT id FROM temporary_transaction);
-    EXCEPTION
-        WHEN others THEN
-            INSERT INTO transaction (native_tx_id)
-            VALUES (txid_current()) RETURNING id INTO transaction_id_value;
-
-            {temporary_transaction_sql}
-            {insert_temporary_transaction_sql}
-    END;
+    transaction_id_value = (SELECT id FROM temporary_transaction);
+    IF transaction_id_value IS NULL THEN
+        RETURN NEW;
+    END IF;
 
     IF (TG_OP = 'INSERT') THEN
         {after_insert}
@@ -136,10 +136,7 @@ class SQLConstruct(object):
 
     @property
     def temporary_transaction_table_name(self):
-        if self.table.schema:
-            return '%s.temporary_transaction' % self.table.schema
-        else:
-            return 'temporary_transaction'
+        return 'temporary_transaction'
 
     @property
     def version_table_name(self):
@@ -359,20 +356,30 @@ class CreateTriggerSQL(SQLConstruct):
         )
 
 
-class CreateTemporaryTransactionTableSQL(SQLConstruct):
+class TransactionSQLConstruct(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class CreateTemporaryTransactionTableSQL(TransactionSQLConstruct):
+    table_name = 'temporary_transaction'
+
     def __str__(self):
         return temporary_transaction_sql.format(
-            temporary_transaction_table=self.temporary_transaction_table_name,
+            temporary_transaction_table=self.table_name,
             transaction_table_columns='id BIGINT, PRIMARY KEY(id)'
         )
 
 
-class InsertTemporaryTransactionSQL(SQLConstruct):
+class InsertTemporaryTransactionSQL(TransactionSQLConstruct):
+    table_name = 'temporary_transaction'
+    transaction_values = 'transaction_id_value'
+
     def __str__(self):
         return insert_temporary_transaction_sql.format(
-            temporary_transaction_table=self.temporary_transaction_table_name,
+            temporary_transaction_table=self.table_name,
             transaction_table_columns='id',
-            transaction_values='transaction_id_value'
+            transaction_values=self.transaction_values
         )
 
 
@@ -394,16 +401,33 @@ class CreateTriggerFunctionSQL(SQLConstruct):
             after_update=after_update,
             after_delete=after_delete,
             temporary_transaction_sql=(
-                CreateTemporaryTransactionTableSQL(**args)
+                CreateTemporaryTransactionTableSQL()
             ),
             insert_temporary_transaction_sql=(
-                InsertTemporaryTransactionSQL(**args)
+                InsertTemporaryTransactionSQL()
             ),
             upsert_insert=InsertUpsertSQL(**args),
             upsert_update=UpdateUpsertSQL(**args),
             upsert_delete=DeleteUpsertSQL(**args)
         )
         return sql
+
+
+class TransactionTriggerSQL(object):
+    def __init__(self, tx_class):
+        self.table = tx_class.__table__
+
+    @property
+    def transaction_table_name(self):
+        if self.table.schema:
+            return '%s.transaction' % self.table.schema
+        else:
+            return 'transaction'
+
+    def __str__(self):
+        return temp_transaction_trigger_sql.format(
+            transaction_table=self.transaction_table_name
+        )
 
 
 def create_versioning_trigger_listeners(manager, cls):
