@@ -313,6 +313,14 @@ class VersioningManager(object):
             self.units_of_work[conn] = uow
             return uow
 
+    def on_connect(self, dbapi_conn, connection_record):
+        from .dialects.postgresql import CreateTemporaryTransactionTableSQL
+
+        cursor = dbapi_conn.cursor()
+        cursor.execute(str(CreateTemporaryTransactionTableSQL()))
+        dbapi_conn.commit()
+        cursor.close()
+
     def before_flush(self, session, flush_context, instances):
         """
         Before flush listener for SQLAlchemy sessions. If this manager has
@@ -380,11 +388,13 @@ class VersioningManager(object):
         Track association operations and adds the generated history
         association operations to pending_statements list.
         """
-        if not self.options['versioning']:
+        if (
+            not self.options['versioning'] and
+            not self.options['native_versioning']
+        ):
             return
 
         op = None
-
         if context.isinsert:
             op = Operation.INSERT
         elif context.isdelete:

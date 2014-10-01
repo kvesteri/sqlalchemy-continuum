@@ -11,7 +11,7 @@ class TestSchemaTools(TestCase):
         stmt = table.insert().values(values)
         self.session.execute(stmt)
 
-    def test_something(self):
+    def test_update_end_transaction_id(self):
         table = version_class(self.Article).__table__
         self._insert(
             {
