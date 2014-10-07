@@ -50,7 +50,11 @@ procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    transaction_id_value = (SELECT id FROM temporary_transaction);
+    BEGIN
+        transaction_id_value = (SELECT id FROM temporary_transaction);
+    EXCEPTION WHEN others THEN
+        RETURN NEW;
+    END;
     IF transaction_id_value IS NULL THEN
         RETURN NEW;
     END IF;
@@ -483,7 +487,7 @@ def sync_trigger(conn, table_name):
         set(c.name for c in parent_table.c) -
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
-    drop_trigger(conn, table_name)
+    drop_trigger(conn, parent_table.name)
     create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
 
 
@@ -512,7 +516,7 @@ def create_trigger(
 
 
 def drop_trigger(conn, table_name):
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
     conn.execute(
         'DROP TRIGGER IF EXISTS %s_trigger ON %s' % (table_name, table_name)
     )
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)

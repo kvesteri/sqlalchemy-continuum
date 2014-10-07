@@ -43,12 +43,13 @@ class TestTriggerSyncing(object):
 
     def test_sync_triggers(self):
         sync_trigger(self.connection, 'article_version')
-        assert 'DROP FUNCTION ' in QueryPool.queries[-4]
-        assert 'DROP TRIGGER ' in QueryPool.queries[-3]
+        assert 'DROP TRIGGER ' in QueryPool.queries[-4]
+        assert 'DROP FUNCTION ' in QueryPool.queries[-3]
         assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
         assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
+        sync_trigger(self.connection, 'article_version')
 
     def test_drop_triggers(self):
         drop_trigger(self.connection, 'article')
-        assert 'DROP FUNCTION ' in QueryPool.queries[-2]
-        assert 'DROP TRIGGER ' in QueryPool.queries[-1]
+        assert 'DROP TRIGGER ' in QueryPool.queries[-2]
+        assert 'DROP FUNCTION ' in QueryPool.queries[-1]

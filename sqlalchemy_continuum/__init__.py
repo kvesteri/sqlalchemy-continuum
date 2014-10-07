@@ -18,7 +18,7 @@ from .utils import (
 )
 
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 versioning_manager = VersioningManager()
@@ -69,12 +69,6 @@ def make_versioned(
         'before_cursor_execute',
         manager.track_association_operations
     )
-    if manager.options['native_versioning']:
-        sa.event.listen(
-            sa.pool.Pool,
-            'connect',
-            manager.on_connect
-        )
 
 
 def remove_versioning(
@@ -102,9 +96,3 @@ def remove_versioning(
         'before_cursor_execute',
         manager.track_association_operations
     )
-    if manager.options['native_versioning']:
-        sa.event.remove(
-            sa.pool.Pool,
-            'connect',
-            manager.on_connect
-        )

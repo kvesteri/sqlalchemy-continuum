@@ -4,7 +4,13 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.1.0 (2014-09-xx)
+1.1.1 (2014-10-07)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed native versioning trigger syncing
+
+
+1.1.0 (2014-10-02)
 ^^^^^^^^^^^^^^^^^^
 
 - Added Python 3.4 to test suite
@@ -16,6 +22,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Fixed savepoint handling
 - Fixed version model building when no versioned models were found (previously threw AttributeError)
 - Replaced plugin template methods before_create_tx_object and after_create_tx_object with transaction_args to better cope with native versioning
+
 
 1.0.3 (2014-07-16)
 ^^^^^^^^^^^^^^^^^^
