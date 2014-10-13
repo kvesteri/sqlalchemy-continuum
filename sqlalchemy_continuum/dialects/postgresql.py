@@ -517,6 +517,9 @@ def create_trigger(
 
 def drop_trigger(conn, table_name):
     conn.execute(
-        'DROP TRIGGER IF EXISTS %s_trigger ON %s' % (table_name, table_name)
+        'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
+            table_name,
+            table_name
+        )
     )
     conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
