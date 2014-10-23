@@ -5,9 +5,24 @@ SQLAlchemy-Continuum
 Versioning and auditing extension for SQLAlchemy.
 """
 
-from setuptools import setup, Command
+import os
 import subprocess
 import sys
+import re
+from setuptools import setup, Command
+
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PY3 = sys.version_info[0] == 3
+
+
+def get_version():
+    filename = os.path.join(HERE, 'sqlalchemy_continuum', '__init__.py')
+    with open(filename) as f:
+        contents = f.read()
+    pattern = r"^__version__ = '(.*?)'$"
+    return re.search(pattern, contents, re.MULTILINE).group(1)
+
 
 
 class PyTest(Command):
@@ -49,7 +64,7 @@ for name, requirements in extras_require.items():
 
 setup(
     name='SQLAlchemy-Continuum',
-    version='1.1.3',
+    version=get_version(),
     url='https://github.com/kvesteri/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
