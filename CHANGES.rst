@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.1.3 (2014-10-23)
+^^^^^^^^^^^^^^^^^^
+
+- Made FlaskPlugin accepts overriding of current_user_id_factory and remote_addr_factory
+
+
 1.1.2 (2014-10-07)
 ^^^^^^^^^^^^^^^^^^
 

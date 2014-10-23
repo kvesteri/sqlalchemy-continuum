@@ -23,7 +23,6 @@ try:
     import flask
     from flask import request
     from flask.globals import _app_ctx_stack, _request_ctx_stack
-    from flask.ext.login import current_user
 except ImportError:
     pass
 from sqlalchemy_utils import ImproperlyConfigured
@@ -31,6 +30,8 @@ from .base import Plugin
 
 
 def fetch_current_user_id():
+    from flask.ext.login import current_user
+
     # Return None if we are outside of request context.
     if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
         return
@@ -48,7 +49,20 @@ def fetch_remote_addr():
 
 
 class FlaskPlugin(Plugin):
-    def __init__(self):
+    def __init__(
+        self,
+        current_user_id_factory=None,
+        remote_addr_factory=None
+    ):
+        self.current_user_id_factory = (
+            fetch_current_user_id if current_user_id_factory is None
+            else current_user_id_factory
+        )
+        self.remote_addr_factory = (
+            fetch_remote_addr if remote_addr_factory is None
+            else remote_addr_factory
+        )
+
         if not flask:
             raise ImproperlyConfigured(
                 'Flask is required with FlaskPlugin. Please install Flask by'
@@ -57,6 +71,6 @@ class FlaskPlugin(Plugin):
 
     def transaction_args(self, uow, session):
         return {
-            'user_id': fetch_current_user_id(),
-            'remote_addr': fetch_remote_addr()
+            'user_id': self.current_user_id_factory(),
+            'remote_addr': self.remote_addr_factory()
         }

@@ -19,6 +19,18 @@ from tests import (
 )
 
 
+class TestFlaskPluginConfiguration(object):
+    def test_set_factories(self):
+        some_func = lambda: None
+        some_other_func = lambda: None
+        plugin = FlaskPlugin(
+            current_user_id_factory=some_func,
+            remote_addr_factory=some_other_func
+        )
+        assert plugin.current_user_id_factory is some_func
+        assert plugin.remote_addr_factory is some_other_func
+
+
 class TestFlaskPlugin(TestCase):
     plugins = [FlaskPlugin()]
     transaction_cls = TransactionFactory()
