@@ -98,7 +98,17 @@ class Operations(object):
                     del state_copy[rel_key]
 
         if state_copy:
-            self.add(Operation(target, Operation.UPDATE))
+            key = self.format_key(target)
+            # if the object has already been added with an INSERT,
+            # then this is a modification within the same transaction and
+            # this is still an INSERT
+            if (target in self and
+                self[key].type == Operation.INSERT):
+                operation = Operation.INSERT
+            else:
+                operation = Operation.UPDATE
+
+            self.add(Operation(target, operation))
 
     def add_delete(self, target):
         self.add(Operation(target, Operation.DELETE))
