@@ -1,5 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import count_versions, versioning_manager, Operation
+from sqlalchemy_continuum import count_versions, versioning_manager, \
+                Operation, version_class
 
 from tests import TestCase
 
@@ -43,13 +44,31 @@ class TestInsert(TestCase):
         """Test that after multiple flushes that affect a newly created object,
         the insert operation type is commited
         """
-        article = self.Article(name=u"Article name")
+        article = self.Article(name=u'Article name')
         self.session.add(article)
         self.session.flush()
-        article.name = u"Changed my mind"
+        article.name = u'Changed my mind'
         self.session.commit()
         assert article.versions.count() == 1
         assert article.versions[0].operation_type == Operation.INSERT
+
+    def test_modify_primary_key(self):
+        """Test that modifying the primary key within the insert transaction
+        maintains correct insert behavior"""
+        article = self.Article(name=u'Article name')
+        self.session.add(article)
+        self.session.flush()
+        article.id += 1
+        self.session.commit()
+        assert article.versions.count() == 1
+        assert article.versions[-1].operation_type == Operation.INSERT
+
+        # also check that no additional article versions have leaked...
+        ArticleVersion = version_class(self.Article)
+        versions_query = self.session.query(ArticleVersion)\
+                        .order_by(ArticleVersion.transaction_id)
+        assert versions_query.count() == 1
+        assert versions_query[0].operation_type == Operation.INSERT
 
 
 class TestInsertWithDeferredColumn(TestCase):

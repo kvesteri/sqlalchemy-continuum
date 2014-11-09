@@ -1,4 +1,6 @@
 import sqlalchemy as sa
+from sqlalchemy_continuum import Operation, version_class
+
 from tests import TestCase
 
 
@@ -75,6 +77,26 @@ class TestUpdate(TestCase):
         version = article.versions.all()[-1]
         assert version.name == u'Some article'
         assert version.content == u'Updated content 2'
+
+    def test_modify_primary_key(self):
+        """Test that modifying the primary key within the same transaction
+        maintains correct update behavior"""
+        article = self.Article(name=u'Article name')
+        self.session.add(article)
+        self.session.commit()
+
+        article.name = u'Second name'
+        self.session.flush()
+        article.id += 1
+        self.session.commit()
+
+        assert article.versions.count() == 1
+
+        ArticleVersion = version_class(self.Article)
+        versions_q = self.session.query(ArticleVersion)\
+                        .order_by(ArticleVersion.transaction_id)
+        assert versions_q.count() == 2
+        assert versions_q[1].operation_type == Operation.UPDATE
 
 
 class TestUpdateWithDefaultValues(TestCase):
