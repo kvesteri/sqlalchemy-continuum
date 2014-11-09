@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import count_versions, versioning_manager
+from sqlalchemy_continuum import count_versions, versioning_manager, Operation
 
 from tests import TestCase
 
@@ -38,6 +38,18 @@ class TestInsert(TestCase):
         self.session.commit()
         assert article.versions.count() == 1
         assert article2.versions.count() == 1
+
+    def test_multiple_flushes_store_operation_type(self):
+        """Test that after multiple flushes that affect a newly created object,
+        the insert operation type is commited
+        """
+        article = self.Article(name=u"Article name")
+        self.session.add(article)
+        self.session.flush()
+        article.name = u"Changed my mind"
+        self.session.commit()
+        assert article.versions.count() == 1
+        assert article.versions[0].operation_type == Operation.INSERT
 
 
 class TestInsertWithDeferredColumn(TestCase):
