@@ -1,14 +1,15 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils import get_primary_keys, identity
+from sqlalchemy_utils import get_primary_keys, identity, has_changes
 from .operation import Operations
 from .utils import (
     end_tx_column_name,
     version_class,
     is_session_modified,
     tx_column_name,
-    versioned_column_properties
+    versioned_column_properties,
+    commited_identity
 )
 
 
@@ -123,6 +124,25 @@ class UnitOfWork(object):
         session.add(self.current_transaction)
         return self.current_transaction
 
+    def _sanitize_obj_key(self, target):
+        """
+        The key for target in `self.version_objs`  may not be valid if its
+        primary key has been modified. Check against that and update the key.
+        """
+        key = self._create_key(target, identity(target))
+        mapper = sa.inspect(target).mapper
+        for pk in mapper.primary_key:
+            if has_changes(target, mapper.get_property_by_column(pk).key):
+                old_key = self._create_key(target, commited_identity(target))
+                if old_key in self.version_objs:
+                    # replace old key with the new one
+                    self.version_objs[key] = self.version_objs.pop(old_key)
+                    break
+        return key
+
+    def _create_key(self, target, pks):
+        return version_class(target.__class__), (pks, self.current_transaction.id)
+
     def get_or_create_version_object(self, target):
         """
         Return version object for given parent object. If no version object
@@ -130,12 +150,10 @@ class UnitOfWork(object):
 
         :param target: Parent object to create the version object for
         """
-        version_cls = version_class(target.__class__)
-        version_id = identity(target) + (self.current_transaction.id, )
-        version_key = (version_cls, version_id)
+        version_key = self._sanitize_obj_key(target)
 
         if version_key not in self.version_objs:
-            version_obj = version_cls()
+            version_obj = version_class(target.__class__)()
             self.version_objs[version_key] = version_obj
             self.version_session.add(version_obj)
             tx_column = self.manager.option(

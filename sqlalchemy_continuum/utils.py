@@ -413,3 +413,20 @@ def changeset(obj):
                 if new_value:
                     data[prop.key] = [new_value, old_value]
     return data
+
+
+def commited_identity(obj):
+    """Returns a tuple of the primary keys of the object without any
+    modifications that may have occured within the session
+    """
+    old_pks = []
+    obj_inspect = sa.inspect(obj)
+    mapper = obj_inspect.mapper
+    for column in get_primary_keys(obj).itervalues():
+        old_pk = obj_inspect.attrs.get(
+            mapper.get_property_by_column(column).key).history.deleted
+        if old_pk:
+            old_pks.append(old_pk[0])
+        else:
+            old_pks.append(getattr(obj, column.name))
+    return tuple(old_pks)

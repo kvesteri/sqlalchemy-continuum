@@ -6,8 +6,9 @@ except ImportError:
 
 import six
 import sqlalchemy as sa
-from sqlalchemy_utils import identity
+from sqlalchemy_utils import identity, get_primary_keys, has_changes
 
+from .utils import commited_identity
 
 class Operation(object):
     INSERT = 0
@@ -98,6 +99,7 @@ class Operations(object):
                     del state_copy[rel_key]
 
         if state_copy:
+            self._sanitize_keys(target)
             key = self.format_key(target)
             # if the object has already been added with an INSERT,
             # then this is a modification within the same transaction and
@@ -112,3 +114,18 @@ class Operations(object):
 
     def add_delete(self, target):
         self.add(Operation(target, Operation.DELETE))
+
+    def _sanitize_keys(self, target):
+        """The operations key for target may not be valid if this target is in
+        `self.objects` but its primary key has been modified. Check against that
+        and update the key.
+        """
+        key = self.format_key(target)
+        mapper = sa.inspect(target).mapper
+        for pk in mapper.primary_key:
+            if has_changes(target, mapper.get_property_by_column(pk).key):
+                old_key = target.__class__, commited_identity(target)
+                if old_key in self.objects:
+                    # replace old key with the new one
+                    self.objects[key] = self.objects.pop(old_key)
+                break
