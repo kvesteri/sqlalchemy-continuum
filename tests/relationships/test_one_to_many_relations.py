@@ -103,10 +103,6 @@ class OneToManyRelationshipsTestCase(TestCase):
         assert tag.versions[2] in article.versions[2].tags
         assert tag2.versions[0] in article.versions[2].tags
 
-
-
-
-
     def test_delete(self):
         article = self.Article()
         article.name = u'Some article'

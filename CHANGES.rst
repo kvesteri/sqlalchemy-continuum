@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.1.4 (2014-xx-xx)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed One-To-Many version relationship handling (#82)
+
+
 1.1.3 (2014-10-23)
 ^^^^^^^^^^^^^^^^^^
 

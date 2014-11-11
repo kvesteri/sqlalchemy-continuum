@@ -26,9 +26,13 @@ class RelationshipBuilder(object):
                 [1]
             ).where(
                 sa.and_(
-                    getattr(remote_alias, tx_column) <= getattr(obj, tx_column),
-                    *[getattr(remote_alias, pk.name) == getattr(self.remote_cls, pk.name)
-                      for pk in primary_keys]
+                    getattr(remote_alias, tx_column) <=
+                    getattr(obj, tx_column),
+                    *[
+                        getattr(remote_alias, pk.name) ==
+                        getattr(self.remote_cls, pk.name)
+                        for pk in primary_keys
+                    ]
                 )
             ).group_by(
                 *primary_keys
@@ -121,8 +125,8 @@ class RelationshipBuilder(object):
         Returns the one-to-many query.
 
         For each item on the 'many' side, returns its latest version as long as
-        the transaction of that version is less than equal of the transaction of
-        `obj`.
+        the transaction of that version is less than equal of the transaction
+        of `obj`.
 
         Example
         -------
@@ -139,8 +143,9 @@ class RelationshipBuilder(object):
             WHERE tags_version_last.transaction_id <= 5
             AND tags_version_last.id = tags_version.id
             GROUP BY tags_version_last.id
-            HAVING max(tags_version_last.transaction_id) =
-                                                tags_version.transaction_id
+            HAVING
+                MAX(tags_version_last.transaction_id) =
+                tags_version.transaction_id
         )
 
         """
