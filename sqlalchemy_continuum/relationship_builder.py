@@ -14,24 +14,34 @@ class RelationshipBuilder(object):
         self.model = model
 
     def one_to_many_subquery(self, obj):
-        primary_keys = []
-
         tx_column = option(obj, 'transaction_column_name')
 
-        for column in self.remote_cls.__table__.c:
-            if column.primary_key and column.name != tx_column:
-                primary_keys.append(column)
+        remote_alias = sa.orm.aliased(self.remote_cls)
+        primary_keys = [getattr(remote_alias, column.name) for column
+                        in sa.inspect(remote_alias).mapper.columns
+                        if column.primary_key and column.name != tx_column]
 
-        return getattr(self.remote_cls, tx_column).in_(
+        return sa.exists(
             sa.select(
-                [sa.func.max(getattr(self.remote_cls, tx_column))]
+                [1]
             ).where(
-                getattr(self.remote_cls, tx_column) <=
-                getattr(obj, tx_column)
+                sa.and_(
+                    getattr(remote_alias, tx_column) <=
+                    getattr(obj, tx_column),
+                    *[
+                        getattr(remote_alias, pk.name) ==
+                        getattr(self.remote_cls, pk.name)
+                        for pk in primary_keys
+                    ]
+                )
             ).group_by(
                 *primary_keys
-            ).correlate(self.local_cls)
+            ).having(
+                sa.func.max(getattr(remote_alias, tx_column)) ==
+                getattr(self.remote_cls, tx_column)
+            ).correlate(self.local_cls, self.remote_cls)
         )
+
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
@@ -111,6 +121,34 @@ class RelationshipBuilder(object):
         )
 
     def one_to_many_criteria(self, obj):
+        """
+        Returns the one-to-many query.
+
+        For each item on the 'many' side, returns its latest version as long as
+        the transaction of that version is less than equal of the transaction
+        of `obj`.
+
+        Example
+        -------
+        Using the Article-Tags relationship, where we look for tags of
+        article_version with id = 3 and transaction = 5 the sql produced is
+
+        SELECT tags_version.*
+        FROM tags_version
+        WHERE tags_version.article_id = 3
+        AND tags_version.operation_type != 2
+        AND EXISTS (
+            SELECT 1
+            FROM tags_version as tags_version_last
+            WHERE tags_version_last.transaction_id <= 5
+            AND tags_version_last.id = tags_version.id
+            GROUP BY tags_version_last.id
+            HAVING
+                MAX(tags_version_last.transaction_id) =
+                tags_version.transaction_id
+        )
+
+        """
         reflector = VersionExpressionReflector(obj)
         return sa.and_(
             reflector(self.property.primaryjoin),

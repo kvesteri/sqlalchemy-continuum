@@ -70,6 +70,39 @@ class OneToManyRelationshipsTestCase(TestCase):
         assert len(article.versions[0].tags) == 1
         assert len(article.versions[1].tags) == 2
 
+    def test_children_inserts_with_varying_versions(self):
+        # one article with one tag
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        tag = self.Tag(name=u'some tag')
+        article.tags.append(tag)
+        self.session.add(article)
+        self.session.commit()
+
+        # update the article and the tag, and add a 2nd tag
+        article.name = u'Updated article'
+        tag.name = u'updated tag'
+        tag2 = self.Tag(name=u'other tag',
+                        article=article)
+        self.session.commit()
+
+        # update the article and the tag again
+        article.name = u'Updated again article'
+        tag.name = u'updated again tag'
+        self.session.commit()
+
+        assert len(article.versions[0].tags) == 1
+        assert article.versions[0].tags[0] is tag.versions[0]
+
+        assert len(article.versions[1].tags) == 2
+        assert tag.versions[1] in article.versions[1].tags
+        assert tag2.versions[0] in article.versions[1].tags
+
+        assert len(article.versions[2].tags) == 2
+        assert tag.versions[2] in article.versions[2].tags
+        assert tag2.versions[0] in article.versions[2].tags
+
     def test_delete(self):
         article = self.Article()
         article.name = u'Some article'
