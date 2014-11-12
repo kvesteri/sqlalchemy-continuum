@@ -96,20 +96,53 @@ class RelationshipBuilder(object):
             return reflector(self.property.primaryjoin)
 
     def many_to_many_criteria(self, obj):
-        tx_column = option(obj, 'transaction_column_name')
-        condition = (
-            getattr(self.remote_cls, tx_column) == sa.select(
-                [sa.func.max(getattr(self.remote_cls, tx_column))]
-            ).where(
-                sa.and_(
-                    getattr(self.remote_cls, tx_column) <=
-                    getattr(obj, tx_column),
-                )
-            ).correlate(self.local_cls)
+        """
+        Returns the many-to-many query.
+
+        Looks up remote items through associations and for each item returns
+        returns the last version with a transaction less than or equal to the
+        transaction of `obj`. This must hold true for both the association and
+        the remote relation items.
+
+        Example
+        -------
+        Select all tags of article with id 3 and transaction 5
+
+        .. code-block:: sql
+
+        SELECT tags_version.*
+        FROM tags_version
+        WHERE EXISTS (
+            SELECT 1
+            FROM article_tag_version
+            WHERE article_id = 3
+            AND tag_id = tags_version.id
+            AND operation_type != 2
+            AND EXISTS (
+                SELECT 1
+                FROM article_tag_version as article_tag_version2
+                WHERE article_tag_version2.tag_id = article_tag_version.tag_id
+                AND article_tag_version2.tx_id <= 5
+                GROUP BY article_tag_version2.tag_id
+                HAVING
+                    max(article_tag_version2.tx_id) =
+                    article_tag_version.tx_id
+            )
         )
+        AND EXISTS (
+            SELECT 1
+            FROM tags_version as tags_version_2
+            WHERE tags_version_2.id = tags_version.id
+            AND tags_version_2.tx_id <= 5
+            GROUP BY tags_version_2.id
+            HAVING max(tags_version_2.tx_id) = tags_version.tx_id
+        )
+        AND operation_type != 2
+        """
         return sa.and_(
-            self.remote_cls.id.in_(self.association_subquery(obj)),
-            condition
+            self.association_subquery(obj),
+            self.one_to_many_subquery(obj),
+            self.remote_cls.operation_type != Operation.DELETE
         )
 
     def many_to_one_criteria(self, obj):
@@ -132,6 +165,8 @@ class RelationshipBuilder(object):
         -------
         Using the Article-Tags relationship, where we look for tags of
         article_version with id = 3 and transaction = 5 the sql produced is
+
+        .. code-block:: sql
 
         SELECT tags_version.*
         FROM tags_version
@@ -170,59 +205,79 @@ class RelationshipBuilder(object):
 
     def association_subquery(self, obj):
         """
-        Returns association subquery for given SQLAlchemy declarative object.
-        This query is used by many_to_many_criteria method.
+        Returns an EXISTS clause that checks if an association exists for given
+        SQLAlchemy declarative object. This query is used by
+        many_to_many_criteria method.
 
         Example query:
 
         .. code-block:: sql
 
-            SELECT article_tag_version.tag_id
+        EXISTS (
+            SELECT 1
             FROM article_tag_version
-            WHERE
-                article_tag_version.transaction_id IN (
-                    SELECT max(article_tag_version.transaction_id) AS max_1
-                    FROM article_tag_version
-                    WHERE
-                        article_tag_version.transaction_id <= ? AND
-                        article_tag_version.article_id = ?
-                    GROUP BY article_tag_version.tag_id
-                ) AND
-                article_tag_version.article_id = ? AND
-                article_tag_version.operation_type != ?
-
+            WHERE article_id = 3
+            AND tag_id = tags_version.id
+            AND operation_type != 2
+            AND EXISTS (
+                SELECT 1
+                FROM article_tag_version as article_tag_version2
+                WHERE article_tag_version2.tag_id = article_tag_version.tag_id
+                AND article_tag_version2.tx_id <=5
+                GROUP BY article_tag_version2.tag_id
+                HAVING max(article_tag_version2.tx_id) = article_tag_version.tx_id
+            )
+        )
 
         :param obj: SQLAlchemy declarative object
         """
+
+
         tx_column = option(obj, 'transaction_column_name')
         reflector = VersionExpressionReflector(obj)
-        subquery = (
-            getattr(self.remote_table.c, tx_column).in_(
-                sa.select(
-                    [sa.func.max(getattr(self.remote_table.c, tx_column))],
-                ).where(
-                    sa.and_(
-                        getattr(self.remote_table.c, tx_column) <=
-                        getattr(obj, tx_column),
-                        reflector(self.property.primaryjoin)
-                    )
-                ).group_by(
-                    self.remote_table.c[self.remote_column.name]
-                ).correlate(self.local_cls)
-            )
-        )
 
-        return (
+        association_table_alias = self.association_version_table.alias()
+        association_cols = [association_table_alias.c[association_col.name]
+                            for _, association_col
+                            in self.remote_to_assosiation_column_pairs]
+
+        association_exists = sa.exists(
             sa.select(
-                [self.remote_table.c[self.remote_column.name]]
+                [1]
             ).where(
                 sa.and_(
-                    subquery,
-                    reflector(self.property.primaryjoin),
-                    self.remote_table.c.operation_type != Operation.DELETE
+                    association_table_alias.c[tx_column] <=
+                    getattr(obj, tx_column),
+                    *[association_col ==
+                      self.association_version_table.c[association_col.name]
+                      for association_col
+                      in association_cols]
                 )
-            )
+            ).group_by(
+                *association_cols
+            ).having(
+                sa.func.max(association_table_alias.c[tx_column]) ==
+                self.association_version_table.c[tx_column]
+            ).correlate(self.association_version_table)
         )
+
+        return sa.exists(
+            sa.select(
+                [1]
+            ).where(
+                sa.and_(
+                    reflector(self.property.primaryjoin),
+                    association_exists,
+                    self.association_version_table.c.operation_type !=
+                    Operation.DELETE,
+                    *[self.remote_cls.__table__.c[remote_col.name] ==
+                      self.association_version_table.c[association_col.name]
+                      for remote_col, association_col in
+                      self.remote_to_assosiation_column_pairs]
+                )
+            ).correlate(self.local_cls, self.remote_cls)
+        )
+
 
     def build_association_version_tables(self):
         """
@@ -244,8 +299,7 @@ class RelationshipBuilder(object):
             table_name = builder.table_name
 
         if table_name not in metadata.tables:
-            table = builder()
-
+            self.association_version_table = table = builder()
             self.manager.association_version_tables.add(table)
 
     def __call__(self):
@@ -266,12 +320,12 @@ class RelationshipBuilder(object):
         if self.property.secondary is not None and not self.property.viewonly:
             self.build_association_version_tables()
 
+            #store remote cls to association table column pairs
+            self.remote_to_assosiation_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
                 if column_pair[0] in self.property.table.c.values():
-                    self.remote_column = column_pair[1]
-                    break
+                    self.remote_to_assosiation_column_pairs.append(column_pair)
 
-            self.remote_table = version_table(self.remote_column.table)
         setattr(
             self.local_cls,
             self.property.key,
