@@ -151,6 +151,37 @@ class ManyToManyRelationshipsTestCase(TestCase):
         tags = article.versions[0].tags
         assert tags == [tag.versions[0]]
 
+    def test_relations_with_varying_transactions(self):
+        # one article with one tag
+        article = self.Article(name=u'Some article')
+        tag1 = self.Tag(name=u'some tag')
+        article.tags.append(tag1)
+        self.session.add(article)
+        self.session.commit()
+
+        # update article and tag, add a 2nd tag
+        tag2 = self.Tag(name=u'some other tag')
+        article.tags.append(tag2)
+        tag1.name = u'updated tag1'
+        article.name = u'updated article'
+        self.session.commit()
+
+        # update article and first tag only
+        tag1.name = u'updated tag1 x2'
+        article.name = u'updated article x2'
+        self.session.commit()
+
+        assert len(article.versions[0].tags) == 1
+        assert article.versions[0].tags[0] is tag1.versions[0]
+
+        assert len(article.versions[1].tags) == 2
+        assert tag1.versions[1] in article.versions[1].tags
+        assert tag2.versions[0] in article.versions[1].tags
+
+        assert len(article.versions[2].tags) == 2
+        assert tag1.versions[2] in article.versions[2].tags
+        assert tag2.versions[0] in article.versions[2].tags
+
 
 create_test_cases(ManyToManyRelationshipsTestCase)
 
