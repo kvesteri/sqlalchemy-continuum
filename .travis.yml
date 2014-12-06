@@ -21,4 +21,4 @@ python:
 install:
   - pip install -e  ".[test]"
 script:
-  - python setup.py test
+  - py.test
