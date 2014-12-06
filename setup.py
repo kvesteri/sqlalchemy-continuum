@@ -65,7 +65,7 @@ setup(
     platforms='any',
     install_requires=[
         'SQLAlchemy>=0.9.4',
-        'SQLAlchemy-Utils>=0.26.5',
+        'SQLAlchemy-Utils>=0.27.11',
         'ordereddict>=1.1'
         if sys.version_info[0] == 2 and sys.version_info[1] < 7 else ''
     ],
