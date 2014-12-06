@@ -97,8 +97,6 @@ class TestCase(object):
 
         self.connection = self.engine.connect()
 
-
-
         if hasattr(self, 'Article'):
             try:
                 self.ArticleVersion = version_class(self.Article)

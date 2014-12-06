@@ -1,3 +1,4 @@
+import pytest
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 
@@ -152,6 +153,12 @@ class ManyToManyRelationshipsTestCase(TestCase):
         assert tags == [tag.versions[0]]
 
     def test_relations_with_varying_transactions(self):
+        if (
+            self.driver == 'mysql' and
+            self.connection.dialect.server_version_info < (5, 6)
+        ):
+            pytest.skip()
+
         # one article with one tag
         article = self.Article(name=u'Some article')
         tag1 = self.Tag(name=u'some tag')
