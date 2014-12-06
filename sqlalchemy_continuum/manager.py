@@ -1,4 +1,5 @@
 import re
+from inspect import isclass
 from functools import wraps
 
 import sqlalchemy as sa
@@ -164,10 +165,14 @@ class VersioningManager(object):
         :param model: SQLAlchemy declarative model object.
         :param column: SQLAlchemy Column object.
         """
-        if column.name in self.option(model, 'include'):
+        if not isclass(model):
+            model = model.__class__
+        prop = sa.inspect(model).get_property_by_column(column)
+
+        if prop.key in self.option(model, 'include'):
             return False
         return (
-            column.name in self.option(model, 'exclude')
+            prop.key in self.option(model, 'exclude')
             or
             is_auto_assigned_date_column(column)
             or

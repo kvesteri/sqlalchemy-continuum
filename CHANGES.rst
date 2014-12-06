@@ -4,11 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.1.4 (2014-xx-xx)
+1.1.4 (2014-12-06)
 ^^^^^^^^^^^^^^^^^^
 
 - Fixed One-To-Many version relationship handling (#82, courtesy of dtheodor)
 - Fixed Many-To-Many version relationship handling (#83, courtesy of dtheodor)
+- Fixed inclusion and exclusion of aliased columns
 
 
 1.1.3 (2014-10-23)
