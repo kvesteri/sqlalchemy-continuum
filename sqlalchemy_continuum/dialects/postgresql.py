@@ -159,8 +159,8 @@ class SQLConstruct(object):
             'operation_type_column_name'
         )
         excluded_columns = [
-            c for key, c in sa.inspect(cls).columns.items()
-            if manager.is_excluded_property(cls, key)
+            c.name for c in sa.inspect(cls).columns
+            if manager.is_excluded_column(cls, c)
         ]
         return self(
             update_validity_for_tables=(
