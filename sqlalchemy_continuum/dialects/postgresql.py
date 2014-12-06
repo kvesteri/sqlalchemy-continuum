@@ -158,9 +158,9 @@ class SQLConstruct(object):
             cls,
             'operation_type_column_name'
         )
-        excluded_columns =  [
-            c.name for c in cls.__table__.c
-            if manager.is_excluded_column(cls, c)
+        excluded_columns = [
+            c for key, c in sa.inspect(cls).columns.items()
+            if manager.is_excluded_property(cls, key)
         ]
         return self(
             update_validity_for_tables=(
@@ -344,6 +344,7 @@ class DeleteValiditySQL(ValiditySQL):
             '{name} = OLD."{name}"'.format(name=c.name)
             for c in self.pk_columns
         )
+
 
 def get_validity_sql(class_, tables, params):
     params = params.copy()

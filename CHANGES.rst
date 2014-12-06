@@ -10,6 +10,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Fixed One-To-Many version relationship handling (#82, courtesy of dtheodor)
 - Fixed Many-To-Many version relationship handling (#83, courtesy of dtheodor)
 - Fixed inclusion and exclusion of aliased columns
+- Removed automatic exclusion of auto-assigned datetime columns and tsvector columns (explicit is better than implicit)
 
 
 1.1.3 (2014-10-23)

@@ -198,11 +198,10 @@ def versioned_column_properties(obj_or_class):
 
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
 
-    for prop in sa.inspect(cls).attrs.values():
-        if not isinstance(prop, ColumnProperty):
-            continue
-        if not manager.is_excluded_column(obj_or_class, prop.columns[0]):
-            yield prop
+    mapper = sa.inspect(cls)
+    for key in mapper.columns.keys():
+        if not manager.is_excluded_property(obj_or_class, key):
+            yield getattr(mapper.attrs, key)
 
 
 def versioned_relationships(obj):

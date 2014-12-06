@@ -1,11 +1,9 @@
 import re
-from inspect import isclass
 from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils.functions import is_auto_assigned_date_column
-from sqlalchemy_utils.types import TSVectorType
+from sqlalchemy_utils import get_column_key
 
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
@@ -158,26 +156,24 @@ class VersioningManager(object):
         return self.transaction_cls
 
     def is_excluded_column(self, model, column):
+        try:
+            key = get_column_key(model, column)
+        except sa.orm.exc.UnmappedColumnError:
+            return False
+
+        return self.is_excluded_property(model, key)
+
+    def is_excluded_property(self, model, key):
         """
-        Returns whether or not given column of given model is excluded from
+        Returns whether or not given property of given model is excluded from
         the associated history model.
 
         :param model: SQLAlchemy declarative model object.
-        :param column: SQLAlchemy Column object.
+        :param key: Model property key
         """
-        if not isclass(model):
-            model = model.__class__
-        prop = sa.inspect(model).get_property_by_column(column)
-
-        if prop.key in self.option(model, 'include'):
+        if key in self.option(model, 'include'):
             return False
-        return (
-            prop.key in self.option(model, 'exclude')
-            or
-            is_auto_assigned_date_column(column)
-            or
-            isinstance(column.type, TSVectorType)
-        )
+        return key in self.option(model, 'exclude')
 
     def option(self, model, name):
         """

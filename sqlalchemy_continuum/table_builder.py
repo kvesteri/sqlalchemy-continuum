@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy_utils import get_column_key
 
 
 class ColumnReflector(object):
@@ -88,7 +89,6 @@ class ColumnReflector(object):
                 self.manager.is_excluded_column(self.model, column)
             ):
                 continue
-
             reflected_column = self.reflect_column(column)
             yield reflected_column
 

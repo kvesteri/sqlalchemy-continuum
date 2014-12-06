@@ -26,7 +26,3 @@ class TestIsModified(TestCase):
     def test_excluded_column(self):
         article = self.Article(content=u'Some content')
         assert not is_modified(article)
-
-    def test_auto_assigned_datetime_exclusion(self):
-        article = self.Article(created_at=datetime.now())
-        assert not is_modified(article)
