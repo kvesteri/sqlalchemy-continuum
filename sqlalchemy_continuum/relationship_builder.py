@@ -17,9 +17,11 @@ class RelationshipBuilder(object):
         tx_column = option(obj, 'transaction_column_name')
 
         remote_alias = sa.orm.aliased(self.remote_cls)
-        primary_keys = [getattr(remote_alias, column.name) for column
-                        in sa.inspect(remote_alias).mapper.columns
-                        if column.primary_key and column.name != tx_column]
+        primary_keys = [
+            getattr(remote_alias, column.name) for column
+            in sa.inspect(remote_alias).mapper.columns
+            if column.primary_key and column.name != tx_column
+        ]
 
         return sa.exists(
             sa.select(
@@ -41,7 +43,6 @@ class RelationshipBuilder(object):
                 getattr(self.remote_cls, tx_column)
             ).correlate(self.local_cls, self.remote_cls)
         )
-
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
@@ -239,9 +240,11 @@ class RelationshipBuilder(object):
         reflector = VersionExpressionReflector(obj)
 
         association_table_alias = self.association_version_table.alias()
-        association_cols = [association_table_alias.c[association_col.name]
-                            for _, association_col
-                            in self.remote_to_assosiation_column_pairs]
+        association_cols = [
+            association_table_alias.c[association_col.name]
+            for _, association_col
+            in self.remote_to_assosiation_column_pairs
+        ]
 
         association_exists = sa.exists(
             sa.select(
@@ -279,7 +282,6 @@ class RelationshipBuilder(object):
                 )
             ).correlate(self.local_cls, self.remote_cls)
         )
-
 
     def build_association_version_tables(self):
         """
@@ -322,7 +324,7 @@ class RelationshipBuilder(object):
         if self.property.secondary is not None and not self.property.viewonly:
             self.build_association_version_tables()
 
-            #store remote cls to association table column pairs
+            # store remote cls to association table column pairs
             self.remote_to_assosiation_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
                 if column_pair[0] in self.property.table.c.values():
