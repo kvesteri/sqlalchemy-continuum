@@ -73,23 +73,7 @@ Cons:
 Column exclusion and inclusion
 ------------------------------
 
-With `include` and `exclude` configuration options you can define which entity attributes you want to get versioned. By default Continuum versions all entity attributes except DateTime columns with default values. If you want to include this columns you have to pass them to `include`.
-
-
-::
-
-
-    class User(Base):
-        __versioned__ = {
-            'include': ['created_at']
-        }
-
-        id = sa.Column(sa.Integer, primary_key=True)
-        name = sa.Column(sa.Unicode(255))
-        created_at = sa.Column(sa.DateTime)
-
-
-Sometimes you may have columns you want to exclude from the history classes. You may pass the column names to `exclude` option as follows:
+With `exclude` configuration option you can define which entity attributes you want to get versioned. By default Continuum versions all entity attributes.
 
 ::
 
