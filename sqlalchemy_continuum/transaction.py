@@ -7,6 +7,7 @@ except ImportError:
 import six
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm import class_mapper
 
 from .dialects.postgresql import (
     CreateTemporaryTransactionTableSQL,
@@ -143,8 +144,9 @@ class TransactionFactory(ModelFactory):
                             'use different user class or disable this '
                             'relationship ' % (user_cls, user_cls)
                         )
+
                 user_id = sa.Column(
-                    sa.Integer,
+                    class_mapper(user_cls).primary_key[0].type,
                     sa.ForeignKey(
                         '%s.id' % user_cls.__tablename__
                     ),
