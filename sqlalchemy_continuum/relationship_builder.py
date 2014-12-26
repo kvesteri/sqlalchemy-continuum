@@ -290,7 +290,7 @@ class RelationshipBuilder(object):
                 self.association_version_table.c[tx_column]
             ).correlate(self.association_version_table)
         )
-        secondaryjoin_reflector = VersionExpressionParser()
+        secondaryjoin_parser = VersionExpressionParser()
         return sa.exists(
             sa.select(
                 [1]
@@ -300,7 +300,7 @@ class RelationshipBuilder(object):
                     association_exists,
                     self.association_version_table.c.operation_type !=
                     Operation.DELETE,
-                    secondaryjoin_reflector(self.property.secondaryjoin),
+                    secondaryjoin_parser(self.property.secondaryjoin),
                 )
             ).correlate(self.local_cls, self.remote_cls)
         )
