@@ -1,7 +1,8 @@
 import sqlalchemy as sa
 
 from .exc import ClassNotVersioned
-from .expression_reflector import VersionExpressionReflector
+from .expression_reflector import VersionExpressionReflector, \
+    VersionExpressionParser
 from .operation import Operation
 from .table_builder import TableBuilder
 from .utils import version_class, option
@@ -289,7 +290,7 @@ class RelationshipBuilder(object):
                 self.association_version_table.c[tx_column]
             ).correlate(self.association_version_table)
         )
-
+        secondaryjoin_reflector = VersionExpressionParser()
         return sa.exists(
             sa.select(
                 [1]
@@ -299,10 +300,7 @@ class RelationshipBuilder(object):
                     association_exists,
                     self.association_version_table.c.operation_type !=
                     Operation.DELETE,
-                    *[self.remote_cls.__table__.c[remote_col.name] ==
-                      self.association_version_table.c[association_col.name]
-                      for remote_col, association_col in
-                      self.remote_to_assosiation_column_pairs]
+                    secondaryjoin_reflector(self.property.secondaryjoin),
                 )
             ).correlate(self.local_cls, self.remote_cls)
         )
@@ -329,6 +327,10 @@ class RelationshipBuilder(object):
         if table_name not in metadata.tables:
             self.association_version_table = table = builder()
             self.manager.association_version_tables.add(table)
+        else:
+            # may have already been created if we visiting the 'other' side of a
+            # self-referential many-to-many relationship
+            self.association_version_table = metadata.tables[table_name]
 
     def __call__(self):
         """
