@@ -166,3 +166,76 @@ class TestOneToManyWithUseListFalse(TestCase):
         self.session.add(article)
         self.session.commit()
         assert article.versions[0].category == category.versions[0]
+
+
+class TestOneToManySelfReferential(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+            content = sa.Column(sa.UnicodeText)
+            description = sa.Column(sa.UnicodeText)
+
+            parent_article_id = sa.Column(sa.ForeignKey(id))
+            parent_article = sa.orm.relationship("Article",
+                                                 remote_side=[id],
+                                                 backref="child_articles")
+
+        self.Article = Article
+        
+    def test_single_insert(self):
+        parent_article = self.Article(name=u'Some article')
+        child_article1 = self.Article(name=u'Child article1',
+                                      parent_article=parent_article)
+        self.session.add(parent_article)
+        self.session.commit()
+        
+        assert len(parent_article.versions[0].child_articles) == 1
+        assert child_article1.versions[0] in \
+               parent_article.versions[0].child_articles
+        assert child_article1.versions[0].parent_article is \
+               parent_article.versions[0]
+    
+
+    def test_multiple_inserts_over_multiple_transactions(self):
+        if (
+            self.driver == 'mysql' and
+            self.connection.dialect.server_version_info < (5, 6)
+        ):
+            pytest.skip()
+        parent_article = self.Article(name=u'Some article')
+        child_article1 = self.Article(name=u'Child article1',
+                                      parent_article=parent_article)
+        self.session.add(parent_article)
+        self.session.commit()
+
+        # update articles, add a 2nd child
+        parent_article.name = u'Updated article'
+        child_article1.name = u'Updated child article1'
+        child_article2 = self.Article(name=u'Child article2',
+                                      parent_article=parent_article)
+        self.session.commit()
+
+        #update the parent and 1st child
+        parent_article.name = u'Updated article x2'
+        child_article1.name = u'Updated child article1 x2'
+        self.session.commit()
+
+        assert len(parent_article.versions[1].child_articles) == 2
+        assert child_article1.versions[1] in \
+               parent_article.versions[1].child_articles
+        assert child_article2.versions[0] in \
+               parent_article.versions[1].child_articles
+        assert child_article1.versions[1].parent_article is \
+               parent_article.versions[1]
+
+        assert len(parent_article.versions[2].child_articles) == 2
+        assert child_article1.versions[2] in \
+               parent_article.versions[2].child_articles
+        assert child_article2.versions[0] in \
+               parent_article.versions[2].child_articles
+        assert child_article1.versions[2].parent_article is \
+               parent_article.versions[2]
