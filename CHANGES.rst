@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.1.5 (2014-12-28)
+^^^^^^^^^^^^^^^^^^
+
+- Added smart primary key type inspection for user class (#86, courtesy of mattupstate)
+
+
 1.1.4 (2014-12-06)
 ^^^^^^^^^^^^^^^^^^
 

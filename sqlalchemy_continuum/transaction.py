@@ -143,8 +143,9 @@ class TransactionFactory(ModelFactory):
                             'use different user class or disable this '
                             'relationship ' % (user_cls, user_cls)
                         )
+
                 user_id = sa.Column(
-                    sa.Integer,
+                    sa.inspect(user_cls).primary_key[0].type,
                     sa.ForeignKey(
                         '%s.id' % user_cls.__tablename__
                     ),
@@ -155,10 +156,11 @@ class TransactionFactory(ModelFactory):
 
             def __repr__(self):
                 fields = ['id', 'issued_at', 'user']
-                field_values = OrderedDict()
-                for field in fields:
-                    if hasattr(self, field):
-                        field_values[field] = getattr(self, field)
+                field_values = OrderedDict(
+                    (field, getattr(self, field))
+                    for field in fields
+                    if hasattr(self, field)
+                )
                 return '<Transaction %s>' % ', '.join(
                     (
                         '%s=%r' % (field, value)
