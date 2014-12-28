@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 from tests import TestCase
 
@@ -35,3 +36,23 @@ class TestTransaction(TestCase):
             ) ==
             repr(transaction)
         )
+
+
+class TestAssigningUserClass(TestCase):
+    user_cls = 'User'
+
+    def create_models(self):
+        class User(self.Model):
+            __tablename__ = 'user'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            id = sa.Column(sa.Unicode(255), primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+
+        self.User = User
+
+    def test_copies_primary_key_type_from_user_class(self):
+        attr = versioning_manager.transaction_cls.user_id
+        assert isinstance(attr.property.columns[0].type, sa.Unicode)

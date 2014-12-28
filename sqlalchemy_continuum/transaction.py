@@ -7,7 +7,6 @@ except ImportError:
 import six
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import class_mapper
 
 from .dialects.postgresql import (
     CreateTemporaryTransactionTableSQL,
@@ -146,7 +145,7 @@ class TransactionFactory(ModelFactory):
                         )
 
                 user_id = sa.Column(
-                    class_mapper(user_cls).primary_key[0].type,
+                    sa.inspect(user_cls).primary_key[0].type,
                     sa.ForeignKey(
                         '%s.id' % user_cls.__tablename__
                     ),
@@ -157,10 +156,11 @@ class TransactionFactory(ModelFactory):
 
             def __repr__(self):
                 fields = ['id', 'issued_at', 'user']
-                field_values = OrderedDict()
-                for field in fields:
-                    if hasattr(self, field):
-                        field_values[field] = getattr(self, field)
+                field_values = OrderedDict(
+                    (field, getattr(self, field))
+                    for field in fields
+                    if hasattr(self, field)
+                )
                 return '<Transaction %s>' % ', '.join(
                     (
                         '%s=%r' % (field, value)
