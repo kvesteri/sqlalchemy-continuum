@@ -5,20 +5,34 @@ from .utils import version_table
 
 
 class VersionExpressionParser(ExpressionParser):
-    parent = None
-    parent_class = None
-
     def column(self, column):
         try:
             table = version_table(column.table)
         except KeyError:
             return column
-        if self.parent and table == self.parent.__table__:
-            return bindparam(column.key, getattr(self.parent, column.key))
         else:
             return table.c[column.name]
 
 
 class VersionExpressionReflector(VersionExpressionParser):
-    def __init__(self, parent):
+    def __init__(self, parent, relationship):
         self.parent = parent
+        self.relationship = relationship
+
+    def column(self, column):
+        try:
+            table = version_table(column.table)
+        except KeyError:
+            reflected_column = column
+        else:
+            reflected_column = table.c[column.name]
+            if (
+                column in self.relationship.local_columns and
+                table == self.parent.__table__
+            ):
+                reflected_column = bindparam(
+                    column.key,
+                    getattr(self.parent, column.key)
+                )
+
+        return reflected_column

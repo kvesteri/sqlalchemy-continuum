@@ -8,6 +8,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^
 
 - Added smart primary key type inspection for user class (#86, courtesy of mattupstate)
+- Added support for self-referential version relationship reflection (#88, courtesy of dtheodor)
 
 
 1.1.4 (2014-12-06)
