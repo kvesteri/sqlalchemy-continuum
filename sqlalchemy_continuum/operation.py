@@ -8,8 +8,6 @@ import six
 import sqlalchemy as sa
 from sqlalchemy_utils import identity, get_primary_keys, has_changes
 
-from .utils import commited_identity
-
 class Operation(object):
     INSERT = 0
     UPDATE = 1
@@ -124,7 +122,7 @@ class Operations(object):
         mapper = sa.inspect(target).mapper
         for pk in mapper.primary_key:
             if has_changes(target, mapper.get_property_by_column(pk).key):
-                old_key = target.__class__, commited_identity(target)
+                old_key = target.__class__, sa.inspect(target).identity
                 if old_key in self.objects:
                     # replace old key with the new one
                     self.objects[key] = self.objects.pop(old_key)

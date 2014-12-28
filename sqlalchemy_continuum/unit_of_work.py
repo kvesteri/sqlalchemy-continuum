@@ -8,8 +8,7 @@ from .utils import (
     version_class,
     is_session_modified,
     tx_column_name,
-    versioned_column_properties,
-    commited_identity
+    versioned_column_properties
 )
 
 
@@ -133,7 +132,7 @@ class UnitOfWork(object):
         mapper = sa.inspect(target).mapper
         for pk in mapper.primary_key:
             if has_changes(target, mapper.get_property_by_column(pk).key):
-                old_key = self._create_key(target, commited_identity(target))
+                old_key = self._create_key(target, sa.inspect(target).identity)
                 if old_key in self.version_objs:
                     # replace old key with the new one
                     self.version_objs[key] = self.version_objs.pop(old_key)
