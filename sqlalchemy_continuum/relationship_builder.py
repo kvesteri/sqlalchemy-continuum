@@ -1,7 +1,10 @@
 import sqlalchemy as sa
 
 from .exc import ClassNotVersioned
-from .expression_reflector import VersionExpressionReflector
+from .expression_reflector import (
+    VersionExpressionParser,
+    VersionExpressionReflector
+)
 from .operation import Operation
 from .table_builder import TableBuilder
 from .utils import version_class, option
@@ -46,9 +49,9 @@ class RelationshipBuilder(object):
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
-        reflector = VersionExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj, self.property)
 
-        return getattr(self.remote_cls, tx_column).in_(
+        return getattr(self.remote_cls, tx_column) == (
             sa.select(
                 [sa.func.max(getattr(self.remote_cls, tx_column))]
             ).where(
@@ -57,7 +60,7 @@ class RelationshipBuilder(object):
                     getattr(obj, tx_column),
                     reflector(self.property.primaryjoin)
                 )
-            ).correlate(self.local_cls)
+            )
         )
 
     def query(self, obj):
@@ -93,7 +96,7 @@ class RelationshipBuilder(object):
             elif direction.name == 'MANYTOONE':
                 return self.many_to_one_criteria(obj)
         else:
-            reflector = VersionExpressionReflector(obj)
+            reflector = VersionExpressionReflector(obj, self.property)
             return reflector(self.property.primaryjoin)
 
     def many_to_many_criteria(self, obj):
@@ -147,7 +150,31 @@ class RelationshipBuilder(object):
         )
 
     def many_to_one_criteria(self, obj):
-        reflector = VersionExpressionReflector(obj)
+        """Returns the many-to-one query.
+
+        Returns the item on the 'one' side with the highest transaction id
+        as long as it is less or equal to the transaction id of the `obj`.
+
+        Example
+        -------
+        Look up the Article of a Tag with article_id = 4 and
+        transaction_id = 5
+
+        .. code-block:: sql
+
+        SELECT *
+        FROM articles_version
+        WHERE id = 4
+        AND transaction_id = (
+            SELECT max(transaction_id)
+            FROM articles_version
+            WHERE transaction_id <= 5
+            AND id = 4
+        )
+        AND operation_type != 2
+
+        """
+        reflector = VersionExpressionReflector(obj, self.property)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.many_to_one_subquery(obj),
@@ -185,7 +212,7 @@ class RelationshipBuilder(object):
         )
 
         """
-        reflector = VersionExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj, self.property)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.one_to_many_subquery(obj),
@@ -235,9 +262,8 @@ class RelationshipBuilder(object):
         :param obj: SQLAlchemy declarative object
         """
 
-
         tx_column = option(obj, 'transaction_column_name')
-        reflector = VersionExpressionReflector(obj)
+        reflector = VersionExpressionReflector(obj, self.property)
 
         association_table_alias = self.association_version_table.alias()
         association_cols = [
@@ -265,7 +291,7 @@ class RelationshipBuilder(object):
                 self.association_version_table.c[tx_column]
             ).correlate(self.association_version_table)
         )
-
+        secondaryjoin_parser = VersionExpressionParser()
         return sa.exists(
             sa.select(
                 [1]
@@ -275,10 +301,7 @@ class RelationshipBuilder(object):
                     association_exists,
                     self.association_version_table.c.operation_type !=
                     Operation.DELETE,
-                    *[self.remote_cls.__table__.c[remote_col.name] ==
-                      self.association_version_table.c[association_col.name]
-                      for remote_col, association_col in
-                      self.remote_to_assosiation_column_pairs]
+                    secondaryjoin_parser(self.property.secondaryjoin),
                 )
             ).correlate(self.local_cls, self.remote_cls)
         )
@@ -305,6 +328,10 @@ class RelationshipBuilder(object):
         if table_name not in metadata.tables:
             self.association_version_table = table = builder()
             self.manager.association_version_tables.add(table)
+        else:
+            # may have already been created if we visiting the 'other' side of
+            # a self-referential many-to-many relationship
+            self.association_version_table = metadata.tables[table_name]
 
     def __call__(self):
         """

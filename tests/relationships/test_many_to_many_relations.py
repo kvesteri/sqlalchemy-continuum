@@ -242,3 +242,101 @@ class TestManyToManyRelationshipWithViewOnly(TestCase):
 
     def test_does_not_add_association_table_to_manager_registry(self):
         assert self.article_tag not in versioning_manager.association_tables
+
+
+class TestManyToManySelfReferential(TestCase):
+    
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_references = sa.Table(
+            'article_references',
+            self.Model.metadata,
+            sa.Column(
+                'referring_id',
+                sa.Integer,
+                sa.ForeignKey('article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'referred_id',
+                sa.Integer,
+                sa.ForeignKey('article.id'),
+                primary_key=True
+            )
+        )
+
+        Article.references = sa.orm.relationship(
+            Article,
+            secondary=article_references,
+            primaryjoin=Article.id == article_references.c.referring_id,
+            secondaryjoin=Article.id == article_references.c.referred_id,
+            backref='cited_by'
+        )
+
+        self.Article = Article
+        self.referenced_articles_table = article_references
+
+
+    def test_single_insert(self):
+
+        article = self.Article(name=u'article')
+        reference1 = self.Article(name=u'referred article 1')
+        article.references.append(reference1)
+        self.session.add(article)
+        self.session.commit()
+
+        assert len(article.versions[0].references) == 1
+        assert reference1.versions[0] in article.versions[0].references
+
+        assert len(reference1.versions[0].cited_by) == 1
+        assert article.versions[0] in reference1.versions[0].cited_by
+        
+        
+    def test_multiple_inserts_over_multiple_transactions(self):
+        if (
+            self.driver == 'mysql' and
+            self.connection.dialect.server_version_info < (5, 6)
+        ):
+            pytest.skip()
+
+        # create 1 article with 1 reference
+        article = self.Article(name=u'article')
+        reference1 = self.Article(name=u'reference 1')
+        article.references.append(reference1)
+        self.session.add(article)
+        self.session.commit()
+
+        # update existing, add a 2nd reference
+        article.name = u'Updated article'
+        reference1.name = u'Updated reference 1'
+        reference2 = self.Article(name=u'reference 2')
+        article.references.append(reference2)
+        self.session.commit()
+
+        # update only the article and reference 1
+        article.name = u'Updated article x2'
+        reference1.name = u'Updated reference 1 x2'
+        self.session.commit()
+
+        assert len(article.versions[1].references) == 2
+        assert reference1.versions[1] in article.versions[1].references
+        assert reference2.versions[0] in article.versions[1].references
+
+        assert len(reference1.versions[1].cited_by) == 1
+        assert article.versions[1] in reference1.versions[1].cited_by
+
+        assert len(reference2.versions[0].cited_by) == 1
+        assert article.versions[1] in reference2.versions[0].cited_by
+
+        assert len(article.versions[2].references) == 2
+        assert reference1.versions[2] in article.versions[2].references
+        assert reference2.versions[0] in article.versions[2].references
+
+        assert len(reference1.versions[2].cited_by) == 1
+        assert article.versions[2] in reference1.versions[2].cited_by
