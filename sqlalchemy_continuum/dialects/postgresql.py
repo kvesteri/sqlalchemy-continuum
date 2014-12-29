@@ -370,6 +370,16 @@ class DeleteUpsertSQL(UpsertSQL):
 
 
 class InsertUpsertSQL(UpsertSQL):
+    """
+    AFTER INSERT on parent_table:
+    exists (NEW.[pks], current_tx_id) in version_table?
+    No:
+        INSERT with operation_type = 0
+    Yes:
+        (means target was deleted and re-inserted in the same transaction,
+         so its actually an update)
+        UPDATE with operation_type = 1
+    """
     operation_type = 0
 
     def build_mod_tracking_values(self):
