@@ -29,6 +29,30 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM upsert);
 """
 
+update_upsert_cte_sql = """
+WITH upsert as
+(
+    UPDATE {version_table_name}
+    SET {update_values}
+    WHERE
+        {transaction_column} = transaction_id_value
+        AND
+        (
+            ({old_primary_key_criteria})
+            OR
+            ({new_primary_key_criteria})
+        )
+    RETURNING *
+)
+INSERT INTO {version_table_name}
+({transaction_column}, {operation_type_column}, {column_names})
+SELECT
+    transaction_id_value,
+    {operation_type},
+    {insert_values}
+WHERE NOT EXISTS (SELECT 1 FROM upsert);
+"""
+
 temporary_transaction_sql = """
 CREATE TEMP TABLE IF NOT EXISTS {temporary_transaction_table}
 ({transaction_table_columns})
@@ -205,6 +229,8 @@ class UpsertSQL(SQLConstruct):
         'primary_key_criteria': ' AND ',
     }
 
+    upsert_cte_sql = upsert_cte_sql
+
     def __init__(self, *args, **kwargs):
         SQLConstruct.__init__(self, *args, **kwargs)
 
@@ -267,7 +293,7 @@ class UpsertSQL(SQLConstruct):
         for key, join_operator in self.builders.items():
             params[key] = join_operator.join(getattr(self, key))
 
-        sql = upsert_cte_sql.format(**params)
+        sql = self.upsert_cte_sql.format(**params)
         return sql
 
 
@@ -301,13 +327,82 @@ class InsertUpsertSQL(UpsertSQL):
 
 
 class UpdateUpsertSQL(UpsertSQL):
+    """
+    AFTER UPDATE on parent_table:
+    exists (OLD.[pks] OR NEW.[pks], current_tx_id) in version_table?
+    (Normally we expect to find the OLD.[pks] in the version table.
+     However, the NEW.[pks] can already exist in the version table in the
+     following edge case:
+     the record  with the OLD pks was deleted and a different record was updated
+     to highjack the OLD pks. In this case the value of OLD.[pks] is irrelevant)
+    No:
+        INSERT with operation_type = 1
+    Yes:
+        we have one of the following scenarios:
+        if existing operation_type = 0 UPDATE with operation_type = 0
+            (means that the record is new in this transaction but is being
+             updated. its version should remain with operation type INSERT)
+        if existing operation_type = 1 UPDATE with operation_type = 1
+            (a 2nd update to the same object in the same transaction)
+        if existing operation_type = 2 UPDATE with operation_type = 1
+            (this is the case described in the justification of why we check for
+             NEW.[pks]. This is also an UPDATE)
+    """
     operation_type = 1
+    upsert_cte_sql = update_upsert_cte_sql
+
+    @property
+    def builders(self):
+        builders = super(UpdateUpsertSQL, self).builders.copy()
+        del builders['primary_key_criteria']
+        builders.update(old_primary_key_criteria=' AND ',
+                        new_primary_key_criteria=' AND ')
+        return builders
 
     def build_mod_tracking_values(self):
         return [
             'OLD."{0}" IS DISTINCT FROM NEW."{0}"'
             .format(c.name) for c in self.columns_without_pks
         ]
+
+    def build_new_primary_key_criteria(self):
+        return [
+            '"{name}" = NEW."{name}"'.format(name=c.name)
+            for c in self.columns if c.primary_key
+        ]
+
+    def build_old_primary_key_criteria(self):
+        return [
+            '"{name}" = OLD."{name}"'.format(name=c.name)
+            for c in self.columns if c.primary_key
+        ]
+
+    def build_update_values(self):
+        parent_columns = [
+            '"{name}" = NEW."{name}"'.format(name=c.name)
+            for c in self.columns
+        ]
+        mod_columns = []
+        if self.use_property_mod_tracking:
+            mod_columns = [
+                '{0}_mod = {0}_mod OR OLD."{0}" IS DISTINCT FROM NEW."{0}"'
+                .format(c.name)
+                for c in self.columns_without_pks
+            ]
+
+        operation_type_update = """{operation_type} = (
+    CASE
+        WHEN {operation_type} = 2 THEN 1
+        WHEN {operation_type} = 0 THEN 0
+        ELSE 1
+    END
+)""".format(operation_type=self.operation_type_column_name)
+
+        return (
+            [operation_type_update] +
+            parent_columns +
+            mod_columns
+        )
 
 
 class ValiditySQL(SQLConstruct):
