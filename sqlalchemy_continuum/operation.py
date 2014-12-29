@@ -12,6 +12,7 @@ class Operation(object):
     INSERT = 0
     UPDATE = 1
     DELETE = 2
+    STALE_VERSION = -1
 
     def __init__(self, target, type):
         self.target = target
@@ -111,7 +112,14 @@ class Operations(object):
             self.add(Operation(target, operation))
 
     def add_delete(self, target):
-        self.add(Operation(target, Operation.DELETE))
+        if target in self and \
+           self[self.format_key(target)].type == Operation.INSERT:
+            # if the target's existing operation is INSERT, it is being
+            # deleted within the same transaction and no version entry
+            # should be persisted
+            self.add(Operation(target, Operation.STALE_VERSION))
+        else:
+            self.add(Operation(target, Operation.DELETE))
 
     def _sanitize_keys(self, target):
         """The operations key for target may not be valid if this target is in

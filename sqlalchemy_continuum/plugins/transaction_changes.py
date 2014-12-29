@@ -107,6 +107,7 @@ class TransactionChangesPlugin(Plugin):
                 primaryjoin=(
                     self.model_class.transaction_id == transaction_column
                 ),
-                foreign_keys=[self.model_class.transaction_id]
+                foreign_keys=[self.model_class.transaction_id],
+                passive_deletes='all'
             )
         parent_cls.__versioned__['transaction_changes'] = self.model_class

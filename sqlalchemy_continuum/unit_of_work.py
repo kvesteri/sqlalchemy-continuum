@@ -2,7 +2,7 @@ from copy import copy
 
 import sqlalchemy as sa
 from sqlalchemy_utils import get_primary_keys, identity, has_changes
-from .operation import Operations
+from .operation import Operations, Operation
 from .utils import (
     end_tx_column_name,
     version_class,
@@ -168,6 +168,20 @@ class UnitOfWork(object):
         else:
             return self.version_objs[version_key]
 
+    def delete_version_object(self, target):
+        """
+        Delete version object for `target` parent object, if a version object
+        exists.
+
+        :param target: Parent object for which the version object should be
+            removed
+        """
+        version_key = self._sanitize_obj_key(target)
+        version_obj = self.version_objs.pop(version_key, None)
+        if version_obj is not None:
+            self.version_session.delete(version_obj)
+
+
     def process_operation(self, operation):
         """
         Process given operation object. The operation processing has x stages:
@@ -181,18 +195,21 @@ class UnitOfWork(object):
         :param operation: Operation object
         """
         target = operation.target
-        version_obj = self.get_or_create_version_object(target)
-        version_obj.operation_type = operation.type
-        self.assign_attributes(target, version_obj)
+        if operation.type == Operation.STALE_VERSION:
+            self.delete_version_object(target)
+        else:
+            version_obj = self.get_or_create_version_object(target)
+            version_obj.operation_type = operation.type
+            self.assign_attributes(target, version_obj)
 
-        self.manager.plugins.after_create_version_object(
-            self, target, version_obj
-        )
-        if self.manager.option(target, 'strategy') == 'validity':
-            self.update_version_validity(
-                target,
-                version_obj
+            self.manager.plugins.after_create_version_object(
+                self, target, version_obj
             )
+            if self.manager.option(target, 'strategy') == 'validity':
+                self.update_version_validity(
+                    target,
+                    version_obj
+                )
         operation.processed = True
 
     def create_version_objects(self, session):
