@@ -53,6 +53,39 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM upsert);
 """
 
+delete_upsert_cte_sql = """
+WITH delete_stale as (
+    DELETE FROM {version_table_name}
+    WHERE
+        {transaction_column} = transaction_id_value
+        AND
+        {primary_key_criteria}
+        AND
+        "operation_type" = 0
+    RETURNING *
+), upsert as
+(
+    UPDATE {version_table_name}
+    SET {update_values}
+    WHERE
+        {transaction_column} = transaction_id_value
+        AND
+        {primary_key_criteria}
+    RETURNING *
+)
+INSERT INTO {version_table_name}
+({transaction_column}, {operation_type_column}, {column_names})
+SELECT
+    transaction_id_value,
+    {operation_type},
+    {insert_values}
+WHERE
+    NOT EXISTS (SELECT 1 from delete_stale)
+    AND
+    NOT EXISTS (SELECT 1 FROM upsert);
+"""
+
+
 temporary_transaction_sql = """
 CREATE TEMP TABLE IF NOT EXISTS {temporary_transaction_table}
 ({transaction_table_columns})
@@ -298,7 +331,24 @@ class UpsertSQL(SQLConstruct):
 
 
 class DeleteUpsertSQL(UpsertSQL):
+    """
+    AFTER DELETE on parent_table:
+    exists (OLD.[pks], current_tx_id) in version_table?
+    No:
+        INSERT with operation_type = 2
+    Yes:
+        we have one of the following scenarios:
+        if existing operation_type = 0, DELETE version entry
+            (means that a new record has been created but now is being deleted
+             in the same transaction. No version should be created)
+        if existing operation_type = 1, UPDATE with operation_type = 2
+            (an object has been updated but is now being deleted)
+        if existing operation_type == 2, UPDATE with operation_type = 2
+            (not sure if this can happen, however a second DELETE of the same
+             PKs still results in a DELETE)
+    """
     operation_type = 2
+    upsert_cte_sql = delete_upsert_cte_sql
 
     def build_primary_key_criteria(self):
         return [
@@ -310,7 +360,7 @@ class DeleteUpsertSQL(UpsertSQL):
         return ['True'] * len(self.columns_without_pks)
 
     def build_update_values(self):
-        return [
+        return ['%s = 2' % self.operation_type_column_name] + [
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
