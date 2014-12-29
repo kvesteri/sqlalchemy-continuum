@@ -40,6 +40,9 @@ class ExoticOperationCombosTestCase(TestCase):
         assert article2.versions[1].operation_type == 1
 
     def test_replace_deleted_object_with_update(self):
+        """Test that deleting an object and hijacking its primary key results
+        in turning the operation_type = 2 to an operation_type = 1
+        """
         article = self.Article()
         article.name = u'Some article'
         article.content = u'Some content'
