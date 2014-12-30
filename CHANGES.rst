@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.2.0 (2015-xx-xx)
+^^^^^^^^^^^^^^^^^^
+
+- Remove generated changes attribute from version classes. This attribute can be accessed through `transaction.changes`
+
+
 1.1.5 (2014-12-28)
 ^^^^^^^^^^^^^^^^^^
 

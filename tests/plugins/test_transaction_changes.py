@@ -58,7 +58,6 @@ class TestTransactionChangedEntities(TestCase):
 
         tx = article.versions[0].transaction
         assert tx.changes[0].entity_name == u'Article'
-        assert article.versions[0].changes[0] == tx.changes[0]
 
     def test_saves_only_modified_entity_names(self):
         article = self.Article()
