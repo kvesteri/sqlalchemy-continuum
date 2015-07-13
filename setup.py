@@ -29,7 +29,8 @@ extras_require = {
         'flexmock>=0.9.7',
         'psycopg2>=2.4.6',
         'PyMySQL==0.6.1',
-        'six>=1.4.0'
+        'six>=1.4.0',
+        'pyramid'
     ],
     'anyjson': ['anyjson>=0.3.3'],
     'flask': ['Flask>=0.9'],
