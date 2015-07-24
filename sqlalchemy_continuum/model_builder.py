@@ -5,8 +5,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import column_property
 from sqlalchemy_utils.functions import get_declarative_base
 
-from .expression_reflector import VersionExpressionParser
-from .utils import option
+from .utils import adapt_columns, option
 from .version import VersionClassBase
 
 
@@ -174,8 +173,7 @@ class ModelBuilder(object):
                 if parent.__table__.name != table.name:
                     mapper = sa.inspect(self.model)
 
-                    reflector = VersionExpressionParser()
-                    inherit_condition = reflector(
+                    inherit_condition = adapt_columns(
                         mapper.inherit_condition
                     )
                     tx_column_name = self.manager.options[

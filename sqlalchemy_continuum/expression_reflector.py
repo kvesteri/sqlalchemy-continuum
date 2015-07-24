@@ -4,17 +4,7 @@ from sqlalchemy_utils import ExpressionParser
 from .utils import version_table
 
 
-class VersionExpressionParser(ExpressionParser):
-    def column(self, column):
-        try:
-            table = version_table(column.table)
-        except KeyError:
-            return column
-        else:
-            return table.c[column.name]
-
-
-class VersionExpressionReflector(VersionExpressionParser):
+class VersionExpressionReflector(ExpressionParser):
     def __init__(self, parent, relationship):
         self.parent = parent
         self.relationship = relationship

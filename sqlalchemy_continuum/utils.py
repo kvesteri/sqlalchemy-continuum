@@ -4,7 +4,6 @@ from collections import defaultdict
 
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
-from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import (
     get_primary_keys,
@@ -413,3 +412,15 @@ def changeset(obj):
                 if new_value:
                     data[prop.key] = [new_value, old_value]
     return data
+
+
+
+class VersioningClauseAdapter(sa.sql.visitors.ReplacingCloningVisitor):
+    def replace(self, col):
+        if isinstance(col, sa.Column):
+            table = version_table(col.table)
+            return table.c.get(col.key)
+
+
+def adapt_columns(expr):
+    return VersioningClauseAdapter().traverse(expr)

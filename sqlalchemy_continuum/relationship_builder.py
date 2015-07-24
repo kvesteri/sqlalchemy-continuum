@@ -1,13 +1,10 @@
 import sqlalchemy as sa
 
 from .exc import ClassNotVersioned
-from .expression_reflector import (
-    VersionExpressionParser,
-    VersionExpressionReflector
-)
+from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
 from .table_builder import TableBuilder
-from .utils import version_class, option
+from .utils import adapt_columns, version_class, option
 
 
 class RelationshipBuilder(object):
@@ -291,7 +288,6 @@ class RelationshipBuilder(object):
                 self.association_version_table.c[tx_column]
             ).correlate(self.association_version_table)
         )
-        secondaryjoin_parser = VersionExpressionParser()
         return sa.exists(
             sa.select(
                 [1]
@@ -301,7 +297,7 @@ class RelationshipBuilder(object):
                     association_exists,
                     self.association_version_table.c.operation_type !=
                     Operation.DELETE,
-                    secondaryjoin_parser(self.property.secondaryjoin),
+                    adapt_columns(self.property.secondaryjoin),
                 )
             ).correlate(self.local_cls, self.remote_cls)
         )
