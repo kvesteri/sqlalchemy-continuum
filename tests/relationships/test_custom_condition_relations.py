@@ -30,7 +30,7 @@ class CustomConditionRelationsTestCase(TestCase):
             Tag,
             primaryjoin=sa.and_(
                 Tag.article_id == Article.id,
-                Tag.category == 'primary'
+                Tag.category == u'primary'
             ),
         )
 
@@ -38,7 +38,7 @@ class CustomConditionRelationsTestCase(TestCase):
             Tag,
             primaryjoin=sa.and_(
                 Tag.article_id == Article.id,
-                Tag.category == 'secondary'
+                Tag.category == u'secondary'
             ),
         )
 
