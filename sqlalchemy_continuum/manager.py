@@ -273,8 +273,6 @@ class VersioningManager(object):
         Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
-        if not is_modified(target):
-            return
         uow.operations.add_insert(target)
 
     @tracked_operation
