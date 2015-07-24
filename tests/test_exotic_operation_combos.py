@@ -16,10 +16,7 @@ class ExoticOperationCombosTestCase(TestCase):
         self.session.commit()
         assert article2.versions.count() == 2
         assert article2.versions[0].operation_type == 0
-        if self.options['native_versioning']:
-            assert article2.versions[1].operation_type == 1
-        else:
-            assert article2.versions[1].operation_type == 0
+        assert article2.versions[1].operation_type == 1
 
     def test_insert_deleted_and_flushed_object(self):
         article = self.Article()
