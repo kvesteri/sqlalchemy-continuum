@@ -1,15 +1,17 @@
+import sqlalchemy as sa
 from sqlalchemy.sql.expression import bindparam
 
-from sqlalchemy_utils import ExpressionParser
 from .utils import version_table
 
 
-class VersionExpressionReflector(ExpressionParser):
+class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
     def __init__(self, parent, relationship):
         self.parent = parent
         self.relationship = relationship
 
-    def column(self, column):
+    def replace(self, column):
+        if not isinstance(column, sa.Column):
+            return
         try:
             table = version_table(column.table)
         except KeyError:
@@ -26,3 +28,6 @@ class VersionExpressionReflector(ExpressionParser):
                 )
 
         return reflected_column
+
+    def __call__(self, expr):
+        return self.traverse(expr)
