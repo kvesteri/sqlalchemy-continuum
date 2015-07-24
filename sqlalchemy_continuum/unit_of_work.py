@@ -224,7 +224,7 @@ class UnitOfWork(object):
         )
         if session.connection().engine.dialect.name == 'mysql':
             return sa.select(
-                ['max_1'],
+                [sa.text('max_1')],
                 from_obj=[
                     sa.sql.expression.alias(subquery, name='subquery')
                 ]
