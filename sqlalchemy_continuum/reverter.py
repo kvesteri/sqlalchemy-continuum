@@ -99,8 +99,8 @@ class Reverter(object):
                 self.revert_relationship(prop)
 
     def __call__(self):
-        if self.obj in self.visited_objects and self.obj.operation_type != Operation.DELETE:
-            return self.version_parent
+        if self.obj in self.visited_objects:
+            return None if self.obj.operation_type == Operation.DELETE else self.version_parent
 
         if self.obj.operation_type == Operation.DELETE:
             self.session.delete(self.version_parent)
