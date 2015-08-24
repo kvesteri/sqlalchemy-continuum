@@ -89,6 +89,30 @@ class RevertTestCase(TestCase):
         assert len(article.tags) == 1
         assert article.tags[0].name == u'some tag'
 
+    def test_revert_version_with_new_one_to_many_relation(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        article.tags.append(self.Tag(name=u'some tag'))
+        self.session.add(article)
+        self.session.commit()
+        article.name = u'Updated name'
+        article.content = u'Updated content'
+        article.tags.append(self.Tag(name=u'some other tag'))
+        self.session.add(article)
+        self.session.commit()
+        self.session.refresh(article)
+        assert len(article.tags) == 2
+        assert len(article.versions[0].tags) == 1
+        assert article.versions[0].tags[0].article
+        article.versions[0].revert(relations=['tags'])
+        self.session.commit()
+
+        assert article.name == u'Some article'
+        assert article.content == u'Some content'
+        assert len(article.tags) == 1
+        assert article.tags[0].name == u'some tag'
+
 
 class TestRevertWithDefaultVersioningStrategy(RevertTestCase):
     pass
