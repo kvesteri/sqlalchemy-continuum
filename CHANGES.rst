@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.2.1 (2015-09-27)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed deep joined table inheritance handling (#105, courtesy of piotr-dobrogost)
+
+
 1.2.0 (2015-07-31)
 ^^^^^^^^^^^^^^^^^^
 

@@ -17,6 +17,14 @@ def find_closest_versioned_parent(manager, model):
         if class_ in manager.version_class_map:
             return manager.version_class_map[class_]
 
+def versioned_parents(manager, model):
+    """
+    Finds all versioned ancestors for current parent model.
+    """
+    for class_ in model.__mro__:
+        if class_ in manager.version_class_map:
+            yield manager.version_class_map[class_]
+
 
 def get_base_class(manager, model):
     """
@@ -195,12 +203,11 @@ class ModelBuilder(object):
         return args
 
     def get_inherited_denormalized_columns(self, table):
-        parent = find_closest_versioned_parent(self.manager, self.model)
+        parent_models = list(versioned_parents(self.manager, self.model))
         mapper = sa.inspect(self.model)
-
         args = {}
 
-        if parent and not (mapper.single or mapper.concrete):
+        if parent_models and not (mapper.single or mapper.concrete):
             columns = [
                 self.manager.option(self.model, 'operation_type_column_name'),
                 self.manager.option(self.model, 'transaction_column_name')
@@ -212,10 +219,11 @@ class ModelBuilder(object):
                         'end_transaction_column_name'
                     )
                 )
+
             for column in columns:
                 args[column] = column_property(
                     table.c[column],
-                    parent.__table__.c[column]
+                    *[m.__table__.c[column] for m in parent_models]
                 )
         return args
 
