@@ -147,7 +147,7 @@ class TransactionFactory(ModelFactory):
                 user_id = sa.Column(
                     sa.inspect(user_cls).primary_key[0].type,
                     sa.ForeignKey(
-                        '%s.id' % user_cls.__tablename__
+                        '%s.%s' % (user_cls.__tablename__, sa.inspect(user_cls).primary_key[0].name)
                     ),
                     index=True
                 )
