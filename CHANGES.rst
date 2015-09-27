@@ -8,6 +8,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^
 
 - Fixed deep joined table inheritance handling (#105, courtesy of piotr-dobrogost)
+- Fixed naive assumption of related User model always having id column (#107, courtesy of avilaton)
 
 
 1.2.0 (2015-07-31)
