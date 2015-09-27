@@ -20,12 +20,13 @@ class ReverterException(Exception):
 
 
 class Reverter(object):
-    def __init__(self, obj, visited_objects=[], relations=[]):
-        self.visited_objects = visited_objects
+    def __init__(self, obj, visited_objects=None, relations=[]):
+        self.visited_objects = visited_objects or []
         self.obj = obj
         self.version_parent = self.obj.version_parent
         self.parent_class = parent_class(self.obj.__class__)
         self.parent_mapper = sa.inspect(self.parent_class)
+        self.session = sa.orm.object_session(self.obj)
 
         self.relations = list(relations)
         for path in relations:
@@ -70,8 +71,15 @@ class Reverter(object):
             self.revert_association(prop)
         else:
             if prop.uselist:
-                for value in getattr(self.obj, prop.key):
-                    self.revert_child(value, prop)
+                values = []
+                for child_obj in getattr(self.obj, prop.key):
+                    value = self.revert_child(child_obj, prop)
+                    if value:
+                        values.append(value)
+
+                for value in getattr(self.version_parent, prop.key, []):
+                    if value not in values:
+                        self.session.delete(value)
             else:
                 self.revert_child(getattr(self.obj, prop.key), prop)
 
@@ -95,12 +103,13 @@ class Reverter(object):
 
     def __call__(self):
         if self.obj in self.visited_objects:
-            return
-
-        session = sa.orm.object_session(self.obj)
+            return (
+                None if self.obj.operation_type == Operation.DELETE
+                else self.version_parent
+            )
 
         if self.obj.operation_type == Operation.DELETE:
-            session.delete(self.version_parent)
+            self.session.delete(self.version_parent)
             return
 
         self.visited_objects.append(self.obj)
@@ -108,7 +117,6 @@ class Reverter(object):
         # Check if parent object has been deleted
         if self.version_parent is None:
             self.version_parent = parent_class(self.obj.__class__)()
-            session.add(self.version_parent)
 
         # Before reifying relations we need to reify object properties. This
         # is needed because reifying relations might need to flush the session
@@ -116,5 +124,6 @@ class Reverter(object):
         # into parent object (if parent object has not null constraints).
         self.revert_properties()
         self.revert_relationships()
+        self.session.add(self.version_parent)
 
         return self.version_parent
