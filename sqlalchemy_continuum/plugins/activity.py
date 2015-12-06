@@ -199,7 +199,11 @@ from ..utils import version_class, version_obj
 
 
 class ActivityBase(object):
-    id = sa.Column(sa.BigInteger, primary_key=True, autoincrement=True)
+    id = sa.Column(sa.BigInteger,
+                   sa.schema.Sequence('id_seq_cont_activity'),
+                   primary_key=True, 
+                   autoincrement=True
+                   )
 
     verb = sa.Column(sa.Unicode(255))
 
