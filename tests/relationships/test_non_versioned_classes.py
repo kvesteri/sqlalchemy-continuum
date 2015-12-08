@@ -36,6 +36,20 @@ class TestRelationshipToNonVersionedClass(TestCase):
 
         assert isinstance(article.versions[0].author, self.User)
 
+    def test_change_relationship(self):
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        user = self.User(name=u'Some user')
+        self.session.add(article)
+        self.session.add(user)
+        self.session.commit()
+
+        assert article.versions.count() == 1
+        article.author = user
+        self.session.commit()
+        assert article.versions.count() == 2
+
 
 class TestManyToManyRelationshipToNonVersionedClass(TestCase):
     def create_models(self):

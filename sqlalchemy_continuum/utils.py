@@ -203,7 +203,7 @@ def versioned_column_properties(obj_or_class):
             yield getattr(mapper.attrs, key)
 
 
-def versioned_relationships(obj):
+def versioned_relationships(obj, versioned_column_keys):
     """
     Return all versioned relationships for given versioned SQLAlchemy
     declarative model object.
@@ -211,7 +211,7 @@ def versioned_relationships(obj):
     :param obj: SQLAlchemy declarative model object
     """
     for prop in sa.inspect(obj.__class__).relationships:
-        if is_versioned(prop.mapper.class_):
+        if any(c.key in versioned_column_keys for c in prop.local_columns):
             yield prop
 
 
@@ -310,7 +310,8 @@ def is_modified(obj):
         prop.key for prop in versioned_column_properties(obj)
     ]
     versioned_relationship_keys = [
-        prop.key for prop in versioned_relationships(obj)
+        prop.key
+        for prop in versioned_relationships(obj, versioned_column_keys)
     ]
     for key, attr in sa.inspect(obj).attrs.items():
         if key in column_names:
