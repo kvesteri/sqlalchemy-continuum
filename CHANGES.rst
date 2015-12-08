@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.2.2 (2015-12-08)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed some relationship changes not counted as modifications (#116, courtesy of tvuotila)
+
+
 1.2.1 (2015-09-27)
 ^^^^^^^^^^^^^^^^^^
 
