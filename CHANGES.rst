@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.2.3 (2015-01-10)
+^^^^^^^^^^^^^^^^^^
+
+- Added use_module_name configuration option (#119, courtesy of kyheo)
+
+
 1.2.2 (2015-12-08)
 ^^^^^^^^^^^^^^^^^^
 

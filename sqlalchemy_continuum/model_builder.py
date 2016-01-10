@@ -255,7 +255,8 @@ class ModelBuilder(object):
         if self.manager.options.get('use_module_name', True):
             name = '%s%sVersion' % (
                 self.model.__module__.title().replace('.', ''),
-                self.model.__name__)
+                self.model.__name__
+            )
         else:
             name = '%sVersion' % (self.model.__name__,)
         return type(name, self.base_classes(), args)
