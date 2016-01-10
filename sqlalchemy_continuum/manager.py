@@ -87,7 +87,8 @@ class VersioningManager(object):
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
-            'strategy': 'validity'
+            'strategy': 'validity',
+            'use_module_name': False
         }
         if plugins is None:
             self.plugins = []

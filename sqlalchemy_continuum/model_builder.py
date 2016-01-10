@@ -252,11 +252,13 @@ class ModelBuilder(object):
 
         args.update(self.get_inherited_denormalized_columns(table))
 
-        return type(
-            '%sVersion' % self.model.__name__,
-            self.base_classes(),
-            args
-        )
+        if self.manager.options.get('use_module_name', True):
+            name = '%s%sVersion' % (
+                self.model.__module__.title().replace('.', ''),
+                self.model.__name__)
+        else:
+            name = '%sVersion' % (self.model.__name__,)
+        return type(name, self.base_classes(), args)
 
     def __call__(self, table, tx_class):
         """
