@@ -200,7 +200,7 @@ from ..utils import version_class, version_obj
 
 class ActivityBase(object):
     id = sa.Column(sa.BigInteger,
-                   sa.schema.Sequence('id_seq_cont_activity'),
+                   sa.schema.Sequence('activity_base_id_seq'),
                    primary_key=True, 
                    autoincrement=True
                    )
