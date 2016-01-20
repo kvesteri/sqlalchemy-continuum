@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 try:
@@ -112,6 +113,7 @@ class TransactionFactory(ModelFactory):
         """
         Create Transaction class.
         """
+	
         class Transaction(
             manager.declarative_base,
             TransactionBase
@@ -121,6 +123,7 @@ class TransactionFactory(ModelFactory):
 
             id = sa.Column(
                 sa.types.BigInteger,
+                sa.schema.Sequence('transaction_id_seq'),
                 primary_key=True,
                 autoincrement=True
             )
