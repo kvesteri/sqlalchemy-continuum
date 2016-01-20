@@ -122,7 +122,7 @@ class TransactionFactory(ModelFactory):
             __versioning_manager__ = manager
 
             id = sa.Column(
-                sa.types.Integer,
+                sa.types.BigInteger,
                 sa.schema.Sequence('transaction_id_seq'),
                 primary_key=True,
                 autoincrement=True
