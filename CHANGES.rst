@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.2.4 (2015-01-10)
+^^^^^^^^^^^^^^^^^^
+
+- Added explicit sequence names for Oracle (#118, courtesy of apfeiffer1)
+
+
 1.2.3 (2015-01-10)
 ^^^^^^^^^^^^^^^^^^
 
