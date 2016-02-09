@@ -126,15 +126,17 @@ class SQLConstruct(object):
 
     @property
     def table_name(self):
-        if self.table.schema:
-            return '%s."%s"' % (self.table.schema, self.table.name)
+        schema = getattr(self.table, 'version_schema', 'schema')
+        if schema:
+            return '%s."%s"' % (schema, self.table.name)
         else:
             return '"' + self.table.name + '"'
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return '%s.transaction' % self.table.schema
+        schema = getattr(self.table, 'version_schema', 'schema')
+        if schema:
+            return '%s.transaction' % schema
         else:
             return 'transaction'
 
@@ -145,10 +147,9 @@ class SQLConstruct(object):
     @property
     def version_table_name(self):
         version_table_name = self.version_table_name_format % self.table.name
-        if self.table.schema:
-            version_table_name = '%s.%s' % (
-                self.table.schema, version_table_name
-            )
+        schema = getattr(self.table, 'version_schema', 'schema')
+        if schema:
+            version_table_name = '%s.%s' % (schema, version_table_name)
         return version_table_name
 
     @classmethod
@@ -424,8 +425,9 @@ class TransactionTriggerSQL(object):
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return '%s.transaction' % self.table.schema
+        schema = getattr(self.table, 'version_schema', 'schema')
+        if schema:
+            return '%s.transaction' % schema
         else:
             return 'transaction'
 
