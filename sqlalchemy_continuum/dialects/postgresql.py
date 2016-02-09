@@ -126,10 +126,8 @@ class SQLConstruct(object):
 
     @property
     def table_name(self):
-        schema = getattr(self.table, 'version_schema',
-                         getattr(self.table, 'schema', None))
-        if schema:
-            return '%s."%s"' % (schema, self.table.name)
+        if self.table.schema:
+            return '%s."%s"' % (self.table.schema, self.table.name)
         else:
             return '"' + self.table.name + '"'
 
@@ -442,6 +440,14 @@ class TransactionTriggerSQL(object):
 
 
 def create_versioning_trigger_listeners(manager, cls):
+    try:
+        version_schema = manager.option(cls, 'table_schema')
+    except TypeError:
+        try:
+            version_schema = manager.options['table_schema']
+        except KeyError:
+            version_schema = None
+    cls.__table__.version_schema = version_schema or cls.__table__.schema
     sa.event.listen(
         cls.__table__,
         'after_create',
