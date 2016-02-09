@@ -133,7 +133,7 @@ def version_table(table):
 
     :param table: SQLAlchemy Table object
     """
-    schema = getattr(table, 'version_schema', 'schema')
+    schema = getattr(table, 'version_schema', getattr(table, 'schema', None))
     if schema:
         return table.metadata.tables[
             schema + '.' + table.name + '_version'
