@@ -24,6 +24,13 @@ class TestSessions(TestCase):
             article.versions[-1].transaction_id
         )
 
+    def test_connection_binded_to_engine(self):
+        self.session2 = Session(bind=self.engine)
+        article = self.Article(name=u'Session1 article')
+        self.session2.add(article)
+        self.session2.commit()
+        assert article.versions[-1].transaction_id
+
     def test_manual_transaction_creation(self):
         uow = versioning_manager.unit_of_work(self.session)
         transaction = uow.create_transaction(self.session)

@@ -123,6 +123,7 @@ class TestCase(object):
     def teardown_method(self, method):
         self.session.rollback()
         uow_leaks = versioning_manager.units_of_work
+        session_map_leaks = versioning_manager.session_connection_map
 
         remove_versioning()
         QueryPool.queries = []
@@ -135,6 +136,7 @@ class TestCase(object):
         self.connection.close()
 
         assert not uow_leaks
+        assert not session_map_leaks
 
     def create_models(self):
         class Article(self.Model):
