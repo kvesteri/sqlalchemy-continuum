@@ -121,6 +121,9 @@ class TestCase(object):
         self.Model.metadata.drop_all(self.connection)
 
     def teardown_method(self, method):
+        self.session.rollback()
+        uow_leaks = versioning_manager.units_of_work
+
         remove_versioning()
         QueryPool.queries = []
         versioning_manager.reset()
@@ -130,6 +133,8 @@ class TestCase(object):
         self.drop_tables()
         self.engine.dispose()
         self.connection.close()
+
+        assert not uow_leaks
 
     def create_models(self):
         class Article(self.Model):
