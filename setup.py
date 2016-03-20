@@ -65,9 +65,7 @@ setup(
     platforms='any',
     install_requires=[
         'SQLAlchemy>=1.0.8',
-        'SQLAlchemy-Utils>=0.30.12',
-        'ordereddict>=1.1'
-        if sys.version_info[0] == 2 and sys.version_info[1] < 7 else ''
+        'SQLAlchemy-Utils>=0.30.12'
     ],
     extras_require=extras_require,
     classifiers=[
@@ -77,7 +75,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',

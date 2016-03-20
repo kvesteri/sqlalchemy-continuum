@@ -4,13 +4,19 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.2.4 (2015-01-10)
+1.3.0 (2016-03-xx)
+^^^^^^^^^^^^^^^^^^
+
+- Dropped py2.6 support
+
+
+1.2.4 (2016-01-10)
 ^^^^^^^^^^^^^^^^^^
 
 - Added explicit sequence names for Oracle (#118, courtesy of apfeiffer1)
 
 
-1.2.3 (2015-01-10)
+1.2.3 (2016-01-10)
 ^^^^^^^^^^^^^^^^^^
 
 - Added use_module_name configuration option (#119, courtesy of kyheo)
