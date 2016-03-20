@@ -145,6 +145,8 @@ class VersioningManager(object):
         # as UnitOfWork objects.
         self.units_of_work = {}
 
+        self.session_connection_map = {}
+
         self.metadata = None
 
     def create_transaction_model(self):
@@ -305,6 +307,8 @@ class VersioningManager(object):
         :param session: SQLAlchemy session object
         """
         conn = session.connection()
+        if conn not in self.session_connection_map.values():
+            self.session_connection_map[session] = conn
 
         if conn in self.units_of_work:
             return self.units_of_work[conn]
@@ -352,10 +356,11 @@ class VersioningManager(object):
         """
         if session.transaction.nested:
             return
-        conn = session.bind
+        conn = self.session_connection_map.pop(session, None)
         if conn in self.units_of_work:
             uow = self.units_of_work[conn]
             uow.reset(session)
+            del self.units_of_work[conn]
 
     def append_association_operation(self, conn, table_name, params, op):
         """
