@@ -1,4 +1,5 @@
 import pytest
+from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 
@@ -340,3 +341,109 @@ class TestManyToManySelfReferential(TestCase):
 
         assert len(reference1.versions[2].cited_by) == 1
         assert article.versions[2] in reference1.versions[2].cited_by
+
+
+@mark.skipif("os.environ.get('DB') == 'sqlite'")
+class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {}
+            __table_args__ = {'schema': 'other'}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_references = sa.Table(
+            'article_references',
+            self.Model.metadata,
+            sa.Column(
+                'referring_id',
+                sa.Integer,
+                sa.ForeignKey('other.article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'referred_id',
+                sa.Integer,
+                sa.ForeignKey('other.article.id'),
+                primary_key=True
+            ),
+            schema='other'
+        )
+
+        Article.references = sa.orm.relationship(
+            Article,
+            secondary=article_references,
+            primaryjoin=Article.id == article_references.c.referring_id,
+            secondaryjoin=Article.id == article_references.c.referred_id,
+            backref='cited_by'
+        )
+
+        self.Article = Article
+        self.referenced_articles_table = article_references
+
+    def create_tables(self):
+        self.connection.execute('DROP SCHEMA IF EXISTS other')
+        self.connection.execute('CREATE SCHEMA other')
+        TestManyToManySelfReferential.create_tables(self)
+
+
+@mark.skipif("os.environ.get('DB') == 'sqlite'")
+class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+            __table_args__ = {'schema': 'other'}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        article_tag = sa.Table(
+            'article_tag',
+            self.Model.metadata,
+            sa.Column(
+                'article_id',
+                sa.Integer,
+                sa.ForeignKey('other.article.id'),
+                primary_key=True,
+            ),
+            sa.Column(
+                'tag_id',
+                sa.Integer,
+                sa.ForeignKey('other.tag.id'),
+                primary_key=True
+            ),
+            schema='other'
+        )
+
+        class Tag(self.Model):
+            __tablename__ = 'tag'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+            __table_args__ = {'schema': 'other'}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255))
+
+        Tag.articles = sa.orm.relationship(
+            Article,
+            secondary=article_tag,
+            backref='tags'
+        )
+
+        self.Article = Article
+        self.Tag = Tag
+
+
+    def create_tables(self):
+        self.connection.execute('DROP SCHEMA IF EXISTS other')
+        self.connection.execute('CREATE SCHEMA other')
+        ManyToManyRelationshipsTestCase.create_tables(self)
+
+create_test_cases(ManyToManyRelationshipsInOtherSchemaTestCase)
+
