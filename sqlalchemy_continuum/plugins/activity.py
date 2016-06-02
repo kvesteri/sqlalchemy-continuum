@@ -186,7 +186,7 @@ target is the given article.
 .. _activity stream specification:
     http://www.activitystrea.ms
 .. _generic relationships:
-    http://sqlalchemy-utils.readthedocs.org/en/latest/generic_relationship.html
+    https://sqlalchemy-utils.readthedocs.io/en/latest/generic_relationship.html
 """
 
 import sqlalchemy as sa
