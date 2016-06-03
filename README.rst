@@ -78,7 +78,7 @@ In order to make your models versioned you need two things:
 Resources
 ---------
 
-- `Documentation <http://sqlalchemy-continuum.readthedocs.org/>`_
+- `Documentation <https://sqlalchemy-continuum.readthedocs.io/>`_
 - `Issue Tracker <http://github.com/kvesteri/sqlalchemy-continuum/issues>`_
 - `Code <http://github.com/kvesteri/sqlalchemy-continuum/>`_
 
