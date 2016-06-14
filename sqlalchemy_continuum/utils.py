@@ -410,7 +410,7 @@ def changeset(obj):
                 old_value = history.deleted[0] if history.deleted else None
                 new_value = history.added[0] if history.added else None
 
-                if new_value:
+                if new_value is not None:
                     data[prop.key] = [new_value, old_value]
     return data
 
