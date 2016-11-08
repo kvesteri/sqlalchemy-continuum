@@ -1,8 +1,8 @@
 import os
 
 from flask import Flask, url_for
-from flask.ext.login import LoginManager
-from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
+from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
 import sqlalchemy as sa
