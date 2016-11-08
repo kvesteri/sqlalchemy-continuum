@@ -36,7 +36,7 @@ def fetch_current_user_id():
     if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
         return
     try:
-        return current_user.id
+        return current_user.get_id()
     except AttributeError:
         return
 

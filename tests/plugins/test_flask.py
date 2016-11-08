@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, url_for
-from flask_login import LoginManager
+from flask_login import LoginManager, UserMixin
 from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
@@ -76,7 +76,7 @@ class TestFlaskPlugin(TestCase):
     def create_models(self):
         TestCase.create_models(self)
 
-        class User(self.Model):
+        class User(self.Model, UserMixin):
             __tablename__ = 'user'
             __versioned__ = {
                 'base_classes': (self.Model, )
