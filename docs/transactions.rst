@@ -13,7 +13,8 @@ Transaction can be queried just like any other sqlalchemy declarative model.
 ::
 
 
-    Transaction = Article.__versioned__['transaction_class']
+    from sqlalchemy_continuum import transaction_class
+    Transaction = transaction_class(Article)
 
     # find all transactions
     session.query(Transaction).all()
