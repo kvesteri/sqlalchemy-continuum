@@ -2,6 +2,7 @@ from copy import copy
 import inspect
 import itertools as it
 import os
+import pytest
 import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
@@ -21,6 +22,9 @@ from sqlalchemy_continuum.plugins import (
 )
 
 warnings.simplefilter('error', sa.exc.SAWarning)
+
+
+pytest_skipif_sqlite = pytest.mark.skipif(os.environ.get('DB', 'sqlite') == 'sqlite')
 
 
 class QueryPool(object):

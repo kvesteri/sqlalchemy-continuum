@@ -2,13 +2,14 @@ import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 from sqlalchemy_i18n import Translatable, make_translatable, translation_base
 from sqlalchemy_utils import i18n
-from . import TestCase
+from . import TestCase, pytest_skipif_sqlite
 
 
 i18n.get_locale = lambda: 'en'
 make_translatable()
 
 
+@pytest_skipif_sqlite(reason='SQLite does not support autoincrement for composite primary keys')
 class TestVersioningWithI18nExtension(TestCase):
     def create_models(self):
         class Versioned(self.Model):
