@@ -88,9 +88,9 @@ Resources
 
 .. |Build Status| image:: https://travis-ci.org/kvesteri/sqlalchemy-continuum.png?branch=master
    :target: https://travis-ci.org/kvesteri/sqlalchemy-continuum
-.. |Version Status| image:: https://pypip.in/v/SQLAlchemy-Continuum/badge.png
+.. |Version Status| image:: https://img.shields.io/pypi/v/SQLAlchemy-Continuum.png
    :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
-.. |Downloads| image:: https://pypip.in/d/SQLAlchemy-Continuum/badge.png
+.. |Downloads| image:: https://img.shields.io/pypi/dm/SQLAlchemy-Continuum.png
    :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
 
 
