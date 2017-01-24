@@ -316,10 +316,11 @@ class RelationshipBuilder(object):
             column.table
         )
         metadata = column.table.metadata
-        if metadata.schema:
+        table_schema = self.manager.options.get('table_schema', None)
+        if metadata.schema and not table_schema:
             table_name = metadata.schema + '.' + builder.table_name
         else:
-            table_name = builder.table_name
+            table_name = ((table_schema + '.') if table_schema else '') + builder.table_name
 
         if table_name not in metadata.tables:
             self.association_version_table = table = builder()
