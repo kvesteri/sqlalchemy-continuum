@@ -27,7 +27,10 @@ class TestVersioningWithI18nExtension(TestCase):
             }
             locale = 'en'
 
-            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            kwargs = dict(primary_key=True)
+            if self.driver != 'sqlite':
+                kwargs['autoincrement'] = True
+            id = sa.Column(sa.Integer, **kwargs)
             description = sa.Column(sa.UnicodeText)
 
         class ArticleTranslation(translation_base(Article)):
