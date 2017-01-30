@@ -4,10 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.3.0 (2016-03-xx)
+1.3.0 (2017-01-30)
 ^^^^^^^^^^^^^^^^^^
 
 - Dropped py2.6 support
+- Fixed memory leaks with UnitOfWork instances (#131, courtesy of quantus)
 
 
 1.2.4 (2016-01-10)
