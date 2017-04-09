@@ -251,7 +251,7 @@ class VersioningManager(object):
         """
         Attach listeners that track the operations (flushing, committing and
         rolling back) of given session. This method should be used in
-        conjuction with `track_operations`.
+        conjunction with `track_operations`.
 
         :param session: SQLAlchemy session to track the operations from
         """
@@ -262,7 +262,7 @@ class VersioningManager(object):
         """
         Remove listeners that track the operations (flushing, committing and
         rolling back) of given session. This method should be used in
-        conjuction with `remove_operations_tracking`.
+        conjunction with `remove_operations_tracking`.
 
         :param session:
             SQLAlchemy session to remove the operations tracking from
@@ -347,7 +347,7 @@ class VersioningManager(object):
 
     def clear(self, session):
         """
-        Simple SQLAlchemy listener that is being invoked after succesful
+        Simple SQLAlchemy listener that is being invoked after successful
         transaction commit or when transaction rollback occurs. The purpose of
         this listener is to reset this UnitOfWork back to its initialization
         state.
