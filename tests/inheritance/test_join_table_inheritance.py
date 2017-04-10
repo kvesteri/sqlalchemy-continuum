@@ -74,6 +74,19 @@ class JoinTableInheritanceTestCase(TestCase):
         assert type(article.versions[0]) == self.ArticleVersion
         assert type(blogpost.versions[0]) == self.BlogPostVersion
 
+    def test_version_index(self):
+        article = self.Article()
+
+        self.session.add(article)
+        self.session.commit()
+        self.session.add(self.Article())
+        self.session.commit()
+
+        article.name = 'test'
+        self.session.commit()
+
+        assert article.versions[1].index == 1
+
     def test_all_tables_contain_transaction_id_column(self):
         tx_column = self.options['transaction_column_name']
 
