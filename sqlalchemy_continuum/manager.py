@@ -366,9 +366,13 @@ class VersioningManager(object):
         """
         Append history association operation to pending_statements list.
         """
+        table_schema = self.options.get('table_schema', None)
+        version_table_name = (((table_schema + '.') if table_schema else '')
+                              + self.options['table_name']) % table_name
+
         params['operation_type'] = op
         stmt = (
-            self.metadata.tables[self.options['table_name'] % table_name]
+            self.metadata.tables[version_table_name]
             .insert()
             .values(params)
         )
