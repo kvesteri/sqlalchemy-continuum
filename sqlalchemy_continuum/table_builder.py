@@ -120,6 +120,10 @@ class TableBuilder(object):
         self.parent_table = parent_table
         self.model = model
 
+        #  Add version_schema attribute to parent_table
+        self.parent_table.version_schema = self.option('table_schema') or \
+            self.parent_table.schema
+
     def option(self, name):
         try:
             return self.manager.option(self.model, name)
@@ -150,5 +154,6 @@ class TableBuilder(object):
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
             *columns,
-            extend_existing=extends is not None
+            extend_existing=extends is not None,
+            schema=self.parent_table.version_schema
         )

@@ -316,8 +316,9 @@ class RelationshipBuilder(object):
             column.table
         )
         metadata = column.table.metadata
-        if metadata.schema:
-            table_name = metadata.schema + '.' + builder.table_name
+
+        if column.table.version_schema:
+            table_name = column.table.version_schema + '.' + builder.table_name
         else:
             table_name = builder.table_name
 
