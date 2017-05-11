@@ -78,6 +78,7 @@ class VersioningManager(object):
         self.options = {
             'versioning': True,
             'base_classes': None,
+            'table_schema': None,
             'table_name': '%s_version',
             'exclude': [],
             'include': [],

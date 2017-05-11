@@ -48,11 +48,24 @@ def fetch_remote_addr():
     return request.headers.get('X-Forwarded-For', None)
 
 
+def fetch_origin_app():
+    from flask import current_app
+
+    # Return None if we are outside of request context.
+    if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
+        return
+    try:
+        return current_app.name
+    except AttributeError:
+        return
+
+
 class FlaskPlugin(Plugin):
     def __init__(
         self,
         current_user_id_factory=None,
-        remote_addr_factory=None
+        remote_addr_factory=None,
+        origin_app_factory=None
     ):
         self.current_user_id_factory = (
             fetch_current_user_id if current_user_id_factory is None
@@ -61,6 +74,10 @@ class FlaskPlugin(Plugin):
         self.remote_addr_factory = (
             fetch_remote_addr if remote_addr_factory is None
             else remote_addr_factory
+        )
+        self.origin_app_factory = (
+            fetch_origin_app if origin_app_factory is None
+            else origin_app_factory
         )
 
         if not flask:
@@ -72,5 +89,6 @@ class FlaskPlugin(Plugin):
     def transaction_args(self, uow, session):
         return {
             'user_id': self.current_user_id_factory(),
-            'remote_addr': self.remote_addr_factory()
+            'remote_addr': self.remote_addr_factory(),
+            'origin_app': self.origin_app_factory()
         }
