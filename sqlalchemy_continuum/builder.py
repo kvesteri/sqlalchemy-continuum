@@ -1,4 +1,5 @@
 from copy import copy
+from inspect import getmro
 
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
@@ -65,9 +66,10 @@ class Builder(object):
         """
         if model in self.manager.tables:
             return self.manager.tables[model]
-        for cls in self.manager.tables:
-            if issubclass(model, cls):
-                return self.manager.tables[cls]
+        subclasses = [cls for cls in self.manager.tables if issubclass(model, cls)]
+        ordered_subclasses = [cls for cls in getmro(model) if cls in subclasses]
+        return self.manager.tables[ordered_subclasses[0]] if ordered_subclasses else None
+
 
     def build_models(self):
         """
