@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.1 (2017-06-28)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed subclass retrieval for closest_matching_table (#163, courtesy of debonzi)
+
+
 1.3.0 (2017-01-30)
 ^^^^^^^^^^^^^^^^^^
 
