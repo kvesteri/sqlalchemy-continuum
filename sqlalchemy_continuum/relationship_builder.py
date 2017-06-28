@@ -266,7 +266,7 @@ class RelationshipBuilder(object):
         association_cols = [
             association_table_alias.c[association_col.name]
             for _, association_col
-            in self.remote_to_assosiation_column_pairs
+            in self.remote_to_association_column_pairs
         ]
 
         association_exists = sa.exists(
@@ -348,10 +348,10 @@ class RelationshipBuilder(object):
             self.build_association_version_tables()
 
             # store remote cls to association table column pairs
-            self.remote_to_assosiation_column_pairs = []
+            self.remote_to_association_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
                 if column_pair[0] in self.property.table.c.values():
-                    self.remote_to_assosiation_column_pairs.append(column_pair)
+                    self.remote_to_association_column_pairs.append(column_pair)
 
         setattr(
             self.local_cls,
