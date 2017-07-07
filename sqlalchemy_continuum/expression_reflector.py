@@ -13,7 +13,7 @@ class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
         if not isinstance(column, sa.Column):
             return
         try:
-            table = version_table(column.table)
+            table = version_table(self.parent, column.table)
         except KeyError:
             reflected_column = column
         else:

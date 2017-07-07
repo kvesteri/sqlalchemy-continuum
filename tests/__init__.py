@@ -12,7 +12,8 @@ from sqlalchemy_continuum import (
     version_class,
     make_versioned,
     versioning_manager,
-    remove_versioning
+    remove_versioning,
+    apply_table_schema
 )
 from sqlalchemy_continuum.transaction import TransactionFactory
 from sqlalchemy_continuum.plugins import (
@@ -67,6 +68,8 @@ class TestCase(object):
     transaction_cls = TransactionFactory()
     user_cls = None
     should_create_models = True
+    obj_table_schema = None
+    audit_table_schema = None
 
     @property
     def options(self):
@@ -77,10 +80,14 @@ class TestCase(object):
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
+            'table_schema': self.audit_table_schema
         }
 
     def setup_method(self, method):
-        self.Model = declarative_base()
+        if self.obj_table_schema:
+            self.Model = declarative_base(metadata=sa.MetaData(schema=self.obj_table_schema))
+        else:
+            self.Model = declarative_base()
         make_versioned(options=self.options)
 
         driver = os.environ.get('DB', 'sqlite')
@@ -115,6 +122,13 @@ class TestCase(object):
             self.session.execute('CREATE EXTENSION IF NOT EXISTS hstore')
 
     def create_tables(self):
+        if self.obj_table_schema:
+            self.connection.execute('DROP SCHEMA IF EXISTS %s' % self.obj_table_schema)
+            self.connection.execute('CREATE SCHEMA %s' % self.obj_table_schema)
+        if self.audit_table_schema:
+            schema = apply_table_schema(self.audit_table_schema, self.obj_table_schema)
+            self.connection.execute('DROP SCHEMA IF EXISTS %s' % schema)
+            self.connection.execute('CREATE SCHEMA %s' % schema)
         self.Model.metadata.create_all(self.connection)
 
     def drop_tables(self):
@@ -175,6 +189,21 @@ setting_variants = {
         'end_tx_id'
     ]
 }
+
+schema_variants = {
+    'obj_table_schema': [
+        None,
+        'continuum'
+    ],
+    'audit_table_schema': [
+        None,
+        'audit',
+        lambda schema: 'audit' if not schema else schema + '_audit',
+    ]
+}
+
+if os.environ.get('DB') != 'sqlite':
+    setting_variants.update(schema_variants)
 
 
 def create_test_cases(base_class, setting_variants=setting_variants):

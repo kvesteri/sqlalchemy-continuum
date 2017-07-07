@@ -15,6 +15,8 @@ from .utils import (
     tx_column_name,
     vacuum,
     version_class,
+    version_table,
+    apply_table_schema,
 )
 
 

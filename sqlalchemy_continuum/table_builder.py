@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_utils import get_column_key
+from .utils import apply_table_schema
 
 
 class ColumnReflector(object):
@@ -151,5 +151,5 @@ class TableBuilder(object):
             self.parent_table.metadata,
             *columns,
             extend_existing=extends is not None,
-            schema=self.option('table_schema') or self.parent_table.schema
+            schema=apply_table_schema(self.option('table_schema'), self.parent_table.schema)
         )

@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import get_versioning_manager
+from sqlalchemy_continuum import get_versioning_manager, version_table
 from tests import TestCase
 
 
@@ -48,11 +48,12 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         tx_log = self.session.query(tx_log_class).first()
 
         self.session.execute(
-            '''INSERT INTO article_version
+            '''INSERT INTO %s
             (id, %s, name, content, operation_type)
             VALUES
             (1, %d, 'something', 'some content', 1)
-            ''' % (self.transaction_column_name, tx_log.id)
+            ''' % (version_table(self.Article, self.Article().__table__),
+                   self.transaction_column_name, tx_log.id)
         )
 
         assert self.session.query(self.ArticleVersion).first().changeset == {}

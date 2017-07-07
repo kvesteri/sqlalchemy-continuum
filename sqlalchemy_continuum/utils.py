@@ -1,6 +1,7 @@
 from itertools import chain
 from inspect import isclass
 from collections import defaultdict
+from types import LambdaType
 
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
@@ -126,20 +127,50 @@ def version_class(model):
     except KeyError:
         return model
 
+def apply_table_schema(table_schema, schema_name):
+    """
+    Applies a manager's `table_schema` property to calculate a history table's schema.
 
-def version_table(table):
+    :param table_schema: lambda or string to apply to schema_name
+    :param schema_name: string
+    """
+    # Apply lambda to schema_name
+    if isinstance(table_schema, LambdaType):
+        return table_schema(schema_name)
+
+    if isinstance(table_schema, basestring):
+        try:
+            # Apply string interpolation
+            return schema_name % table_schema
+        except TypeError:
+            # If string interpolation fails, return table_schema string without interpolation
+            return table_schema
+
+    return schema_name
+
+
+def version_table(model, table):
     """
     Return associated version table for given SQLAlchemy Table object.
 
+    :param model: SQLAlchemy declarative model class
     :param table: SQLAlchemy Table object
     """
-    if table.metadata.schema:
+    table_name = option(model, 'table_name')
+    table_schema = option(model, 'table_schema')
+
+    if table.schema:
         return table.metadata.tables[
-            table.metadata.schema + '.' + table.name + '_version'
+            table_name % (apply_table_schema(table_schema, table.schema) + '.' + table.name)
+        ]
+    elif table.metadata.schema:
+        return table.metadata.tables[
+            table_name % (apply_table_schema(table_schema, table.metadata.schema) + '.' + table.name)
         ]
     else:
+        schema = apply_table_schema(table_schema, None)
         return table.metadata.tables[
-            table.name + '_version'
+            table_name % (((schema + '.') if schema else '') + table.name)
         ]
 
 
@@ -364,8 +395,7 @@ def count_versions(obj):
     if session is None:
         # If object is transient, we assume it has no version history.
         return 0
-    manager = get_versioning_manager(obj)
-    table_name = manager.option(obj, 'table_name') % obj.__table__.name
+    table_name = version_table(obj, obj.__table__)
     criteria = [
         '%s = %r' % (pk, getattr(obj, pk))
         for pk in get_primary_keys(obj)
@@ -417,11 +447,18 @@ def changeset(obj):
 
 
 class VersioningClauseAdapter(sa.sql.visitors.ReplacingCloningVisitor):
+    def __init__(self, model):
+        self.model = model
+
     def replace(self, col):
         if isinstance(col, sa.Column):
-            table = version_table(col.table)
+            table = version_table(self.model, col.table)
             return table.c.get(col.key)
 
 
-def adapt_columns(expr):
-    return VersioningClauseAdapter().traverse(expr)
+def adapt_columns(model, expr):
+    """
+    :param obj: SQLAlchemy declarative model object
+    :param expr: SQL expression/condition to traverse and visit
+    """
+    return VersioningClauseAdapter(model).traverse(expr)
