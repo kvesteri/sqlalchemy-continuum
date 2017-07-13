@@ -30,7 +30,7 @@ from .base import Plugin
 
 
 def fetch_current_user_id():
-    from flask.ext.login import current_user
+    from flask_login import current_user
 
     # Return None if we are outside of request context.
     if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
@@ -45,7 +45,7 @@ def fetch_remote_addr():
     # Return None if we are outside of request context.
     if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
         return
-    return request.headers.get('X-Forwarded-For', None)
+    return request.headers.get('X-Forwarded-For') or request.remote_addr
 
 
 def fetch_origin_app():

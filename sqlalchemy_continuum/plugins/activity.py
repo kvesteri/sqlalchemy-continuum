@@ -210,7 +210,7 @@ class ActivityBase(object):
 
     @hybrid_property
     def actor(self):
-        self.transaction.user
+        return self.transaction.user
 
 
 class ActivityFactory(ModelFactory):

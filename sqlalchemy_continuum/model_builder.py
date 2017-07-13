@@ -182,6 +182,7 @@ class ModelBuilder(object):
                     mapper = sa.inspect(self.model)
 
                     inherit_condition = adapt_columns(
+                        self.model,
                         mapper.inherit_condition
                     )
                     tx_column_name = self.manager.options[

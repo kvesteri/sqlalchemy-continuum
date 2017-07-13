@@ -101,6 +101,9 @@ Here is a full list of configuration options:
 * table_name (default: '%s_version')
     The name of the history table.
 
+* table_schema (default: None)
+    The schema name of the history table.
+
 * transaction_column_name (default: 'transaction_id')
     The name of the transaction column (used by history tables).
 

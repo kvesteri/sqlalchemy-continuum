@@ -1,6 +1,6 @@
 import pytest
 import sqlalchemy as sa
-from sqlalchemy_continuum import version_class
+from sqlalchemy_continuum import version_class, version_table
 from tests import TestCase, uses_native_versioning, create_test_cases
 
 
@@ -102,10 +102,12 @@ class JoinTableInheritanceTestCase(TestCase):
         self.session.add(article)
         self.session.commit()
         assert self.session.execute(
-            'SELECT %s FROM article_version' % tx_column
+            'SELECT %s FROM %s' %
+            (tx_column, version_table(self.Article, self.Article().__table__))
         ).fetchone()[0]
         assert self.session.execute(
-            'SELECT %s FROM text_item_version' % tx_column
+            'SELECT %s FROM %s' %
+            (tx_column, version_table(self.TextItem, self.TextItem().__table__))
         ).fetchone()[0]
 
     def test_primary_keys(self):
@@ -134,12 +136,18 @@ class JoinTableInheritanceTestCase(TestCase):
         assert article.versions.count() == 2
 
         assert self.session.execute(
-            'SELECT %s FROM text_item_version '
-            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
+            'SELECT %s FROM %s '
+            'ORDER BY %s LIMIT 1' %
+            (end_tx_column,
+             version_table(self.TextItem, self.TextItem().__table__),
+             tx_column)
         ).scalar()
         assert self.session.execute(
-            'SELECT %s FROM article_version '
-            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
+            'SELECT %s FROM %s '
+            'ORDER BY %s LIMIT 1' %
+            (end_tx_column,
+             version_table(self.Article, self.Article().__table__),
+             tx_column)
         ).scalar()
 
 
@@ -195,11 +203,14 @@ class TestDeepJoinedTableInheritance(TestCase):
         self.session.add(document)
         self.session.commit()
         assert self.session.execute(
-            'SELECT COUNT(1) FROM document_version'
+            'SELECT COUNT(1) FROM %s' %
+            (version_table(self.Document, self.Document().__table__))
         ).scalar() == 1
         assert self.session.execute(
-            'SELECT COUNT(1) FROM content_version'
+            'SELECT COUNT(1) FROM %s' %
+            (version_table(self.Content, self.Content().__table__))
         ).scalar() == 1
         assert self.session.execute(
-            'SELECT COUNT(1) FROM node_version'
+            'SELECT COUNT(1) FROM %s' %
+            (version_table(self.Node, self.Node().__table__))
         ).scalar() == 1

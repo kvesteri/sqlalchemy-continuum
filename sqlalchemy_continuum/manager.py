@@ -11,7 +11,7 @@ from .operation import Operation
 from .plugins import PluginCollection
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
-from .utils import is_modified, is_versioned
+from .utils import is_modified, is_versioned, apply_table_schema
 
 
 def tracked_operation(func):
@@ -252,7 +252,7 @@ class VersioningManager(object):
         """
         Attach listeners that track the operations (flushing, committing and
         rolling back) of given session. This method should be used in
-        conjuction with `track_operations`.
+        conjunction with `track_operations`.
 
         :param session: SQLAlchemy session to track the operations from
         """
@@ -263,7 +263,7 @@ class VersioningManager(object):
         """
         Remove listeners that track the operations (flushing, committing and
         rolling back) of given session. This method should be used in
-        conjuction with `remove_operations_tracking`.
+        conjunction with `remove_operations_tracking`.
 
         :param session:
             SQLAlchemy session to remove the operations tracking from
@@ -348,7 +348,7 @@ class VersioningManager(object):
 
     def clear(self, session):
         """
-        Simple SQLAlchemy listener that is being invoked after succesful
+        Simple SQLAlchemy listener that is being invoked after successful
         transaction commit or when transaction rollback occurs. The purpose of
         this listener is to reset this UnitOfWork back to its initialization
         state.
@@ -367,7 +367,13 @@ class VersioningManager(object):
         """
         Append history association operation to pending_statements list.
         """
-        table_schema = self.options.get('table_schema', None)
+        # Override table_schema if necessary
+        schema = None
+        split_table_name = table_name.split('.', 1)
+        if len(split_table_name) == 2:
+            schema = split_table_name[0]
+            table_name = split_table_name[-1]
+        table_schema = apply_table_schema(self.options.get('table_schema', None), schema)
         version_table_name = (((table_schema + '.') if table_schema else '')
                               + self.options['table_name']) % table_name
 
@@ -380,7 +386,10 @@ class VersioningManager(object):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-            uow = self.units_of_work[conn.engine]
+            try:
+                uow = self.units_of_work[conn.engine]
+            except KeyError:
+                return
         uow.pending_statements.append(stmt)
 
     def track_association_operations(
@@ -405,7 +414,8 @@ class VersioningManager(object):
         if op is not None:
             table_name = statement.split(' ')[2]
             table_names = [
-                table.name for table in self.association_tables
+                table.name if not table.schema else table.schema + '.' + table.name
+                for table in self.association_tables
             ]
             if table_name in table_names:
                 if executemany:

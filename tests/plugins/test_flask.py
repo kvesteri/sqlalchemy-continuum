@@ -1,8 +1,8 @@
 import os
 
 from flask import Flask, url_for
-from flask.ext.login import LoginManager
-from flask.ext.sqlalchemy import SQLAlchemy, _SessionSignalEvents
+from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
 import sqlalchemy as sa
@@ -97,15 +97,22 @@ class TestFlaskPlugin(TestCase):
 
         @self.app.route('/raw-sql-and-flush')
         def test_raw_sql_and_flush():
+            try:
+                table_schema = self.Article.__table_args__['schema']
+            except AttributeError:
+                table_schema = None
+            table_name = ((table_schema + '.') if table_schema else '') + self.Article.__tablename__
             self.session.execute(
-                "INSERT INTO article (name) VALUES ('some article')"
+                "INSERT INTO %s (name) VALUES ('some article')" %
+                (table_name)
             )
             article = self.Article()
             article.name = u'Some article'
             self.session.add(article)
             self.session.flush()
             self.session.execute(
-                "INSERT INTO article (name) VALUES ('some article')"
+                "INSERT INTO %s (name) VALUES ('some article')" %
+                (table_name)
             )
             self.session.commit()
             return ''
@@ -281,5 +288,3 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         uow = versioning_manager.unit_of_work(self.db.session)
         transaction = uow.create_transaction(self.db.session)
         assert transaction.id
-
-
