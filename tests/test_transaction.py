@@ -56,3 +56,34 @@ class TestAssigningUserClass(TestCase):
     def test_copies_primary_key_type_from_user_class(self):
         attr = versioning_manager.transaction_cls.user_id
         assert isinstance(attr.property.columns[0].type, sa.Unicode)
+
+
+class TestCustomTableName(TestCase):
+    transaction_table_name = "my_custom_TX_table_name"
+
+    def setup_method(self, method):
+        TestCase.setup_method(self, method)
+        self.article = self.Article()
+        self.article.name = u'Some article'
+        self.article.content = u'Some content'
+        self.article.tags.append(self.Tag(name=u'Some tag'))
+        self.session.add(self.article)
+        self.session.commit()
+
+    def test_table_name(self):
+        assert (
+            versioning_manager.transaction_cls.__tablename__ ==
+            self.transaction_table_name
+        )
+
+    def test_relationships(self):
+        assert self.article.versions[0].transaction
+
+    def test_only_saves_transaction_if_actual_modifications(self):
+        self.article.name = u'Some article'
+        self.session.commit()
+        self.article.name = u'Some article'
+        self.session.commit()
+        assert self.session.query(
+            versioning_manager.transaction_cls
+        ).count() == 1

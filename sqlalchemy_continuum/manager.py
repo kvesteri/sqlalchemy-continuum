@@ -1,5 +1,6 @@
 import re
 from functools import wraps
+import warnings
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
@@ -88,13 +89,23 @@ class VersioningManager(object):
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'strategy': 'validity',
-            'use_module_name': False
+            'use_module_name': False,
+            'transaction_table_name': 'transaction'
         }
         if plugins is None:
             self.plugins = []
         else:
             self.plugins = plugins
         self.options.update(options)
+
+        if (self.options['native_versioning']
+            and self.options['transaction_table_name'] != 'transaction'
+        ):
+            self.options['transaction_table_name'] = 'transaction'
+            warnings.warn(
+                'custom name for transaction table is not supported'
+                'with native versioning'
+            )
 
     @property
     def plugins(self):

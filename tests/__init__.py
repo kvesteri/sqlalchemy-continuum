@@ -62,6 +62,7 @@ class TestCase(object):
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
+    transaction_table_name = 'transaction'
     composite_pk = False
     plugins = [TransactionChangesPlugin(), TransactionMetaPlugin()]
     transaction_cls = TransactionFactory()
@@ -77,6 +78,7 @@ class TestCase(object):
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
+            'transaction_table_name': self.transaction_table_name,
         }
 
     def setup_method(self, method):

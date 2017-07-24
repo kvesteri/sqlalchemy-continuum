@@ -116,7 +116,7 @@ class TransactionFactory(ModelFactory):
             manager.declarative_base,
             TransactionBase
         ):
-            __tablename__ = 'transaction'
+            __tablename__ = manager.options['transaction_table_name']
             __versioning_manager__ = manager
 
             id = sa.Column(
