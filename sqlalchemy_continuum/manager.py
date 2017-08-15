@@ -24,7 +24,15 @@ def tracked_operation(func):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-            uow = self.units_of_work[conn.engine]
+            try:
+                uow = self.units_of_work[conn.engine]
+            except KeyError:
+                for connection in self.units_of_work.keys():
+                    if connection.connection is conn.connection:
+                        uow = self.unit_of_work(session)
+                        break  # The ConnectionFairy is the same, this connection is a clone
+                else:
+                    raise KeyError
         return func(self, uow, target)
     return wrapper
 
@@ -357,10 +365,19 @@ class VersioningManager(object):
         if session.transaction.nested:
             return
         conn = self.session_connection_map.pop(session, None)
+        if conn is None:
+            return
+
         if conn in self.units_of_work:
             uow = self.units_of_work[conn]
             uow.reset(session)
             del self.units_of_work[conn]
+
+        for connection in dict(self.units_of_work).keys():
+            if conn.connection is connection.connection:
+                uow = self.units_of_work[connection]
+                uow.reset(session)
+                del self.units_of_work[connection]
 
     def append_association_operation(self, conn, table_name, params, op):
         """
@@ -375,8 +392,25 @@ class VersioningManager(object):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-            uow = self.units_of_work[conn.engine]
+            try:
+                uow = self.units_of_work[conn.engine]
+            except KeyError:
+                for connection in self.units_of_work.keys():
+                    if connection.connection is conn.connection:
+                        uow = self.unit_of_work(conn.session)
+                        break  # The ConnectionFairy is the same, this connection is a clone
+                else:
+                    raise KeyError
         uow.pending_statements.append(stmt)
+
+    def track_cloned_connections(self, c, opt):
+        """
+        Track cloned connections from association tables.
+        """
+        if c not in self.units_of_work.keys():
+            for connection, uow in dict(self.units_of_work).items():
+                if connection.connection is c.connection:  # ConnectionFairy is the same - this is a clone
+                    self.units_of_work[c] = uow
 
     def track_association_operations(
         self, conn, cursor, statement, parameters, context, executemany
