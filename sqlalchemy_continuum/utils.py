@@ -133,7 +133,11 @@ def version_table(table):
 
     :param table: SQLAlchemy Table object
     """
-    if table.metadata.schema:
+    if table.schema:
+        return table.metadata.tables[
+            table.schema + '.' + table.name + '_version'
+        ]
+    elif table.metadata.schema:
         return table.metadata.tables[
             table.metadata.schema + '.' + table.name + '_version'
         ]

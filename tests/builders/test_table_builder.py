@@ -3,6 +3,7 @@ from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
 from tests import TestCase
+from pytest import mark
 
 
 class TestTableBuilder(TestCase):
@@ -69,3 +70,31 @@ class TestTableBuilderWithOnUpdate(TestCase):
     def test_takes_out_onupdate_triggers(self):
         table = version_class(self.Article).__table__
         assert table.c.last_update.onupdate is None
+
+@mark.skipif("os.environ.get('DB') == 'sqlite'")
+class TestTableBuilderInOtherSchema(TestCase):
+    def create_models(self):
+        class Article(self.Model):
+            __tablename__ = 'article'
+            __versioned__ = copy(self.options)
+            __table_args__ = {'schema': 'other'}
+
+            id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            last_update = sa.Column(
+                sa.DateTime,
+                default=datetime.utcnow,
+                onupdate=datetime.utcnow,
+                nullable=False
+            )
+        self.Article = Article
+
+    def create_tables(self):
+        self.connection.execute('DROP SCHEMA IF EXISTS other')
+        self.connection.execute('CREATE SCHEMA other')
+        TestCase.create_tables(self)
+
+    def test_created_tables_retain_schema(self):
+        table = version_class(self.Article).__table__
+        assert table.schema is not None
+        assert table.schema == self.Article.__table__.schema
+

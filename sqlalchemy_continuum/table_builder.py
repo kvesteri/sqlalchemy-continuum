@@ -150,5 +150,6 @@ class TableBuilder(object):
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
             *columns,
+            schema=self.parent_table.schema,
             extend_existing=extends is not None
         )

@@ -400,7 +400,8 @@ class VersioningManager(object):
         if op is not None:
             table_name = statement.split(' ')[2]
             table_names = [
-                table.name for table in self.association_tables
+                table.name if not table.schema else table.schema + '.' + table.name
+                for table in self.association_tables
             ]
             if table_name in table_names:
                 if executemany:
