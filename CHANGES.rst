@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.2 (2017-10-12)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed multiple schema handling (#132, courtesy of vault)
+
+
 1.3.1 (2017-06-28)
 ^^^^^^^^^^^^^^^^^^
 
