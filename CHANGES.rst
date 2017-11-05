@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.3 (2017-11-05)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed changeset when updating object in same transaction as inserting it (#141, courtesy of oinopion)
+
+
 1.3.2 (2017-10-12)
 ^^^^^^^^^^^^^^^^^^
 
