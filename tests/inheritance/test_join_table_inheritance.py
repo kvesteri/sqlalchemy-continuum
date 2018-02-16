@@ -1,6 +1,7 @@
 import pytest
 import sqlalchemy as sa
-from sqlalchemy_continuum import version_class
+import sqlalchemy.orm as orm
+from sqlalchemy_continuum import version_class, Operation
 from tests import TestCase, uses_native_versioning, create_test_cases
 
 
@@ -32,6 +33,8 @@ class JoinTableInheritanceTestCase(TestCase):
                 sa.ForeignKey(TextItem.id),
                 primary_key=True
             )
+
+            author = sa.Column(sa.Unicode(255))
 
         class BlogPost(TextItem):
             __tablename__ = 'blog_post'
@@ -118,6 +121,27 @@ class JoinTableInheritanceTestCase(TestCase):
         assert len(table.primary_key.columns)
         assert 'id' in table.primary_key.columns
         assert tx_column in table.primary_key.columns
+
+    def test_versions(self):
+        article = self.Article()
+        article.name = u'Alchemy for beginners'
+        self.session.add(article)
+        self.session.commit()
+        assert article.name == u'Alchemy for beginners'
+        assert article.versions[0].operation_type == Operation.INSERT
+
+        article.name = u'SQLAlchemy for beginners'
+        self.session.commit()
+        assert article.name == u'SQLAlchemy for beginners'
+        assert article.versions[1].operation_type == Operation.UPDATE
+
+        article.author = u'John Author'
+        self.session.commit()
+        assert article.author == u'John Author'
+        assert article.versions[2].operation_type == Operation.UPDATE
+        assert len(list(article.versions)) == 3
+        assert article.versions[0].name == u'Alchemy for beginners'
+        assert article.versions[0].author is None
 
     @pytest.mark.skipif('uses_native_versioning()')
     def test_updates_end_transaction_id_to_all_tables(self):
