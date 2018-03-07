@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.4 (2018-03-07)
+^^^^^^^^^^^^^^^^^^
+
+- Exclude many-to-many properties from versioning if they are added in exclude parameter (#169, courtesy of fuhrysteve)
+
+
 1.3.3 (2017-11-05)
 ^^^^^^^^^^^^^^^^^^
 
