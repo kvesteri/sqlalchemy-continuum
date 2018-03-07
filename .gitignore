@@ -34,3 +34,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# mypy
+.mypy_cache/
+
+# Unit test / coverage reports
+.cache
