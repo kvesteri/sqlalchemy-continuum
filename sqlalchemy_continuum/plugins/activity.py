@@ -199,13 +199,6 @@ from ..utils import version_class, version_obj
 
 
 class ActivityBase(object):
-    id = sa.Column(
-        sa.BigInteger,
-        sa.schema.Sequence('activity_id_seq'),
-        primary_key=True,
-        autoincrement=True
-    )
-
     verb = sa.Column(sa.Unicode(255))
 
     @hybrid_property
@@ -226,6 +219,18 @@ class ActivityFactory(ModelFactory):
         ):
             __tablename__ = 'activity'
             manager = self
+
+            id_seq = sa.schema.Sequence(
+                'activity_id_seq',
+                metadata=manager.declarative_base.metadata
+            )
+
+            id = sa.Column(
+                sa.BigInteger,
+                server_default=id_seq.next_value(),
+                primary_key=True,
+                autoincrement=True
+            )
 
             transaction_id = sa.Column(
                 sa.BigInteger,

@@ -119,9 +119,14 @@ class TransactionFactory(ModelFactory):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
 
+            id_seq = sa.schema.Sequence(
+                'transaction_id_seq',
+                metadata=manager.declarative_base.metadata
+            )
+
             id = sa.Column(
                 sa.types.BigInteger,
-                sa.schema.Sequence('transaction_id_seq'),
+                server_default=id_seq.next_value(),
                 primary_key=True,
                 autoincrement=True
             )
