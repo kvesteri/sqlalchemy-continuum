@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.5 (2018-06-03)
+^^^^^^^^^^^^^^^^^^
+
+- Track cloned connections (#167, courtesy of netcriptus)
+
+
 1.3.4 (2018-03-07)
 ^^^^^^^^^^^^^^^^^^
 
