@@ -32,7 +32,7 @@ def tracked_operation(func):
                         uow = self.unit_of_work(session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
-                    raise KeyError
+                    raise
         return func(self, uow, target)
     return wrapper
 
@@ -400,7 +400,7 @@ class VersioningManager(object):
                         uow = self.unit_of_work(conn.session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
-                    raise KeyError
+                    raise
         uow.pending_statements.append(stmt)
 
     def track_cloned_connections(self, c, opt):
