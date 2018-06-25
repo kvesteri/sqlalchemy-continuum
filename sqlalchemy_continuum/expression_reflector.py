@@ -3,6 +3,9 @@ from sqlalchemy.sql.expression import bindparam
 
 from .utils import version_table
 
+import contextlib
+import shortuuid
+
 
 class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
     def __init__(self, parent, relationship):
@@ -27,6 +30,8 @@ class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
                     getattr(self.parent, column.key)
                 )
 
+        with contextlib.suppress(AttributeError):
+            reflected_column.value = shortuuid.decode(reflected_column.value)
         return reflected_column
 
     def __call__(self, expr):
