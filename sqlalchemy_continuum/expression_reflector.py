@@ -30,7 +30,7 @@ class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
                     getattr(self.parent, column.key)
                 )
 
-        with contextlib.suppress(AttributeError):
+        with contextlib.suppress(AttributeError, TypeError):
             reflected_column.value = shortuuid.decode(reflected_column.value)
         return reflected_column
 
