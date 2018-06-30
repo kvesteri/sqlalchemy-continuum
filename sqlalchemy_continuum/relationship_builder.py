@@ -95,13 +95,17 @@ class RelationshipBuilder(object):
                 tx_column = option(obj, 'transaction_column_name')
                 tx_value = getattr(obj, tx_column)
 
+                join = None
                 joins = []
                 for column in secondary.c:
                     for versioned_column in vs.c:
                         if column.name == versioned_column.name:
+                            fk = list(column.foreign_keys)[0]
+                            if fk.column.table == self.remote_cls.__table__:
+                                join = versioned_column == fk.column
                             joins.append(avs.c[column.name] == versioned_column)
 
-                query = query.join(vs, vs.c.tag_id == self.remote_cls.id)
+                query = query.join(vs, join)
                 query = query.filter(
                     getattr(vs.c, tx_column) <= tx_value,
                     vs.c.operation_type != 2,
