@@ -4,7 +4,7 @@ from .exc import ClassNotVersioned
 from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
 from .table_builder import TableBuilder
-from .utils import adapt_columns, version_class, option
+from .utils import adapt_columns, version_class, version_table, option
 
 
 class RelationshipBuilder(object):
@@ -62,12 +62,7 @@ class RelationshipBuilder(object):
 
     def query(self, obj):
         session = sa.orm.object_session(obj)
-        return (
-            session.query(self.remote_cls)
-            .filter(
-                self.criteria(obj)
-            )
-        )
+        return self.criteria(obj, session.query(self.remote_cls))
 
     def process_query(self, query):
         """
@@ -82,19 +77,46 @@ class RelationshipBuilder(object):
             return query.first()
         return query.all()
 
-    def criteria(self, obj):
+    def criteria(self, obj, query):
         direction = self.property.direction
 
         if self.versioned:
             if direction.name == 'ONETOMANY':
-                return self.one_to_many_criteria(obj)
+                criteria = self.one_to_many_criteria(obj)
             elif direction.name == 'MANYTOMANY':
-                return self.many_to_many_criteria(obj)
+                criteria = self.many_to_many_criteria(obj)
             elif direction.name == 'MANYTOONE':
-                return self.many_to_one_criteria(obj)
+                criteria = self.many_to_one_criteria(obj)
         else:
+            if direction.name == 'MANYTOMANY':
+                secondary = self.property.secondary
+                vs = version_table(secondary)
+                avs = vs.alias()
+                tx_column = option(obj, 'transaction_column_name')
+                tx_value = getattr(obj, tx_column)
+
+                joins = []
+                for column in secondary.c:
+                    for versioned_column in vs.c:
+                        if column.name == versioned_column.name:
+                            joins.append(avs.c[column.name] == versioned_column)
+
+                query = query.join(vs, vs.c.tag_id == self.remote_cls.id)
+                query = query.filter(
+                    getattr(vs.c, tx_column) <= tx_value,
+                    vs.c.operation_type != 2,
+                    ~sa.exists(
+                        sa.select([1]).where(sa.and_(
+                            avs.c[tx_column] >= vs.c[tx_column],
+                            avs.c[tx_column] <= tx_value,
+                            avs.c.operation_type == 2,
+                            sa.and_(*joins)
+                        ))
+                    ))
             reflector = VersionExpressionReflector(obj, self.property)
-            return reflector(self.property.primaryjoin)
+            criteria = reflector(self.property.primaryjoin)
+
+        return query.filter(criteria)
 
     def many_to_many_criteria(self, obj):
         """
