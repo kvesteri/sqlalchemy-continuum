@@ -282,4 +282,23 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         transaction = uow.create_transaction(self.db.session)
         assert transaction.id
 
+    def test_clear_after_implicit_transaction(self):
+        # Add something to the db
+        article = self.Article()
+        article.name = u'Some article'
+        article.content = u'Some content'
+        self.db.session.add(article)
+        self.db.session.commit()
+
+        # Dirty the session
+        self.db.session.delete(article)
+        # Implicitly flush the session to the db with a separate connection
+        # to be able to get the count.
+        self.Article.query.count()
+
+        # That new connection should not leak
+        uow_leaks = versioning_manager.units_of_work
+        session_map_leaks = versioning_manager.session_connection_map
+        assert not uow_leaks
+        assert not session_map_leaks
 
