@@ -379,6 +379,25 @@ class VersioningManager(object):
                 uow.reset(session)
                 del self.units_of_work[connection]
 
+    def clear_connection(self, conn):
+        if conn in self.units_of_work:
+            uow = self.units_of_work[conn]
+            uow.reset()
+            del self.units_of_work[conn]
+
+
+        for session, connection in dict(self.session_connection_map).items():
+            if connection is conn:
+                del self.session_connection_map[session]
+
+
+        for connection in dict(self.units_of_work).keys():
+            if connection.closed or conn.connection is connection.connection:
+                uow = self.units_of_work[connection]
+                uow.reset()
+                del self.units_of_work[connection]
+
+
     def append_association_operation(self, conn, table_name, params, op):
         """
         Append history association operation to pending_statements list.
