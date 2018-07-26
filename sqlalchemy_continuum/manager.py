@@ -28,7 +28,7 @@ def tracked_operation(func):
                 uow = self.units_of_work[conn.engine]
             except KeyError:
                 for connection in self.units_of_work.keys():
-                    if connection.connection is conn.connection:
+                    if not connection.closed and connection.connection is conn.connection:
                         uow = self.unit_of_work(session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
@@ -374,7 +374,7 @@ class VersioningManager(object):
             del self.units_of_work[conn]
 
         for connection in dict(self.units_of_work).keys():
-            if conn.connection is connection.connection:
+            if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset(session)
                 del self.units_of_work[connection]
@@ -396,7 +396,7 @@ class VersioningManager(object):
                 uow = self.units_of_work[conn.engine]
             except KeyError:
                 for connection in self.units_of_work.keys():
-                    if connection.connection is conn.connection:
+                    if not connection.closed and connection.connection is conn.connection:
                         uow = self.unit_of_work(conn.session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
@@ -409,7 +409,7 @@ class VersioningManager(object):
         """
         if c not in self.units_of_work.keys():
             for connection, uow in dict(self.units_of_work).items():
-                if connection.connection is c.connection:  # ConnectionFairy is the same - this is a clone
+                if not connection.closed and connection.connection is c.connection:  # ConnectionFairy is the same - this is a clone
                     self.units_of_work[c] = uow
 
     def track_association_operations(
