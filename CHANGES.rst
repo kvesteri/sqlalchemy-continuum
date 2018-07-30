@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.6 (2018-07-30)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed ResourceClosedErrors from connections leaking when using an external transaction (#196, courtesy of vault)
+
+
 1.3.5 (2018-06-03)
 ^^^^^^^^^^^^^^^^^^
 
