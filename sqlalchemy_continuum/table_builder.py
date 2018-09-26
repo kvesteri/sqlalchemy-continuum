@@ -85,8 +85,8 @@ class ColumnReflector(object):
     def reflected_parent_columns(self):
         for column in self.parent_table.c:
             if (
-                self.model and
-                self.manager.is_excluded_column(self.model, column)
+                    self.model and
+                    self.manager.is_excluded_column(self.model, column)
             ):
                 continue
             reflected_column = self.reflect_column(column)
@@ -110,11 +110,12 @@ class TableBuilder(object):
     TableBuilder handles the building of version tables based on parent
     table's structure and versioning configuration options.
     """
+
     def __init__(
-        self,
-        versioning_manager,
-        parent_table,
-        model=None
+            self,
+            versioning_manager,
+            parent_table,
+            model=None
     ):
         self.manager = versioning_manager
         self.parent_table = parent_table
@@ -131,7 +132,15 @@ class TableBuilder(object):
         """
         Returns the version table name for current parent table.
         """
-        return self.option('table_name') % self.parent_table.name
+        table_name = self.option('table_name') % self.parent_table.name if '%s' in self.option(
+            'table_name') else self.option(
+            'table_name')
+        try:
+            if self.option('schema_name') and '.' in table_name:
+                table_name = '{}.{}'.format(self.option('schema_name'), table_name.split('.')[-1])
+        except KeyError:
+            pass
+        return table_name
 
     @property
     def columns(self):
