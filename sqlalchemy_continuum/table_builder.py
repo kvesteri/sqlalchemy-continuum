@@ -132,14 +132,12 @@ class TableBuilder(object):
         """
         Returns the version table name for current parent table.
         """
-        table_name = self.option('table_name') % self.parent_table.name if '%s' in self.option(
+        table_name = self.option('table_name') % self.parent_table if '%s' in self.option(
             'table_name') else self.option(
             'table_name')
-        try:
-            if self.option('schema_name') and '.' in table_name:
-                table_name = '{}.{}'.format(self.option('schema_name'), table_name.split('.')[-1])
-        except KeyError:
-            pass
+        if '.' in table_name:
+            table_name = table_name.split('.')[-1]
+
         return table_name
 
     @property
@@ -155,10 +153,14 @@ class TableBuilder(object):
         """
         columns = self.columns if extends is None else []
         self.manager.plugins.after_build_version_table_columns(self, columns)
+        try:
+            schema = self.option('schema_name')
+        except KeyError as e:
+            schema = self.parent_table.schema
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
             *columns,
-            schema=self.parent_table.schema,
+            schema=schema,
             extend_existing=extends is not None
         )
