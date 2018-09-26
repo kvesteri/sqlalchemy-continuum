@@ -124,8 +124,11 @@ class TableBuilder(object):
     def option(self, name):
         try:
             return self.manager.option(self.model, name)
-        except TypeError:
-            return self.manager.options[name]
+        except (TypeError, KeyError):
+            try:
+                return self.manager.options[name]
+            except KeyError:
+                return None
 
     @property
     def table_name(self):
@@ -153,10 +156,11 @@ class TableBuilder(object):
         """
         columns = self.columns if extends is None else []
         self.manager.plugins.after_build_version_table_columns(self, columns)
-        try:
+        schema = self.parent_table.schema
+        if self.option('schema_name'):
             schema = self.option('schema_name')
-        except KeyError as e:
-            schema = self.parent_table.schema
+        elif self.option('versions_tables_schema_name'):
+            schema = self.option('versions_tables_schema_name')
         return sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
