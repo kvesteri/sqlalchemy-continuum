@@ -34,6 +34,7 @@ def tracked_operation(func):
                 else:
                     raise
         return func(self, uow, target)
+
     return wrapper
 
 
@@ -60,14 +61,15 @@ class VersioningManager(object):
         Builder object which handles the building of versioning tables and
         models.
     """
+
     def __init__(
-        self,
-        unit_of_work_cls=UnitOfWork,
-        transaction_cls=None,
-        user_cls=None,
-        options={},
-        plugins=None,
-        builder=None
+            self,
+            unit_of_work_cls=UnitOfWork,
+            transaction_cls=None,
+            user_cls=None,
+            options={},
+            plugins=None,
+            builder=None
     ):
         self.uow_class = unit_of_work_cls
         if builder is None:
@@ -92,6 +94,8 @@ class VersioningManager(object):
             'native_versioning': False,
             'create_models': True,
             'create_tables': True,
+            'transaction_table_name': 'transaction',
+            'transaction_table_schema_name': None,
             'transaction_column_name': 'transaction_id',
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
@@ -385,18 +389,15 @@ class VersioningManager(object):
             uow.reset()
             del self.units_of_work[conn]
 
-
         for session, connection in dict(self.session_connection_map).items():
             if connection is conn:
                 del self.session_connection_map[session]
-
 
         for connection in dict(self.units_of_work).keys():
             if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset()
                 del self.units_of_work[connection]
-
 
     def append_association_operation(self, conn, table_name, params, op):
         """
@@ -405,8 +406,8 @@ class VersioningManager(object):
         params['operation_type'] = op
         stmt = (
             self.metadata.tables[self.options['table_name'] % table_name]
-            .insert()
-            .values(params)
+                .insert()
+                .values(params)
         )
         try:
             uow = self.units_of_work[conn]
@@ -432,15 +433,15 @@ class VersioningManager(object):
                     self.units_of_work[c] = uow
 
     def track_association_operations(
-        self, conn, cursor, statement, parameters, context, executemany
+            self, conn, cursor, statement, parameters, context, executemany
     ):
         """
         Track association operations and adds the generated history
         association operations to pending_statements list.
         """
         if (
-            not self.options['versioning'] and
-            not self.options['native_versioning']
+                not self.options['versioning'] and
+                not self.options['native_versioning']
         ):
             return
 

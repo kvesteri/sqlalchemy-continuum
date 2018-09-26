@@ -54,8 +54,8 @@ class TransactionBase(object):
 
             entities[version_class] = (
                 session
-                .query(version_class)
-                .filter(getattr(version_class, tx_column) == self.id)
+                    .query(version_class)
+                    .filter(getattr(version_class, tx_column) == self.id)
             ).all()
         return entities
 
@@ -112,18 +112,21 @@ class TransactionFactory(ModelFactory):
         """
         Create Transaction class.
         """
+
         class Transaction(
             manager.declarative_base,
             TransactionBase
         ):
-            __tablename__ = 'transaction'
+            __tablename__ = manager.options['transaction_table_name']
             __versioning_manager__ = manager
+            __table_args__ = {u'schema': manager.options['transaction_table_schema_name']}
 
             id = sa.Column(
                 sa.types.BigInteger,
-                sa.schema.Sequence('transaction_id_seq'),
                 primary_key=True,
-                autoincrement=True
+                autoincrement=True,
+                server_default=sa.text(
+                    "nextval('{}.equipment_seq'::regclass)".format(manager.options['transaction_table_schema_name']))
             )
 
             if self.remote_addr:
