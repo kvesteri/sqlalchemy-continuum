@@ -34,6 +34,8 @@ class ColumnReflector(object):
 
         if not column_copy.primary_key:
             column_copy.nullable = True
+        else:
+            column_copy.index = True
 
         # Find the right column key
         if self.model is not None:
