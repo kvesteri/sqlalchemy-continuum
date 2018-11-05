@@ -47,9 +47,9 @@ for name, requirements in extras_require.items():
 
 
 setup(
-    name='SQLAlchemy-Continuum',
+    name='SQLAlchemy-Continuum-Trialspark',
     version=get_version(),
-    url='https://github.com/kvesteri/sqlalchemy-continuum',
+    url='https://github.com/trialspark/sqlalchemy-continuum',
     license='BSD',
     author='Konsta Vesterinen',
     author_email='konsta@fastmonkeys.com',
