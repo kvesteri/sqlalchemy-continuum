@@ -53,26 +53,26 @@ In order to make your models versioned you need two things:
         content = sa.Column(sa.UnicodeText)
 
 
-    article = Article(name=u'Some article', content=u'Some content')
+    article = Article(name='Some article', content='Some content')
     session.add(article)
     session.commit()
 
     # article has now one version stored in database
     article.versions[0].name
-    # u'Some article'
+    # 'Some article'
 
-    article.name = u'Updated name'
+    article.name = 'Updated name'
     session.commit()
 
     article.versions[1].name
-    # u'Updated name'
+    # 'Updated name'
 
 
     # lets revert back to first version
     article.versions[0].revert()
 
     article.name
-    # u'Some article'
+    # 'Some article'
 
 
 Resources
