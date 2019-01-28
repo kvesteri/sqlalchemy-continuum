@@ -36,6 +36,34 @@ class ActivityTestCase(TestCase):
         return activity
 
 
+class TestActivityNotId(ActivityTestCase):
+
+    def create_models(self):
+        TestCase.create_models(self)
+
+        class NotIdModel(self.Model):
+            __tablename__ = 'not_id'
+            __versioned__ = {
+                'base_classes': (self.Model, )
+            }
+
+            pk = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+            name = sa.Column(sa.Unicode(255), nullable=False)
+        self.NotIdModel = NotIdModel
+
+    def test_create_activity_with_pk(self):
+        not_id_model = self.NotIdModel(name="abc")
+        self.session.add(not_id_model)
+        self.session.commit()
+        self.create_activity(not_id_model)
+        self.session.commit()
+        activity = self.session.query(versioning_manager.activity_cls).first()
+        assert activity
+        assert activity.transaction_id
+        assert activity.object == not_id_model
+        assert activity.object_version == not_id_model.versions[-1]
+
+
 class TestActivity(ActivityTestCase):
     def test_creates_activity_class(self):
         assert versioning_manager.activity_cls.__name__ == 'Activity'
