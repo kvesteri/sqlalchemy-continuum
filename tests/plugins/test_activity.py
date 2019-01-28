@@ -52,7 +52,7 @@ class TestActivityNotId(ActivityTestCase):
         self.NotIdModel = NotIdModel
 
     def test_create_activity_with_pk(self):
-        not_id_model = self.NotIdModel(name="abc")
+        not_id_model = self.NotIdModel(name=u'Some model without id PK')
         self.session.add(not_id_model)
         self.session.commit()
         self.create_activity(not_id_model)
