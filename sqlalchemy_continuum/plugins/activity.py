@@ -191,6 +191,7 @@ target is the given article.
 
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.inspection import inspect
 from sqlalchemy_utils import JSONType, generic_relationship
 
 from .base import Plugin
@@ -254,11 +255,13 @@ class ActivityFactory(ModelFactory):
                     if object_version:
                         return object_version.transaction_id
 
-                    version_cls = version_class(obj.__class__)
+                    model = obj.__class__
+                    version_cls = version_class(model)
+                    primary_key = inspect(model).primary_key[0].name
                     return session.query(
                         sa.func.max(version_cls.transaction_id)
                     ).filter(
-                        version_cls.id == obj.id
+                        getattr(version_cls, primary_key) == getattr(obj, primary_key)
                     ).scalar()
 
             def calculate_object_tx_id(self):
