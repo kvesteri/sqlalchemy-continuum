@@ -202,7 +202,11 @@ def versioned_column_properties(obj_or_class):
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
 
     mapper = sa.inspect(cls)
-    for key in mapper.columns.keys():
+    for key, column in mapper.columns.items():
+        # Ignores non table columns
+        if not isinstance(column, sa.Column):
+            continue
+
         if not manager.is_excluded_property(obj_or_class, key):
             yield getattr(mapper.attrs, key)
 
