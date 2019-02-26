@@ -204,7 +204,7 @@ def versioned_column_properties(obj_or_class):
     mapper = sa.inspect(cls)
     for key, column in mapper.columns.items():
         # Ignores non table columns
-        if not isinstance(column, sa.Column):
+        if not is_table_column(column):
             continue
 
         if not manager.is_excluded_property(obj_or_class, key):
@@ -264,6 +264,16 @@ def vacuum(session, model, yield_per=1000):
                 session.delete(version)
         else:
             versions[version_id].append(version)
+
+
+def is_table_column(column):
+    """
+    Return wheter of not give field is a column over the database table.
+
+    :param column: SQLAclhemy model field.
+    :rtype: bool
+    """
+    return isinstance(column, sa.Column)
 
 
 def is_internal_column(model, column_name):
@@ -410,7 +420,10 @@ def changeset(obj):
     data = {}
     session = sa.orm.object_session(obj)
     if session and obj in session.deleted:
-        for column in sa.inspect(obj.__class__).columns.values():
+        columns = [c for c in sa.inspect(obj.__class__).columns.values()
+                   if is_table_column(c)]
+
+        for column in columns:
             if not column.primary_key:
                 value = getattr(obj, column.key)
                 if value is not None:
