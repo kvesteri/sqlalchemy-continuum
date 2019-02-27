@@ -74,25 +74,10 @@ LANGUAGE plpgsql
 """
 
 
-def _after_create(cls, ddl):
-    """Execute DDL after a table is created
-
-    This is required for compatibility with alembic, as the `after_create` event
-    does not fire during alembic migrations"""
-    def listener(tablename, ddl, table, bind, **kw):
-        if table.name == tablename:
-            ddl(table, bind, **kw)
-
-    sa.event.listen(
-        sa.Table,
-       'after_create',
-       partial(listener, cls.__table__.name, ddl)
-    )
-
-
 def create_triggers(cls):
-    _after_create(
-        cls,
+    sa.event.listen(
+        cls.__table__,
+        'after_create',
         sa.schema.DDL(
             procedure_sql.format(
                 temporary_transaction_sql=CreateTemporaryTransactionTableSQL(),
@@ -104,8 +89,9 @@ def create_triggers(cls):
             )
         )
     )
-    _after_create(
-        cls,
+    sa.event.listen(
+        cls.__table__,
+        'after_create',
         sa.schema.DDL(str(TransactionTriggerSQL(cls)))
     )
     sa.event.listen(
