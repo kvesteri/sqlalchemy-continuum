@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.8 (2019-02-27)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed revert to ignore non-columns (#197, courtesy of mauler)
+
+
 1.3.7 (2019-01-13)
 ^^^^^^^^^^^^^^^^^^
 
