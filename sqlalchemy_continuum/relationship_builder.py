@@ -350,7 +350,7 @@ class RelationshipBuilder(object):
             # store remote cls to association table column pairs
             self.remote_to_association_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
-                if column_pair[0] in self.property.table.c.values():
+                if column_pair[0] in self.property.target.c.values():
                     self.remote_to_association_column_pairs.append(column_pair)
 
         setattr(
