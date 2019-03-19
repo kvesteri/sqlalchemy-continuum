@@ -4,10 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.3.9 (2019-03-18)
+1.3.9 (2019-03-19)
 ^^^^^^^^^^^^^^^^^^
 
 - Added SA 1.3 support
+- Reverted trigger creation from 1.3.7
 
 
 1.3.8 (2019-02-27)
@@ -19,7 +20,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 1.3.7 (2019-01-13)
 ^^^^^^^^^^^^^^^^^^
 
-Fix trigger creation during alembic migrations (#209, courtesy of lyndsysimon)
+- Fix trigger creation during alembic migrations (#209, courtesy of lyndsysimon)
 
 
 1.3.6 (2018-07-30)
