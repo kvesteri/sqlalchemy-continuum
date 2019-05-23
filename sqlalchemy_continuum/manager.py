@@ -430,7 +430,7 @@ class VersioningManager(object):
                         uow = self.unit_of_work(conn.session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
-                    raise
+                    return
         uow.pending_statements.append(stmt)
 
     def track_cloned_connections(self, c, opt):
