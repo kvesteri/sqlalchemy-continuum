@@ -3,20 +3,67 @@ SQLAlchemy-Continuum
 
 |Build Status| |Version Status| |Downloads|
 
-Versioning and auditing extension for SQLAlchemy.
+This is Trialspark's fork of SQLALchemy Continuum. A versioning and auditing extension for SQLAlchemy.
+
+Trialspark Features
+-------------------
+- Handles PostgreSQL Schemas
+- Adds indices to Columns that are marked primary_key=True
 
 
-Features
---------
+Set up for publishing
+---------------------
+* Copy the following:
 
-- Creates versions for inserts, deletes and updates
-- Does not store updates which don't change anything
-- Supports alembic migrations
-- Can revert objects data as well as all object relations at given transaction even if the object was deleted
-- Transactions can be queried afterwards using SQLAlchemy query syntax
-- Query for changed records at given transaction
-- Temporal relationship reflection. Version object's relationship show the parent objects relationships as they where in that point in time.
-- Supports native versioning for PostgreSQL database (trigger based versioning)
+::
+
+   [distutils]
+   index-servers=
+       testpypi
+       pypi
+
+   [testpypi]
+   repository = https://test.pypi.org/legacy/
+   username = rrmurcek
+   password =
+
+   [pypi]
+   username = rrmurcek
+   password =
+
+* Paste into your local pypiprc:
+
+::
+
+   pbpaste > ~/.pypirc
+
+* Set the password from 1pass
+
+Publishing
+----------
+
+* Install twine, if you haven't already
+
+::
+
+   pip install twine
+
+* Bump version number in setup.py, if necessary!
+
+* Upload to our test pypi
+
+::
+
+   twine upload dist/* -r testpypi
+
+* Verify that the new version appears here: https://test.pypi.org/project/SQLAlchemy-Continuum-Trialspark/
+* Upload to our prod pypi
+
+::
+
+   twine upload dist/*
+
+* Update requirements.txt in spark, if you released a new version
 
 
 QuickStart
@@ -25,83 +72,4 @@ QuickStart
 ::
 
 
-    pip install SQLAlchemy-Continuum
-
-
-
-In order to make your models versioned you need two things:
-
-1. Call make_versioned() before your models are defined.
-2. Add __versioned__ to all models you wish to add versioning to
-
-
-.. code-block:: python
-
-
-    from sqlalchemy_continuum import make_versioned
-
-
-    make_versioned()
-
-
-    class Article(Base):
-        __versioned__ = {}
-        __tablename__ = 'article'
-
-        id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-        name = sa.Column(sa.Unicode(255))
-        content = sa.Column(sa.UnicodeText)
-
-
-    article = Article(name=u'Some article', content=u'Some content')
-    session.add(article)
-    session.commit()
-
-    # article has now one version stored in database
-    article.versions[0].name
-    # u'Some article'
-
-    article.name = u'Updated name'
-    session.commit()
-
-    article.versions[1].name
-    # u'Updated name'
-
-
-    # lets revert back to first version
-    article.versions[0].revert()
-
-    article.name
-    # u'Some article'
-
-
-Resources
----------
-
-- `Documentation <https://sqlalchemy-continuum.readthedocs.io/>`_
-- `Issue Tracker <http://github.com/kvesteri/sqlalchemy-continuum/issues>`_
-- `Code <http://github.com/kvesteri/sqlalchemy-continuum/>`_
-
-
-.. image:: http://i.imgur.com/UFaRx.gif
-
-
-.. |Build Status| image:: https://travis-ci.org/kvesteri/sqlalchemy-continuum.png?branch=master
-   :target: https://travis-ci.org/kvesteri/sqlalchemy-continuum
-.. |Version Status| image:: https://img.shields.io/pypi/v/SQLAlchemy-Continuum.png
-   :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
-.. |Downloads| image:: https://img.shields.io/pypi/dm/SQLAlchemy-Continuum.png
-   :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
-
-
-More information
-----------------
-
-- http://en.wikipedia.org/wiki/Slowly_changing_dimension
-- http://en.wikipedia.org/wiki/Change_data_capture
-- http://en.wikipedia.org/wiki/Anchor_Modeling
-- http://en.wikipedia.org/wiki/Shadow_table
-- https://wiki.postgresql.org/wiki/Audit_trigger
-- https://wiki.postgresql.org/wiki/Audit_trigger_91plus
-- http://kosalads.blogspot.fi/2014/06/implement-audit-functionality-in.html
-- https://github.com/2ndQuadrant/pgaudit
+    pip install SQLAlchemy-Continuum-Trialspark
