@@ -56,7 +56,11 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
                    self.transaction_column_name, tx_log.id)
         )
 
-        assert self.session.query(self.ArticleVersion).first().changeset == {}
+        assert self.session.query(self.ArticleVersion).first().changeset == {
+            'content': [None, 'some content'],
+            'id': [None, 1],
+            'name': [None, 'something']
+        }
 
 
 class TestChangeSetWithValidityStrategy(ChangeSetTestCase):
@@ -72,7 +76,7 @@ class TestChangeSetWhenParentContainsAdditionalColumns(ChangeSetTestCase):
         class Article(self.Model):
             __tablename__ = 'article'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model,)
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
@@ -83,7 +87,7 @@ class TestChangeSetWhenParentContainsAdditionalColumns(ChangeSetTestCase):
         class Tag(self.Model):
             __tablename__ = 'tag'
             __versioned__ = {
-                'base_classes': (self.Model, )
+                'base_classes': (self.Model,)
             }
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)

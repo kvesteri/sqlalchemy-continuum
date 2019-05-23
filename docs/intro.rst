@@ -5,7 +5,7 @@ Introduction
 Why?
 ^^^^
 
-SQLAlchemy already has versioning extension. This extension however is very limited. It does not support versioning entire transactions.
+SQLAlchemy already has a versioning extension. This extension however is very limited. It does not support versioning entire transactions.
 
 Hibernate for Java has Envers, which had nice features but lacks a nice API. Ruby on Rails has papertrail_, which has very nice API but lacks the efficiency and feature set of Envers.
 
@@ -54,7 +54,7 @@ In order to make your models versioned you need two things:
     from sqlalchemy_continuum import make_versioned
 
 
-    make_versioned()
+    make_versioned(user_cls=None)
 
 
     class Article(Base):

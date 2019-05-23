@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from .reverter import Reverter
 from .utils import get_versioning_manager, is_internal_column, parent_class
 
@@ -49,9 +50,6 @@ class VersionClassBase(object):
         and second list value as the new value.
         """
         previous_version = self.previous
-        if not previous_version and self.operation_type != 0:
-            return {}
-
         data = {}
 
         for key in sa.inspect(self.__class__).columns.keys():

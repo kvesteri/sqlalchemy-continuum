@@ -344,13 +344,16 @@ class RelationshipBuilder(object):
         except ClassNotVersioned:
             self.remote_cls = self.property.mapper.class_
 
-        if self.property.secondary is not None and not self.property.viewonly:
+        if (self.property.secondary is not None and
+                not self.property.viewonly and
+                not self.manager.is_excluded_property(
+                    self.model, self.property.key)):
             self.build_association_version_tables()
 
             # store remote cls to association table column pairs
             self.remote_to_association_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
-                if column_pair[0] in self.property.table.c.values():
+                if column_pair[0] in self.property.target.c.values():
                     self.remote_to_association_column_pairs.append(column_pair)
 
         setattr(
