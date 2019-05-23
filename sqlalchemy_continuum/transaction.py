@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import partial
 
 try:
     from collections import OrderedDict

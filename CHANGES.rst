@@ -4,6 +4,55 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.9 (2019-03-19)
+^^^^^^^^^^^^^^^^^^
+
+- Added SA 1.3 support
+- Reverted trigger creation from 1.3.7
+
+
+1.3.8 (2019-02-27)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed revert to ignore non-columns (#197, courtesy of mauler)
+
+
+1.3.7 (2019-01-13)
+^^^^^^^^^^^^^^^^^^
+
+- Fix trigger creation during alembic migrations (#209, courtesy of lyndsysimon)
+
+
+1.3.6 (2018-07-30)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed ResourceClosedErrors from connections leaking when using an external transaction (#196, courtesy of vault)
+
+
+1.3.5 (2018-06-03)
+^^^^^^^^^^^^^^^^^^
+
+- Track cloned connections (#167, courtesy of netcriptus)
+
+
+1.3.4 (2018-03-07)
+^^^^^^^^^^^^^^^^^^
+
+- Exclude many-to-many properties from versioning if they are added in exclude parameter (#169, courtesy of fuhrysteve)
+
+
+1.3.3 (2017-11-05)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed changeset when updating object in same transaction as inserting it (#141, courtesy of oinopion)
+
+
+1.3.2 (2017-10-12)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed multiple schema handling (#132, courtesy of vault)
+
+
 1.3.1 (2017-06-28)
 ^^^^^^^^^^^^^^^^^^
 
