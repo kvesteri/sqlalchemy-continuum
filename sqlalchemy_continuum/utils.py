@@ -3,8 +3,6 @@ from inspect import isclass
 from collections import defaultdict
 from types import LambdaType
 
-import six
-
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
@@ -140,7 +138,7 @@ def apply_table_schema(table_schema, schema_name):
     if isinstance(table_schema, LambdaType):
         return table_schema(schema_name)
 
-    if isinstance(table_schema, six.string_types):
+    if isinstance(table_schema, basestring):
         try:
             # Apply string interpolation
             return schema_name % table_schema
@@ -231,11 +229,7 @@ def versioned_column_properties(obj_or_class):
     cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
 
     mapper = sa.inspect(cls)
-    for key, column in mapper.columns.items():
-        # Ignores non table columns
-        if not is_table_column(column):
-            continue
-
+    for key in mapper.columns.keys():
         if not manager.is_excluded_property(obj_or_class, key):
             yield getattr(mapper.attrs, key)
 
@@ -252,7 +246,7 @@ def versioned_relationships(obj, versioned_column_keys):
             yield prop
 
 
-def vacuum(session, model, yield_per=1000):
+def vacuum(session, model):
     """
     When making structural changes to version tables (for example dropping
     columns) there are sometimes situations where some old version records
@@ -273,7 +267,6 @@ def vacuum(session, model, yield_per=1000):
 
     :param session: SQLAlchemy session object
     :param model: SQLAlchemy declarative model class
-    :param yield_per: how many rows to process at a time
     """
     version_cls = version_class(model)
     versions = defaultdict(list)
@@ -281,28 +274,15 @@ def vacuum(session, model, yield_per=1000):
     query = (
         session.query(version_cls)
         .order_by(option(version_cls, 'transaction_column_name'))
-    ).yield_per(yield_per)
-
-    primary_key_col = sa.inspection.inspect(model).primary_key[0].name
+    )
 
     for version in query:
-        version_id = getattr(version, primary_key_col)
-        if versions[version_id]:
-            prev_version = versions[version_id][-1]
+        if versions[version.id]:
+            prev_version = versions[version.id][-1]
             if naturally_equivalent(prev_version, version):
                 session.delete(version)
         else:
-            versions[version_id].append(version)
-
-
-def is_table_column(column):
-    """
-    Return wheter of not give field is a column over the database table.
-
-    :param column: SQLAclhemy model field.
-    :rtype: bool
-    """
-    return isinstance(column, sa.Column)
+            versions[version.id].append(version)
 
 
 def is_internal_column(model, column_name):
@@ -448,10 +428,7 @@ def changeset(obj):
     data = {}
     session = sa.orm.object_session(obj)
     if session and obj in session.deleted:
-        columns = [c for c in sa.inspect(obj.__class__).columns.values()
-                   if is_table_column(c)]
-
-        for column in columns:
+        for column in sa.inspect(obj.__class__).columns.values():
             if not column.primary_key:
                 value = getattr(obj, column.key)
                 if value is not None:

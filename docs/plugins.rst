@@ -7,7 +7,7 @@ Using plugins
 
 ::
 
-    from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
+    from sqlalchemy.continuum.plugins import PropertyModTrackerPlugin
 
 
     versioning_manager.plugins.append(PropertyModTrackerPlugin())

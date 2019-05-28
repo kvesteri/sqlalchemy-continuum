@@ -52,19 +52,3 @@ class TestUnitOfWork(TestCase):
     def test_with_session_arg(self):
         uow = versioning_manager.unit_of_work(self.session)
         assert isinstance(uow, UnitOfWork)
-
-
-class TestExternalTransactionSession(TestCase):
-
-    def test_session_with_external_transaction(self):
-        conn = self.engine.connect()
-        t = conn.begin()
-        session = Session(bind=conn)
-
-        article = self.Article(name=u'My Session Article')
-        session.add(article)
-        session.flush()
-
-        session.close()
-        t.rollback()
-        conn.close()
