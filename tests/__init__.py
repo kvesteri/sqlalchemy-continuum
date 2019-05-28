@@ -1,4 +1,3 @@
-
 from copy import copy
 import inspect
 import itertools as it
@@ -7,7 +6,7 @@ import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy_continuum import (
     ClassNotVersioned,
     version_class,
@@ -162,9 +161,6 @@ class TestCase(object):
             name = sa.Column(sa.Unicode(255), nullable=False)
             content = sa.Column(sa.UnicodeText)
             description = sa.Column(sa.UnicodeText)
-
-            # Dynamic column cotaining all text content data
-            fulltext_content = column_property(name + content + description)
 
         class Tag(self.Model):
             __tablename__ = 'tag'

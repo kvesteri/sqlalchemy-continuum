@@ -20,7 +20,7 @@ from .utils import (
 )
 
 
-__version__ = '1.3.11'
+__version__ = '1.3.12'
 
 
 versioning_manager = VersioningManager()
@@ -72,18 +72,6 @@ def make_versioned(
         manager.track_association_operations
     )
 
-    sa.event.listen(
-        sa.engine.Engine,
-        'rollback',
-        manager.clear_connection
-    )
-
-    sa.event.listen(
-        sa.engine.Engine,
-        'set_connection_execution_options',
-        manager.track_cloned_connections
-    )
-
 
 def remove_versioning(
     mapper=sa.orm.mapper,
@@ -109,16 +97,4 @@ def remove_versioning(
         sa.engine.Engine,
         'before_cursor_execute',
         manager.track_association_operations
-    )
-
-    sa.event.remove(
-        sa.engine.Engine,
-        'rollback',
-        manager.clear_connection
-    )
-
-    sa.event.remove(
-        sa.engine.Engine,
-        'set_connection_execution_options',
-        manager.track_cloned_connections
     )
