@@ -3,6 +3,7 @@ from inspect import isclass
 from collections import defaultdict
 from types import LambdaType
 
+import six
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
@@ -138,7 +139,7 @@ def apply_table_schema(table_schema, schema_name):
     if isinstance(table_schema, LambdaType):
         return table_schema(schema_name)
 
-    if isinstance(table_schema, basestring):
+    if isinstance(table_schema, six.string_types):
         try:
             # Apply string interpolation
             return schema_name % table_schema
