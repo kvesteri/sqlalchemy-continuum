@@ -4,6 +4,14 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.9+geru.1 (2019-06-03)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Support for downgrades (only drop trigger) in native_versioning
+- Support for customized version tables in native_versioning
+- Simpler use of sync_trigger (with table model) in native_versioning
+
+
 1.3.9 (2019-03-19)
 ^^^^^^^^^^^^^^^^^^
 
