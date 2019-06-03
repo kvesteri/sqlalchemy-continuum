@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 
-from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
 
 
@@ -485,8 +484,10 @@ def sync_trigger(conn, table_model):
     except sa.exc.NoSuchTableError:
         return
 
+    from sqlalchemy_continuum import versioning_manager
+    version_pattern = versioning_manager.options['table_name']
     version_table = sa.Table(
-        version_class(parent_table),
+        version_pattern % table_model,
         meta,
         autoload=True,
         autoload_with=conn
