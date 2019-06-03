@@ -43,3 +43,6 @@ nosetests.xml
 
 # idea
 .idea/
+
+# pyenv
+.python-version
