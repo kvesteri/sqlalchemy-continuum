@@ -40,3 +40,6 @@ nosetests.xml
 
 # Unit test / coverage reports
 .cache
+
+# idea
+.idea/
