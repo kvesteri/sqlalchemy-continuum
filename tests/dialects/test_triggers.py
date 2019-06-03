@@ -59,3 +59,12 @@ class TestTriggerSyncing(object):
             in QueryPool.queries[-2]
         )
         assert 'DROP FUNCTION ' in QueryPool.queries[-1]
+
+    def test_drop_triggers_using_sync(self):
+        self.connection.execute('DROP TABLE IF EXISTS article')
+        sync_trigger(self.connection, 'article')
+        assert (
+            'DROP TRIGGER IF EXISTS article_trigger ON "article"'
+            in QueryPool.queries[-3]
+        )
+        assert 'DROP FUNCTION ' in QueryPool.queries[-2]
