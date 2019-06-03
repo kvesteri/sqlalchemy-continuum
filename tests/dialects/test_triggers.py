@@ -42,15 +42,15 @@ class TestTriggerSyncing(object):
         self.connection.close()
 
     def test_sync_triggers(self):
-        sync_trigger(self.connection, 'article_version')
+        sync_trigger(self.connection, 'article')
         assert (
             'DROP TRIGGER IF EXISTS article_trigger ON "article"'
-            in QueryPool.queries[-4]
+            in QueryPool.queries[3]
         )
-        assert 'DROP FUNCTION ' in QueryPool.queries[-3]
+        assert 'DROP FUNCTION ' in QueryPool.queries[4]
         assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
         assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
-        sync_trigger(self.connection, 'article_version')
+        sync_trigger(self.connection, 'article')
 
     def test_drop_triggers(self):
         drop_trigger(self.connection, 'article')
