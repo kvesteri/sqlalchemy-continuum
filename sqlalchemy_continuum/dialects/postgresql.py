@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
 
 
@@ -456,9 +457,9 @@ def create_versioning_trigger_listeners(manager, cls):
     )
 
 
-def sync_trigger(conn, table_name):
+def sync_trigger(conn, table_model):
     """
-    Synchronizes versioning trigger for given table with given connection.
+    Synchronizes versioning trigger for the given model table with given connection.
 
     ::
 
@@ -467,19 +468,25 @@ def sync_trigger(conn, table_name):
 
 
     :param conn: SQLAlchemy connection object
-    :param table_name: Name of the table to synchronize versioning trigger for
+    :param table_model: Name of the table of the model to synchronize versioning trigger for
 
     .. versionadded: 1.1.0
     """
+    drop_trigger(conn, table_model)
+
     meta = sa.MetaData()
+    try:
+        parent_table = sa.Table(
+            table_model,
+            meta,
+            autoload=True,
+            autoload_with=conn
+        )
+    except sa.exc.NoSuchTableError:
+        return
+
     version_table = sa.Table(
-        table_name,
-        meta,
-        autoload=True,
-        autoload_with=conn
-    )
-    parent_table = sa.Table(
-        table_name[0:-len('_version')],
+        version_class(parent_table),
         meta,
         autoload=True,
         autoload_with=conn
@@ -488,9 +495,12 @@ def sync_trigger(conn, table_name):
         set(c.name for c in parent_table.c) -
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
-    drop_trigger(conn, parent_table.name)
-    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
-
+    create_trigger(
+        conn,
+        table=parent_table,
+        excluded_columns=excluded_columns,
+        use_property_mod_tracking=False,
+    )
 
 def create_trigger(
     conn,
