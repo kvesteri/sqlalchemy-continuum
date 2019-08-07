@@ -314,6 +314,8 @@ class ActivityFactory(ModelFactory):
 
 
 class ActivityPlugin(Plugin):
+    activity_cls = None
+    
     def after_build_models(self, manager):
         self.activity_cls = ActivityFactory()(manager)
         manager.activity_cls = self.activity_cls
