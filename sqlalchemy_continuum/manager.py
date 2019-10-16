@@ -97,6 +97,9 @@ class VersioningManager(object):
             self.plugins = plugins
         self.options.update(options)
 
+        if self.options['table_name'].count('%s') > 1:
+            raise ValueError('The table_name option must be set with only a single `%%s`. found %s' % self.options['table_name'])
+
     @property
     def plugins(self):
         return self._plugins

@@ -59,3 +59,58 @@ class TestTriggerSyncing(object):
             in QueryPool.queries[-2]
         )
         assert 'DROP FUNCTION ' in QueryPool.queries[-1]
+
+@pytest.mark.skipif('not uses_native_versioning()')
+class TestTriggerSyncingCustomTableNameFormat(object):
+    def setup_method(self, method):
+        driver = os.environ.get('DB', 'sqlite')
+        self.driver = get_driver_name(driver)
+        self.engine = sa.create_engine(get_dns_from_driver(self.driver))
+        self.connection = self.engine.connect()
+        if driver == 'postgres-native':
+            self.connection.execute('CREATE EXTENSION IF NOT EXISTS hstore')
+
+        self.connection.execute(
+            'CREATE TABLE article '
+            '(id INT PRIMARY KEY, name VARCHAR(200), content TEXT)'
+        )
+        self.connection.execute(
+            'CREATE TABLE custom_article_versioning_table_scheme '
+            '(id INT, transaction_id INT, name VARCHAR(200), '
+            'name_mod BOOLEAN, PRIMARY KEY (id, transaction_id))'
+        )
+
+    def teardown_method(self, method):
+        self.connection.execute('DROP TABLE IF EXISTS article')
+        self.connection.execute('DROP TABLE IF EXISTS custom_article_versioning_table_scheme')
+        self.engine.dispose()
+        self.connection.close()
+
+    def test_sync_trigger_failure_bad_format(self):
+        with pytest.raises(ValueError):
+            sync_trigger(self.connection,
+                         'custom_article_versioning_table_scheme',
+                         version_table_name_format='%s_version')
+
+    def test_sync_triggers(self):
+        sync_trigger(self.connection,
+                     'custom_article_versioning_table_scheme',
+                     version_table_name_format='custom_%s_versioning_table_scheme')
+        assert (
+            'DROP TRIGGER IF EXISTS article_trigger ON "article"'
+            in QueryPool.queries[-4]
+        )
+        assert 'DROP FUNCTION ' in QueryPool.queries[-3]
+        assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
+        assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
+        sync_trigger(self.connection,
+                     'custom_article_versioning_table_scheme',
+                     version_table_name_format='custom_%s_versioning_table_scheme')
+
+    def test_drop_triggers(self):
+        drop_trigger(self.connection, 'article')
+        assert (
+            'DROP TRIGGER IF EXISTS article_trigger ON "article"'
+            in QueryPool.queries[-2]
+        )
+        assert 'DROP FUNCTION ' in QueryPool.queries[-1]

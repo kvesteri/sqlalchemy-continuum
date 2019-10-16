@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
+import re
 
 
 trigger_sql = """
@@ -455,8 +456,15 @@ def create_versioning_trigger_listeners(manager, cls):
         )
     )
 
+def reverse_table_name_format(version_table_name_format):
+    """
+    Returns a regex that looks for a match where the version_table_name_format's %s is
+    """
+    return '^' + version_table_name_format.replace('%s', '(.*)') + '$'
 
-def sync_trigger(conn, table_name):
+def sync_trigger(conn,
+                 table_name,
+                 version_table_name_format='%s_version'):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -468,9 +476,12 @@ def sync_trigger(conn, table_name):
 
     :param conn: SQLAlchemy connection object
     :param table_name: Name of the table to synchronize versioning trigger for
+    :param version_table_name_format: The custom table_name option that you may have set on the versioning manager
 
     .. versionadded: 1.1.0
     """
+    parent_table_name_regex = reverse_table_name_format(version_table_name_format)
+    
     meta = sa.MetaData()
     version_table = sa.Table(
         table_name,
@@ -478,8 +489,14 @@ def sync_trigger(conn, table_name):
         autoload=True,
         autoload_with=conn
     )
+
+    try:
+        parent_table_name = re.findall(parent_table_name_regex, table_name)[0]
+    except IndexError:
+        raise ValueError('The version table name %s that was provided to sync_trigger does not conform to the format %s' % (table_name, version_table_name_format))
+
     parent_table = sa.Table(
-        table_name[0:-len('_version')],
+        parent_table_name,
         meta,
         autoload=True,
         autoload_with=conn
@@ -489,7 +506,10 @@ def sync_trigger(conn, table_name):
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
     drop_trigger(conn, parent_table.name)
-    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
+    create_trigger(conn,
+                   table=parent_table,
+                   excluded_columns=excluded_columns,
+                   version_table_name_format=version_table_name_format)
 
 
 def create_trigger(

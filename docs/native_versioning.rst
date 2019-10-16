@@ -30,3 +30,16 @@ When making schema migrations (for example adding new columns to version tables)
 
 
     sync_trigger(conn, 'article_version')
+
+You also may have a custom option set on the versioning manager called `table_name`, which tells the manager what the versioned table should be called, given a parent table name.  The default is `%s_version`.
+
+If you have this set to something custom, you should instead run
+
+::
+
+    from sqlalchemy_continuum import versioning_manager # or import your custom one, if you have one
+    sync_trigger(conn,
+                 'article_version',
+                 version_table_name_format=versioning_manager.option('table_name'))
+
+
