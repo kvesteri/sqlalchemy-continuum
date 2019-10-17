@@ -462,9 +462,10 @@ def reverse_table_name_format(version_table_name_format):
     """
     return '^' + version_table_name_format.replace('%s', '(.*)') + '$'
 
+DEFAULT_VERSION_TABLE_NAME_FORMAT = '%s_version'
 def sync_trigger(conn,
                  table_name,
-                 version_table_name_format='%s_version'):
+                 versioning_manager=None):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -476,10 +477,12 @@ def sync_trigger(conn,
 
     :param conn: SQLAlchemy connection object
     :param table_name: Name of the table to synchronize versioning trigger for
-    :param version_table_name_format: The custom table_name option that you may have set on the versioning manager
+    :param versioning_manager: (Optional) the versioning manager
 
     .. versionadded: 1.1.0
     """
+    custom_version_table_name_format = versioning_manager.option('table_name') if versioning_manager else None
+    version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
     parent_table_name_regex = reverse_table_name_format(version_table_name_format)
     
     meta = sa.MetaData()
@@ -517,7 +520,7 @@ def create_trigger(
     table,
     transaction_column_name='transaction_id',
     operation_type_column_name='operation_type',
-    version_table_name_format='%s_version',
+    version_table_name_format=DEFAULT_VERSION_TABLE_NAME_FORMAT,
     excluded_columns=None,
     use_property_mod_tracking=True,
     end_transaction_column_name=None,

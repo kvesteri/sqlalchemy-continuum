@@ -1,8 +1,9 @@
 import os
 
+from mock import MagicMock
 import pytest
 import sqlalchemy as sa
-
+from sqlalchemy_continuum.manager import VersioningManager
 from sqlalchemy_continuum.dialects.postgresql import (
     drop_trigger,
     sync_trigger
@@ -90,12 +91,15 @@ class TestTriggerSyncingCustomTableNameFormat(object):
         with pytest.raises(ValueError):
             sync_trigger(self.connection,
                          'custom_article_versioning_table_scheme',
-                         version_table_name_format='%s_version')
+                         versioning_manager=None)
 
     def test_sync_triggers(self):
+        mock_manager = VersioningManager()
+        mock_manager.option = MagicMock(return_value='custom_%s_versioning_table_scheme')
+        
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
-                     version_table_name_format='custom_%s_versioning_table_scheme')
+                     versioning_manager=mock_manager)
         assert (
             'DROP TRIGGER IF EXISTS article_trigger ON "article"'
             in QueryPool.queries[-4]
@@ -105,7 +109,7 @@ class TestTriggerSyncingCustomTableNameFormat(object):
         assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
-                     version_table_name_format='custom_%s_versioning_table_scheme')
+                     versioning_manager=mock_manager)
 
     def test_drop_triggers(self):
         drop_trigger(self.connection, 'article')
