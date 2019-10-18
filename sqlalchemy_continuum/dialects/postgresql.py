@@ -111,6 +111,7 @@ class SQLConstruct(object):
         update_validity_for_tables=None,
         use_property_mod_tracking=False,
         end_transaction_column_name=None,
+        versioning_manager=None
     ):
         self.update_validity_for_tables = update_validity_for_tables
         self.operation_type_column_name = operation_type_column_name
@@ -120,6 +121,7 @@ class SQLConstruct(object):
         self.use_property_mod_tracking = use_property_mod_tracking
         self.table = table
         self.excluded_columns = excluded_columns
+        self.versioning_manager = versioning_manager
         if update_validity_for_tables is None:
             self.update_validity_for_tables = []
         if self.excluded_columns is None:
@@ -134,10 +136,9 @@ class SQLConstruct(object):
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return '%s.transaction' % self.table.schema
-        else:
-            return 'transaction'
+        if self.versioning_manager and self.versioning_manager.transaction_cls:
+            return getattr(self.versioning_manager.transaction_cls, '__tablename__', 'transaction')
+        return 'transaction'
 
     @property
     def temporary_transaction_table_name(self):
@@ -426,9 +427,8 @@ class TransactionTriggerSQL(object):
     @property
     def transaction_table_name(self):
         if self.table.schema:
-            return '%s.transaction' % self.table.schema
-        else:
-            return 'transaction'
+            return '%s.%s' % (self.table.schema, self.table.name)
+        return self.table.name
 
     def __str__(self):
         return temp_transaction_trigger_sql.format(
@@ -512,7 +512,7 @@ def sync_trigger(conn,
     create_trigger(conn,
                    table=parent_table,
                    excluded_columns=excluded_columns,
-                   version_table_name_format=version_table_name_format)
+                   versioning_manager=versioning_manager)
 
 
 def create_trigger(
@@ -520,11 +520,13 @@ def create_trigger(
     table,
     transaction_column_name='transaction_id',
     operation_type_column_name='operation_type',
-    version_table_name_format=DEFAULT_VERSION_TABLE_NAME_FORMAT,
+    versioning_manager=None,
     excluded_columns=None,
     use_property_mod_tracking=True,
     end_transaction_column_name=None,
 ):
+    custom_version_table_name_format = versioning_manager.option('table_name') if versioning_manager else None
+    version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
     params = dict(
         table=table,
         update_validity_for_tables=[],
@@ -534,6 +536,7 @@ def create_trigger(
         excluded_columns=excluded_columns,
         use_property_mod_tracking=use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
+        versioning_manager=versioning_manager,
     )
     conn.execute(str(CreateTriggerFunctionSQL(**params)))
     conn.execute(str(CreateTriggerSQL(**params)))

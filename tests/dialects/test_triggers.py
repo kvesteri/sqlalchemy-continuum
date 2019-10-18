@@ -107,6 +107,7 @@ class TestTriggerSyncingCustomTableNameFormat(object):
         assert 'DROP FUNCTION ' in QueryPool.queries[-3]
         assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
         assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
+
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
                      versioning_manager=mock_manager)
