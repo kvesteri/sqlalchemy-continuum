@@ -51,13 +51,10 @@ procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    BEGIN
-        transaction_id_value = (SELECT id FROM temporary_transaction);
-    EXCEPTION WHEN others THEN
-        RETURN NEW;
-    END;
+    transaction_id_value = (SELECT id FROM temporary_transaction);
+
     IF transaction_id_value IS NULL THEN
-        RETURN NEW;
+        RAISE NOTICE 'Could not find latest transaction ID';
     END IF;
 
     IF (TG_OP = 'INSERT') THEN
@@ -480,7 +477,7 @@ def sync_trigger(conn,
 
     .. versionadded: 1.1.0
     """
-    custom_version_table_name_format = versioning_manager.option('table_name') if versioning_manager else None
+    custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
     parent_table_name_regex = reverse_table_name_format(version_table_name_format)
     
@@ -524,7 +521,7 @@ def create_trigger(
     use_property_mod_tracking=True,
     end_transaction_column_name=None,
 ):
-    custom_version_table_name_format = versioning_manager.option('table_name') if versioning_manager else None
+    custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
 
     transaction_table_name = 'transaction'

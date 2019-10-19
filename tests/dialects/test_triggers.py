@@ -95,7 +95,7 @@ class TestTriggerSyncingCustomTableNameFormat(object):
 
     def test_sync_triggers(self):
         mock_manager = VersioningManager()
-        mock_manager.option = MagicMock(return_value='custom_%s_versioning_table_scheme')
+        mock_manager.options = {'table_name': 'custom_%s_versioning_table_scheme'}
         
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
