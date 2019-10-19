@@ -111,7 +111,7 @@ class SQLConstruct(object):
         update_validity_for_tables=None,
         use_property_mod_tracking=False,
         end_transaction_column_name=None,
-        versioning_manager=None
+        transaction_table_name='transaction',
     ):
         self.update_validity_for_tables = update_validity_for_tables
         self.operation_type_column_name = operation_type_column_name
@@ -121,7 +121,7 @@ class SQLConstruct(object):
         self.use_property_mod_tracking = use_property_mod_tracking
         self.table = table
         self.excluded_columns = excluded_columns
-        self.versioning_manager = versioning_manager
+        self.transaction_table_name = transaction_table_name
         if update_validity_for_tables is None:
             self.update_validity_for_tables = []
         if self.excluded_columns is None:
@@ -133,12 +133,6 @@ class SQLConstruct(object):
             return '%s."%s"' % (self.table.schema, self.table.name)
         else:
             return '"' + self.table.name + '"'
-
-    @property
-    def transaction_table_name(self):
-        if self.versioning_manager and self.versioning_manager.transaction_cls:
-            return getattr(self.versioning_manager.transaction_cls, '__tablename__', 'transaction')
-        return 'transaction'
 
     @property
     def temporary_transaction_table_name(self):
@@ -164,6 +158,11 @@ class SQLConstruct(object):
             c.name for c in sa.inspect(cls).columns
             if manager.is_excluded_column(cls, c)
         ]
+
+        transaction_table_name = 'transaction'
+        if manager.transaction_cls:
+            transaction_table_name = getattr(manager.transaction_cls, '__tablename__', 'transaction')
+
         return self(
             update_validity_for_tables=(
                 sa.inspect(cls).tables if strategy == 'validity' else []
@@ -178,7 +177,8 @@ class SQLConstruct(object):
             ),
             use_property_mod_tracking=uses_property_mod_tracking(manager),
             excluded_columns=excluded_columns,
-            table=cls.__table__
+            table=cls.__table__,
+            transaction_table_name=transaction_table_name,
         )
 
     @property
@@ -426,9 +426,8 @@ class TransactionTriggerSQL(object):
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return '%s.%s' % (self.table.schema, self.table.name)
-        return self.table.name
+        # This is hardcoded for now...just want to prove it works
+        return 'audit_transactions'
 
     def __str__(self):
         return temp_transaction_trigger_sql.format(
@@ -527,6 +526,11 @@ def create_trigger(
 ):
     custom_version_table_name_format = versioning_manager.option('table_name') if versioning_manager else None
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
+
+    transaction_table_name = 'transaction'
+    if versioning_manager and versioning_manager.transaction_cls:
+        transaction_table_name = getattr(versioning_manager.transaction_cls, '__tablename__', 'transaction')
+
     params = dict(
         table=table,
         update_validity_for_tables=[],
@@ -536,7 +540,7 @@ def create_trigger(
         excluded_columns=excluded_columns,
         use_property_mod_tracking=use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
-        versioning_manager=versioning_manager,
+        transaction_table_name=transaction_table_name,
     )
     conn.execute(str(CreateTriggerFunctionSQL(**params)))
     conn.execute(str(CreateTriggerSQL(**params)))
