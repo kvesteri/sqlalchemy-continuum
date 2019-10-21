@@ -14,7 +14,7 @@ upsert_cte_sql = """
 WITH upsert as
 (
     UPDATE {version_table_name}
-    SET {update_values}
+    SET {update_values}, {end_transaction_column} = NULL
     WHERE
         {transaction_column} = transaction_id_value
         AND
@@ -238,7 +238,6 @@ class UpsertSQL(SQLConstruct):
             ]
 
         return (
-            ['%s = 1' % self.operation_type_column_name] +
             parent_columns +
             mod_columns
         )
@@ -259,6 +258,7 @@ class UpsertSQL(SQLConstruct):
         params = dict(
             version_table_name=self.version_table_name,
             transaction_column=self.transaction_column_name,
+            end_transaction_column=self.end_transaction_column_name,
             operation_type=self.operation_type,
             operation_type_column=self.operation_type_column_name,
             transaction_table_name=self.transaction_table_name,
@@ -353,10 +353,14 @@ def get_validity_sql(class_, tables, params):
 
 class CreateTriggerSQL(SQLConstruct):
     def __str__(self):
+        procedure_name = '%s_audit' % self.table.name
+        if self.table.schema:
+            procedure_name = '%s_%s' % (self.table.schema, procedure_name)
+
         return trigger_sql.format(
             trigger_name='%s_trigger' % self.table.name,
             table_name=self.table_name,
-            procedure_name='%s_audit' % self.table.name
+            procedure_name=procedure_name
         )
 
 
@@ -395,8 +399,12 @@ class CreateTriggerFunctionSQL(SQLConstruct):
         after_update = get_validity_sql(UpdateValiditySQL, tables, args)
         after_delete = get_validity_sql(DeleteValiditySQL, tables, args)
 
+        procedure_name = '%s_audit' % self.table.name
+        if self.table.schema:
+            procedure_name = '%s_%s' % (self.table.schema, procedure_name)
+
         sql = procedure_sql.format(
-            procedure_name='%s_audit' % self.table.name,
+            procedure_name=procedure_name,
             excluded_columns=', '.join(
                 "'%s'" % c for c in self.excluded_columns
             ),
@@ -433,6 +441,10 @@ class TransactionTriggerSQL(object):
 
 
 def create_versioning_trigger_listeners(manager, cls):
+    compound_trigger_name = cls.__table__.name
+    if cls.__table__.schema:
+       compound_trigger_name = '%s_%s' % (cls.__table__.schema, compound_trigger_name) 
+
     sa.event.listen(
         cls.__table__,
         'after_create',
@@ -448,7 +460,7 @@ def create_versioning_trigger_listeners(manager, cls):
         'after_drop',
         sa.schema.DDL(
             'DROP FUNCTION IF EXISTS %s()' %
-            '%s_audit' % cls.__table__.name,
+            '%s_audit' % compound_trigger_name,
         )
     )
 
@@ -504,7 +516,7 @@ def sync_trigger(conn,
         set(c.name for c in parent_table.c) -
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
-    drop_trigger(conn, parent_table.name)
+    drop_trigger(conn, parent_table.name, parent_table.schema)
     create_trigger(conn,
                    table=parent_table,
                    excluded_columns=excluded_columns,
@@ -518,7 +530,7 @@ def create_trigger(
     operation_type_column_name='operation_type',
     versioning_manager=None,
     excluded_columns=None,
-    use_property_mod_tracking=True,
+    use_property_mod_tracking=False,
     end_transaction_column_name=None,
 ):
     custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
@@ -535,7 +547,7 @@ def create_trigger(
         operation_type_column_name=operation_type_column_name,
         version_table_name_format=version_table_name_format,
         excluded_columns=excluded_columns,
-        use_property_mod_tracking=use_property_mod_tracking,
+        use_property_mod_tracking=uses_property_mod_tracking(versioning_manager) if versioning_manager else use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
         transaction_table_name=transaction_table_name,
     )
@@ -543,11 +555,15 @@ def create_trigger(
     conn.execute(str(CreateTriggerSQL(**params)))
 
 
-def drop_trigger(conn, table_name):
+def drop_trigger(conn, table_name, table_schema=None):
+    compound_name = table_name
+    if table_schema:
+        compound_name = '%s_%s' % (table_schema, table_name)
+
     conn.execute(
         'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
             table_name,
             table_name
         )
     )
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_name)
