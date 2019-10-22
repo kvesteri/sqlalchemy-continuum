@@ -283,10 +283,11 @@ class DeleteUpsertSQL(UpsertSQL):
         return ['True'] * len(self.columns_without_pks)
 
     def build_update_values(self):
-        return [
+        parent_columns = [
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
+        return parent_columns + ['%s = 2' % self.operation_type_column_name]
 
     def build_values(self):
         return ['OLD."%s"' % c.name for c in self.columns]
