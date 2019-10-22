@@ -432,8 +432,9 @@ class TransactionTriggerSQL(object):
 
     @property
     def transaction_table_name(self):
-        # This is hardcoded for now...just want to prove it works
-        return 'audit_transactions'
+        if self.table.schema:
+            return '%s.%s' % (self.table.schema, self.table.name)
+        return self.table.name
 
     def __str__(self):
         return temp_transaction_trigger_sql.format(
