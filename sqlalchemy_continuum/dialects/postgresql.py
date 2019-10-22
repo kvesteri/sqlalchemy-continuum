@@ -14,7 +14,7 @@ upsert_cte_sql = """
 WITH upsert as
 (
     UPDATE {version_table_name}
-    SET {update_values}, {end_transaction_column} = NULL
+    SET {update_values}
     WHERE
         {transaction_column} = transaction_id_value
         AND
@@ -236,10 +236,13 @@ class UpsertSQL(SQLConstruct):
                 .format(c.name)
                 for c in self.columns_without_pks
             ]
-
+        validity_strategy_columns = []
+        if self.update_validity_for_tables:
+            validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
         return (
             parent_columns +
-            mod_columns
+            mod_columns +
+            validity_strategy_columns
         )
 
     def build_insert_values(self):
@@ -258,7 +261,6 @@ class UpsertSQL(SQLConstruct):
         params = dict(
             version_table_name=self.version_table_name,
             transaction_column=self.transaction_column_name,
-            end_transaction_column=self.end_transaction_column_name,
             operation_type=self.operation_type,
             operation_type_column=self.operation_type_column_name,
             transaction_table_name=self.transaction_table_name,
@@ -287,7 +289,9 @@ class DeleteUpsertSQL(UpsertSQL):
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
-        return parent_columns + ['%s = 2' % self.operation_type_column_name]
+        if self.update_validity_for_tables:
+            validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
+        return parent_columns + validity_strategy_columns + ['%s = 2' % self.operation_type_column_name]
 
     def build_values(self):
         return ['OLD."%s"' % c.name for c in self.columns]
