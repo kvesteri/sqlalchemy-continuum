@@ -54,7 +54,7 @@ BEGIN
     transaction_id_value = (SELECT id FROM temporary_transaction limit 1);
 
     IF transaction_id_value IS NULL THEN
-        RAISE NOTICE 'Could not find latest transaction ID';
+        RAISE EXCEPTION 'Could not find latest transaction ID';
     END IF;
 
     IF (TG_OP = 'INSERT') THEN
