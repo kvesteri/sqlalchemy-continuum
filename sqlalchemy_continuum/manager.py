@@ -403,8 +403,8 @@ class VersioningManager(object):
         association operations to pending_statements list.
         """
         if (
-            not self.options['versioning'] and
-            not self.options['native_versioning']
+            not self.options['versioning'] or
+            self.options['native_versioning']
         ):
             return
 
