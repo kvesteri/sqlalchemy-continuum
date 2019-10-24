@@ -51,7 +51,7 @@ procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    transaction_id_value = (SELECT id FROM temporary_transaction limit 1);
+    transaction_id_value = (SELECT max(id) FROM temporary_transaction);
 
     IF transaction_id_value IS NULL THEN
         RAISE EXCEPTION 'Could not find latest transaction ID';
