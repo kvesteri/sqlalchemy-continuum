@@ -24,7 +24,7 @@ def tracked_operation(func):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-            uow = self.units_of_work[conn.engine]
+            uow = self.units_of_work.get(conn.engine, None)
         return func(self, uow, target)
     return wrapper
 
@@ -161,10 +161,9 @@ class VersioningManager(object):
         if not self.options['native_versioning']:
             return
         Transaction = self.transaction_cls
-        assert self.native_transaction is None, 'SQLAlchemy called begin twice without committing or rolling back.'
         self.native_transaction = Transaction()
         session.add(self.native_transaction)
-        session.flush()
+        session.flush(objects=[self.native_transaction])
 
     def transaction_args(self, session):
         args = {}
@@ -175,9 +174,25 @@ class VersioningManager(object):
     def before_commit(self, session):
         if not self.options['native_versioning']:
             return
-        args = self.transaction_args(session)
-        for key, value in args.items():
-            setattr(self.native_transaction, key, value)
+
+        full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
+
+        # FIXME this will not work if the transaction_cls exists in a schema other than public.
+        # Oh yeah, and this is an enormous hack. Right.
+        # stmt = 'update %s set ' % full_table_name
+        # position = 0
+
+        # items = list(self.transaction_args(session).items())
+        # for key, value in items:
+        #     stmt += '%s = :value%s, ' % (key, position)
+        #     position += 1
+
+        # stmt = stmt[:-2] + ' where id = :tx_id;'
+
+        # bound_values = {'tx_id': self.native_transaction.id}
+        # for (position, (_, value)) in enumerate(items):
+        #     bound_values['value' + str(position)] = value
+        # session.execute(stmt, bound_values)
 
 
     def create_transaction_model(self):
@@ -307,6 +322,9 @@ class VersioningManager(object):
         Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         uow.operations.add_insert(target)
 
     @tracked_operation
@@ -315,6 +333,9 @@ class VersioningManager(object):
         Track object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         if not is_modified(target):
             return
         uow.operations.add_update(target)
@@ -325,6 +346,9 @@ class VersioningManager(object):
         Track object deletion operations. Whenever object is deleted it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         uow.operations.add_delete(target)
 
     def unit_of_work(self, session):
