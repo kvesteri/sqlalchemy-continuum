@@ -62,7 +62,7 @@ class VersioningManager(object):
         builder=None
     ):
         self.uow_class = unit_of_work_cls
-        self.native_transaction = None
+        self.native_transaction_id = None
         if builder is None:
             self.builder = Builder()
         else:
@@ -160,10 +160,17 @@ class VersioningManager(object):
     def after_begin(self, session, tx, conn):
         if not self.options['native_versioning']:
             return
-        Transaction = self.transaction_cls
-        self.native_transaction = Transaction()
-        session.add(self.native_transaction)
-        session.flush(objects=[self.native_transaction])
+        # Transaction = self.transaction_cls
+        # self.native_transaction = Transaction()
+        # session.add(self.native_transaction)
+
+        # try:
+        #     session.flush(objects=[self.native_transaction])
+        # except:
+        #     pass
+
+        res = session.execute('insert into audit_transactions(user_id) values(null) returning id;')
+        self.native_transaction_id = [x[0] for x in res][0]
 
     def transaction_args(self, session):
         args = {}
@@ -179,20 +186,20 @@ class VersioningManager(object):
 
         # FIXME this will not work if the transaction_cls exists in a schema other than public.
         # Oh yeah, and this is an enormous hack. Right.
-        # stmt = 'update %s set ' % full_table_name
-        # position = 0
+        stmt = 'update %s set ' % full_table_name
+        position = 0
 
-        # items = list(self.transaction_args(session).items())
-        # for key, value in items:
-        #     stmt += '%s = :value%s, ' % (key, position)
-        #     position += 1
+        items = list(self.transaction_args(session).items())
+        for key, value in items:
+            stmt += '%s = :value%s, ' % (key, position)
+            position += 1
 
-        # stmt = stmt[:-2] + ' where id = :tx_id;'
+        stmt = stmt[:-2] + ' where id = :tx_id;'
 
-        # bound_values = {'tx_id': self.native_transaction.id}
-        # for (position, (_, value)) in enumerate(items):
-        #     bound_values['value' + str(position)] = value
-        # session.execute(stmt, bound_values)
+        bound_values = {'tx_id': self.native_transaction_id}
+        for (position, (_, value)) in enumerate(items):
+            bound_values['value' + str(position)] = value
+        session.execute(stmt, bound_values)
 
 
     def create_transaction_model(self):
@@ -410,7 +417,7 @@ class VersioningManager(object):
         :param session: SQLAlchemy session object
         """
         if self.options['native_versioning']:
-            self.native_transaction = None
+            self.native_transaction_id = None
 
         if session.transaction.nested:
             return
