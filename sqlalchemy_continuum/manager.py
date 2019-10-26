@@ -62,6 +62,7 @@ class VersioningManager(object):
         builder=None
     ):
         self.uow_class = unit_of_work_cls
+        self.native_transaction = None
         if builder is None:
             self.builder = Builder()
         else:
@@ -134,6 +135,9 @@ class VersioningManager(object):
             'after_flush': self.after_flush,
             'after_commit': self.clear,
             'after_rollback': self.clear,
+            # The below are only used by native versioning
+            'after_begin': self.after_begin,
+            'before_commit': self.before_commit,
         }
         self.mapper_listeners = {
             'after_delete': self.track_deletes,
@@ -152,6 +156,29 @@ class VersioningManager(object):
         self.session_connection_map = {}
 
         self.metadata = None
+
+    def after_begin(self, session, tx, conn):
+        if not self.options['native_versioning']:
+            return
+        Transaction = self.transaction_cls
+        assert self.native_transaction is None, 'SQLAlchemy called begin twice without committing or rolling back.'
+        self.native_transaction = Transaction()
+        session.add(self.native_transaction)
+        session.flush()
+
+    def transaction_args(self, session):
+        args = {}
+        for plugin in self.plugins:
+            args.update(plugin.transaction_args(self, session))
+        return args
+
+    def before_commit(self, session):
+        if not self.options['native_versioning']:
+            return
+        args = self.transaction_args(session)
+        for key, value in args.items():
+            setattr(self.native_transaction, key, value)
+
 
     def create_transaction_model(self):
         """
@@ -329,7 +356,7 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session
         """
-        if not self.options['versioning']:
+        if not self.options['versioning'] or self.options['native_versioning']:
             return
 
         uow = self.unit_of_work(session)
@@ -344,7 +371,7 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session
         """
-        if not self.options['versioning']:
+        if not self.options['versioning'] or self.options['native_versioning']:
             return
         uow = self.unit_of_work(session)
         uow.process_after_flush(session)
@@ -358,6 +385,9 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session object
         """
+        if self.options['native_versioning']:
+            self.native_transaction = None
+
         if session.transaction.nested:
             return
         conn = self.session_connection_map.pop(session, None)

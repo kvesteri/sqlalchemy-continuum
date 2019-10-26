@@ -42,7 +42,6 @@ class UnitOfWork(object):
             any(self.manager.plugins.is_session_modified(session))
         )
 
-
     def process_before_flush(self, session):
         """
         Before flush processor for given session.
