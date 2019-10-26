@@ -158,18 +158,15 @@ class VersioningManager(object):
         self.metadata = None
 
     def after_begin(self, session, tx, conn):
-        if not self.options['native_versioning']:
+        if not self.options['versioning'] or not self.options['native_versioning']:
             return
-        # Transaction = self.transaction_cls
-        # self.native_transaction = Transaction()
-        # session.add(self.native_transaction)
 
-        # try:
-        #     session.flush(objects=[self.native_transaction])
-        # except:
-        #     pass
+        # FIXME this will not work if the transaction_cls exists in a schema other than public.
 
-        res = session.execute('insert into audit_transactions(user_id) values(null) returning id;')
+        full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
+
+        res = session.execute('insert into %s(issued_at) values(now()) returning id' % full_table_name)
+
         self.native_transaction_id = [x[0] for x in res][0]
 
     def transaction_args(self, session):
@@ -179,13 +176,13 @@ class VersioningManager(object):
         return args
 
     def before_commit(self, session):
-        if not self.options['native_versioning']:
+        if not self.options['versioning'] or not self.options['native_versioning']:
             return
 
         full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
 
         # FIXME this will not work if the transaction_cls exists in a schema other than public.
-        # Oh yeah, and this is an enormous hack. Right.
+        # Oh yeah, and this is an enormous hack that strings together a raw SQL update.
         stmt = 'update %s set ' % full_table_name
         position = 0
 
