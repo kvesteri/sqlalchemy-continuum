@@ -24,7 +24,6 @@ class UnitOfWork(object):
         """
         self.version_session = None
         self.current_transaction = None
-        self.transaction_updated_by_plugins = False
         self.operations = Operations()
         self.pending_statements = []
         self.version_objs = {}
@@ -70,18 +69,9 @@ class UnitOfWork(object):
             )
 
         if not self.current_transaction:
-            print('before flush create tx')
             self.create_transaction(session)
 
         self.manager.plugins.before_flush(self, session)
-
-    def process_after_begin(self, session):
-        if session == self.version_session:
-            return
-
-        if not self.current_transaction:
-            print('after begin create tx')
-            self.create_transaction(session, update_with_plugins=False)
 
     def process_after_flush(self, session):
         """
@@ -105,24 +95,19 @@ class UnitOfWork(object):
 
         self.make_versions(session)
 
-    def process_before_commit(self, session):
-        if self.current_transaction and not self.transaction_updated_by_plugins:
-            print('before commit update with plugins')
-            self.update_transaction_with_plugins(session)
-
     def transaction_args(self, session):
         args = {}
         for plugin in self.manager.plugins:
             args.update(plugin.transaction_args(self, session))
         return args
 
-    def create_transaction(self, session, update_with_plugins=True):
+    def create_transaction(self, session):
         """
         Create transaction object for given SQLAlchemy session.
 
         :param session: SQLAlchemy session object
         """
-        print('creating tx')
+        args = self.transaction_args(session)
 
         Transaction = self.manager.transaction_cls
         self.current_transaction = Transaction()
@@ -132,19 +117,14 @@ class UnitOfWork(object):
                 bind=session.connection()
             )
 
-        if update_with_plugins:
-            self.update_transaction_with_plugins(session)
-
-        session.add(self.current_transaction)
-        session.flush()
-        print('created tx')
-        return self.current_transaction
-
-    def update_transaction_with_plugins(self, session):
-        args = self.transaction_args(session)
         for key, value in args.items():
             setattr(self.current_transaction, key, value)
-        self.transaction_updated_by_plugins = True
+
+        self.version_session.add(self.current_transaction)
+        self.version_session.flush()
+        self.version_session.expunge(self.current_transaction)
+        session.add(self.current_transaction)
+        return self.current_transaction
 
     def get_or_create_version_object(self, target):
         """
@@ -334,6 +314,13 @@ class UnitOfWork(object):
             self.manager.plugins.before_create_version_objects(self, session)
             self.create_version_objects(session)
             self.manager.plugins.after_create_version_objects(self, session)
+
+    def handle_final_tx_update(self, session):
+        if self.current_transaction:
+            args = self.transaction_args(session)
+
+            for key, value in args.items():
+                setattr(self.current_transaction, key, value)
 
     @property
     def has_changes(self):

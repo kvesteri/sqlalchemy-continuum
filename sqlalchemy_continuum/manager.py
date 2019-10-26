@@ -134,9 +134,6 @@ class VersioningManager(object):
             'after_flush': self.after_flush,
             'after_commit': self.clear,
             'after_rollback': self.clear,
-            # The below are used only when native_versioning is True
-            'after_begin': self.after_begin,
-            'before_commit': self.before_commit,
         }
         self.mapper_listeners = {
             'after_delete': self.track_deletes,
@@ -351,18 +348,6 @@ class VersioningManager(object):
             return
         uow = self.unit_of_work(session)
         uow.process_after_flush(session)
-
-    def after_begin(self, session, tx, conn):
-        if not self.options['versioning'] or not self.options['native_versioning']:
-            return
-        uow = self.unit_of_work(session)
-        uow.process_after_begin(session)
-
-    def before_commit(self, session):
-        if not self.options['versioning'] or not self.options['native_versioning']:
-            return
-        uow = self.unit_of_work(session)
-        uow.process_before_commit(session)
 
     def clear(self, session):
         """
