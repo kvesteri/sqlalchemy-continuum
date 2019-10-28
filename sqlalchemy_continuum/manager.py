@@ -1,5 +1,6 @@
 import re
 from functools import wraps
+from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
@@ -165,7 +166,7 @@ class VersioningManager(object):
 
         full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
 
-        res = session.execute('insert into %s(issued_at) values(now()) returning id' % full_table_name)
+        res = session.execute('insert into %s(issued_at) values(:start) returning id' % full_table_name, {'start': datetime.utcnow()})
 
         self.native_transaction_id = [x[0] for x in res][0]
 
