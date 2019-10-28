@@ -37,7 +37,7 @@ def fetch_current_user_id():
         return
     try:
         return current_user.id
-    except AttributeError as e:
+    except AttributeError:
         return
 
 

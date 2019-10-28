@@ -111,14 +111,12 @@ class UnitOfWork(object):
         Transaction = self.manager.transaction_cls
         self.current_transaction = Transaction()
 
+        for key, value in args.items():
+            setattr(self.current_transaction, key, value)
         if not self.version_session:
             self.version_session = sa.orm.session.Session(
                 bind=session.connection()
             )
-
-        for key, value in args.items():
-            setattr(self.current_transaction, key, value)
-
         self.version_session.add(self.current_transaction)
         self.version_session.flush()
         self.version_session.expunge(self.current_transaction)
@@ -313,13 +311,6 @@ class UnitOfWork(object):
             self.manager.plugins.before_create_version_objects(self, session)
             self.create_version_objects(session)
             self.manager.plugins.after_create_version_objects(self, session)
-
-    def handle_final_tx_update(self, session):
-        if self.current_transaction:
-            args = self.transaction_args(session)
-
-            for key, value in args.items():
-                setattr(self.current_transaction, key, value)
 
     @property
     def has_changes(self):
