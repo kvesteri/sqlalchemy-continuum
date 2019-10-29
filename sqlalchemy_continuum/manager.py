@@ -180,25 +180,14 @@ class VersioningManager(object):
         if not self.options['versioning'] or not self.options['native_versioning']:
             return
 
-        full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
+        tx_table = self.transaction_cls.__table__
 
-        # FIXME this will not work if the transaction_cls exists in a schema other than public.
-        # Oh yeah, and this is an enormous hack that strings together a raw SQL update.
-        stmt = 'update %s set ' % full_table_name
-        position = 0
-
-        items = list(self.transaction_args(session).items())
-        for key, value in items:
-            stmt += '%s = :value%s, ' % (key, position)
-            position += 1
-
-        stmt = stmt[:-2] + ' where id = :tx_id;'
-
-        bound_values = {'tx_id': self.native_transaction_id}
-        for (position, (_, value)) in enumerate(items):
-            bound_values['value' + str(position)] = value
-        session.execute(stmt, bound_values)
-
+        stmt = sa.update(
+            table=tx_table,
+            whereclause=(tx_table.c.id == self.native_transaction_id),
+            values={key: value for (key, value) in list(self.transaction_args(session).items())}
+        )
+        session.execute(stmt)
 
     def create_transaction_model(self):
         """
