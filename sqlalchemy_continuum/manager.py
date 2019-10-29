@@ -162,13 +162,12 @@ class VersioningManager(object):
         if not self.options['versioning'] or not self.options['native_versioning']:
             return
 
-        # FIXME this will not work if the transaction_cls exists in a schema other than public.
+        tx_table = self.transaction_cls.__table__
 
-        full_table_name = getattr(self.transaction_cls, '__tablename__', 'transaction')
+        stmt = tx_table.insert().values(issued_at=datetime.utcnow()).returning(tx_table.c.id)
 
-        res = session.execute('insert into %s(issued_at) values(:start) returning id' % full_table_name, {'start': datetime.utcnow()})
-
-        self.native_transaction_id = [x[0] for x in res][0]
+        # result of fetchone() is a Tuple[int]
+        self.native_transaction_id = session.execute(stmt).fetchone()[0]
 
     def transaction_args(self, session):
         args = {}
