@@ -51,10 +51,16 @@ procedure_sql = """
 CREATE OR REPLACE FUNCTION {procedure_name}() RETURNS TRIGGER AS $$
 DECLARE transaction_id_value INT;
 BEGIN
-    transaction_id_value = (SELECT max(id) FROM temporary_transaction);
+    BEGIN
+        transaction_id_value = (SELECT id FROM temporary_transaction);
+    EXCEPTION WHEN others THEN
+        RAISE EXCEPTION 'A {transaction_table_name} row was never created for this database transaction, so versioning cannot proceed.'
+            USING HINT = 'Please create a row in {transaction_table_name} after opening a database transaction.';
+    END;
 
     IF transaction_id_value IS NULL THEN
-        RAISE EXCEPTION 'Could not find latest transaction ID';
+        RAISE EXCEPTION 'A {transaction_table_name} row was never created for this database transaction, so versioning cannot proceed.'
+            USING HINT = 'Please create a row in {transaction_table_name} after opening a database transaction.';
     END IF;
 
     IF (TG_OP = 'INSERT') THEN
@@ -158,7 +164,9 @@ class SQLConstruct(object):
 
         transaction_table_name = 'transaction'
         if manager.transaction_cls:
-            transaction_table_name = getattr(manager.transaction_cls, '__tablename__', 'transaction')
+            transaction_table_name = manager.transaction_cls.__table__.name
+            if manager.transaction_cls.__table__.schema:
+                transaction_table_name = '%s.%s' % (manager.transaction_cls.__table__.schema, transaction_table_name)
 
         return self(
             update_validity_for_tables=(
@@ -479,7 +487,7 @@ def reverse_table_name_format(version_table_name_format):
 DEFAULT_VERSION_TABLE_NAME_FORMAT = '%s_version'
 def sync_trigger(conn,
                  table_name,
-                 versioning_manager=None):
+                 versioning_manager):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -525,16 +533,16 @@ def sync_trigger(conn,
     drop_trigger(conn, parent_table.name, parent_table.schema)
     create_trigger(conn,
                    table=parent_table,
-                   excluded_columns=excluded_columns,
-                   versioning_manager=versioning_manager)
+                   versioning_manager=versioning_manager,
+                   excluded_columns=excluded_columns)
 
 
 def create_trigger(
     conn,
     table,
+    versioning_manager,
     transaction_column_name='transaction_id',
     operation_type_column_name='operation_type',
-    versioning_manager=None,
     excluded_columns=None,
     use_property_mod_tracking=False,
     end_transaction_column_name=None,
@@ -543,8 +551,10 @@ def create_trigger(
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
 
     transaction_table_name = 'transaction'
-    if versioning_manager and versioning_manager.transaction_cls:
-        transaction_table_name = getattr(versioning_manager.transaction_cls, '__tablename__', 'transaction')
+    if versioning_manager.transaction_cls:
+        transaction_table_name = versioning_manager.transaction_cls.__table__.name
+        if versioning_manager.transaction_cls.__table__.schema:
+            transaction_table_name = '%s.%s' % (versioning_manager.transaction_cls.__table__.schema, transaction_table_name)
 
     params = dict(
         table=table,
