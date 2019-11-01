@@ -1,5 +1,6 @@
 import re
 from functools import wraps
+from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
@@ -24,7 +25,7 @@ def tracked_operation(func):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-            uow = self.units_of_work[conn.engine]
+            uow = self.units_of_work.get(conn.engine, None)
         return func(self, uow, target)
     return wrapper
 
@@ -62,6 +63,7 @@ class VersioningManager(object):
         builder=None
     ):
         self.uow_class = unit_of_work_cls
+        self.native_transaction_id = None
         if builder is None:
             self.builder = Builder()
         else:
@@ -134,6 +136,9 @@ class VersioningManager(object):
             'after_flush': self.after_flush,
             'after_commit': self.clear,
             'after_rollback': self.clear,
+            # The below are only used by native versioning
+            'after_begin': self.after_begin,
+            'before_commit': self.before_commit,
         }
         self.mapper_listeners = {
             'after_delete': self.track_deletes,
@@ -152,6 +157,36 @@ class VersioningManager(object):
         self.session_connection_map = {}
 
         self.metadata = None
+
+    def after_begin(self, session, tx, conn):
+        if not self.options['versioning'] or not self.options['native_versioning']:
+            return
+
+        tx_table = self.transaction_cls.__table__
+
+        stmt = tx_table.insert().values(issued_at=datetime.utcnow()).returning(tx_table.c.id)
+
+        # result of fetchone() is a Tuple[int]
+        self.native_transaction_id = session.execute(stmt).fetchone()[0]
+
+    def transaction_args(self, session):
+        args = {}
+        for plugin in self.plugins:
+            args.update(plugin.transaction_args(self, session))
+        return args
+
+    def before_commit(self, session):
+        if not self.options['versioning'] or not self.options['native_versioning']:
+            return
+
+        tx_table = self.transaction_cls.__table__
+
+        stmt = sa.update(
+            table=tx_table,
+            whereclause=(tx_table.c.id == self.native_transaction_id),
+            values={key: value for (key, value) in list(self.transaction_args(session).items())}
+        )
+        session.execute(stmt)
 
     def create_transaction_model(self):
         """
@@ -280,6 +315,9 @@ class VersioningManager(object):
         Track object insert operations. Whenever object is inserted it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         uow.operations.add_insert(target)
 
     @tracked_operation
@@ -288,6 +326,9 @@ class VersioningManager(object):
         Track object update operations. Whenever object is updated it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         if not is_modified(target):
             return
         uow.operations.add_update(target)
@@ -298,6 +339,9 @@ class VersioningManager(object):
         Track object deletion operations. Whenever object is deleted it is
         added to this UnitOfWork's internal operations dictionary.
         """
+        if uow is None:
+            return
+
         uow.operations.add_delete(target)
 
     def unit_of_work(self, session):
@@ -329,7 +373,7 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session
         """
-        if not self.options['versioning']:
+        if not self.options['versioning'] or self.options['native_versioning']:
             return
 
         uow = self.unit_of_work(session)
@@ -344,7 +388,7 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session
         """
-        if not self.options['versioning']:
+        if not self.options['versioning'] or self.options['native_versioning']:
             return
         uow = self.unit_of_work(session)
         uow.process_after_flush(session)
@@ -358,6 +402,9 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session object
         """
+        if self.options['native_versioning']:
+            self.native_transaction_id = None
+
         if session.transaction.nested:
             return
         conn = self.session_connection_map.pop(session, None)
@@ -403,8 +450,8 @@ class VersioningManager(object):
         association operations to pending_statements list.
         """
         if (
-            not self.options['versioning'] and
-            not self.options['native_versioning']
+            not self.options['versioning'] or
+            self.options['native_versioning']
         ):
             return
 

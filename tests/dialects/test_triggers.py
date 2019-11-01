@@ -95,7 +95,7 @@ class TestTriggerSyncingCustomTableNameFormat(object):
 
     def test_sync_triggers(self):
         mock_manager = VersioningManager()
-        mock_manager.option = MagicMock(return_value='custom_%s_versioning_table_scheme')
+        mock_manager.options = {'table_name': 'custom_%s_versioning_table_scheme'}
         
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
@@ -107,6 +107,7 @@ class TestTriggerSyncingCustomTableNameFormat(object):
         assert 'DROP FUNCTION ' in QueryPool.queries[-3]
         assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
         assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
+
         sync_trigger(self.connection,
                      'custom_article_versioning_table_scheme',
                      versioning_manager=mock_manager)

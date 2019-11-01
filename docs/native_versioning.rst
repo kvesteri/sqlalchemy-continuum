@@ -23,18 +23,6 @@ Schema migrations
 -----------------
 
 When making schema migrations (for example adding new columns to version tables) you need to remember to call sync_trigger in order to keep the version trigger up-to-date.
-
-::
-
-    from sqlalchemy_continuum.dialects.postgresql import sync_trigger
-
-
-    sync_trigger(conn, 'article_version')
-
-You also may have a custom option set on the versioning manager called `table_name`, which tells the manager what the versioned table should be called, given a parent table name.  The default is `%s_version`.
-
-If you have this set to something custom on the versioning manager, you can pass the manager into sync_trigger.
-
 ::
 
     from sqlalchemy_continuum import versioning_manager # or import your custom one, if you have one
