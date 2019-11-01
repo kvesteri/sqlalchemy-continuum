@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
+import re
 
 
 trigger_sql = """
@@ -53,10 +54,13 @@ BEGIN
     BEGIN
         transaction_id_value = (SELECT id FROM temporary_transaction);
     EXCEPTION WHEN others THEN
-        RETURN NEW;
+        RAISE EXCEPTION 'A {transaction_table_name} row was never created for this database transaction, so versioning cannot proceed.'
+            USING HINT = 'Please create a row in {transaction_table_name} after opening a database transaction.';
     END;
+
     IF transaction_id_value IS NULL THEN
-        RETURN NEW;
+        RAISE EXCEPTION 'A {transaction_table_name} row was never created for this database transaction, so versioning cannot proceed.'
+            USING HINT = 'Please create a row in {transaction_table_name} after opening a database transaction.';
     END IF;
 
     IF (TG_OP = 'INSERT') THEN
@@ -110,6 +114,7 @@ class SQLConstruct(object):
         update_validity_for_tables=None,
         use_property_mod_tracking=False,
         end_transaction_column_name=None,
+        transaction_table_name='transaction',
     ):
         self.update_validity_for_tables = update_validity_for_tables
         self.operation_type_column_name = operation_type_column_name
@@ -119,6 +124,7 @@ class SQLConstruct(object):
         self.use_property_mod_tracking = use_property_mod_tracking
         self.table = table
         self.excluded_columns = excluded_columns
+        self.transaction_table_name = transaction_table_name
         if update_validity_for_tables is None:
             self.update_validity_for_tables = []
         if self.excluded_columns is None:
@@ -130,13 +136,6 @@ class SQLConstruct(object):
             return '%s."%s"' % (self.table.schema, self.table.name)
         else:
             return '"' + self.table.name + '"'
-
-    @property
-    def transaction_table_name(self):
-        if self.table.schema:
-            return '%s.transaction' % self.table.schema
-        else:
-            return 'transaction'
 
     @property
     def temporary_transaction_table_name(self):
@@ -162,6 +161,13 @@ class SQLConstruct(object):
             c.name for c in sa.inspect(cls).columns
             if manager.is_excluded_column(cls, c)
         ]
+
+        transaction_table_name = 'transaction'
+        if manager.transaction_cls:
+            transaction_table_name = manager.transaction_cls.__table__.name
+            if manager.transaction_cls.__table__.schema:
+                transaction_table_name = '%s.%s' % (manager.transaction_cls.__table__.schema, transaction_table_name)
+
         return self(
             update_validity_for_tables=(
                 sa.inspect(cls).tables if strategy == 'validity' else []
@@ -176,7 +182,8 @@ class SQLConstruct(object):
             ),
             use_property_mod_tracking=uses_property_mod_tracking(manager),
             excluded_columns=excluded_columns,
-            table=cls.__table__
+            table=cls.__table__,
+            transaction_table_name=transaction_table_name,
         )
 
     @property
@@ -237,11 +244,13 @@ class UpsertSQL(SQLConstruct):
                 .format(c.name)
                 for c in self.columns_without_pks
             ]
-
+        validity_strategy_columns = []
+        if self.update_validity_for_tables:
+            validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
         return (
-            ['%s = 1' % self.operation_type_column_name] +
             parent_columns +
-            mod_columns
+            mod_columns +
+            validity_strategy_columns
         )
 
     def build_insert_values(self):
@@ -284,10 +293,13 @@ class DeleteUpsertSQL(UpsertSQL):
         return ['True'] * len(self.columns_without_pks)
 
     def build_update_values(self):
-        return [
+        parent_columns = [
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
+        if self.update_validity_for_tables:
+            validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
+        return parent_columns + validity_strategy_columns + ['%s = 2' % self.operation_type_column_name]
 
     def build_values(self):
         return ['OLD."%s"' % c.name for c in self.columns]
@@ -354,10 +366,14 @@ def get_validity_sql(class_, tables, params):
 
 class CreateTriggerSQL(SQLConstruct):
     def __str__(self):
+        procedure_name = '%s_audit' % self.table.name
+        if self.table.schema:
+            procedure_name = '%s_%s' % (self.table.schema, procedure_name)
+
         return trigger_sql.format(
             trigger_name='%s_trigger' % self.table.name,
             table_name=self.table_name,
-            procedure_name='%s_audit' % self.table.name
+            procedure_name=procedure_name
         )
 
 
@@ -396,8 +412,12 @@ class CreateTriggerFunctionSQL(SQLConstruct):
         after_update = get_validity_sql(UpdateValiditySQL, tables, args)
         after_delete = get_validity_sql(DeleteValiditySQL, tables, args)
 
+        procedure_name = '%s_audit' % self.table.name
+        if self.table.schema:
+            procedure_name = '%s_%s' % (self.table.schema, procedure_name)
+
         sql = procedure_sql.format(
-            procedure_name='%s_audit' % self.table.name,
+            procedure_name=procedure_name,
             excluded_columns=', '.join(
                 "'%s'" % c for c in self.excluded_columns
             ),
@@ -425,9 +445,8 @@ class TransactionTriggerSQL(object):
     @property
     def transaction_table_name(self):
         if self.table.schema:
-            return '%s.transaction' % self.table.schema
-        else:
-            return 'transaction'
+            return '%s.%s' % (self.table.schema, self.table.name)
+        return self.table.name
 
     def __str__(self):
         return temp_transaction_trigger_sql.format(
@@ -436,6 +455,10 @@ class TransactionTriggerSQL(object):
 
 
 def create_versioning_trigger_listeners(manager, cls):
+    compound_trigger_name = cls.__table__.name
+    if cls.__table__.schema:
+       compound_trigger_name = '%s_%s' % (cls.__table__.schema, compound_trigger_name) 
+
     sa.event.listen(
         cls.__table__,
         'after_create',
@@ -451,12 +474,20 @@ def create_versioning_trigger_listeners(manager, cls):
         'after_drop',
         sa.schema.DDL(
             'DROP FUNCTION IF EXISTS %s()' %
-            '%s_audit' % cls.__table__.name,
+            '%s_audit' % compound_trigger_name,
         )
     )
 
+def reverse_table_name_format(version_table_name_format):
+    """
+    Returns a regex that looks for a match where the version_table_name_format's %s is
+    """
+    return '^' + version_table_name_format.replace('%s', '(.*)') + '$'
 
-def sync_trigger(conn, table_name):
+DEFAULT_VERSION_TABLE_NAME_FORMAT = '%s_version'
+def sync_trigger(conn,
+                 table_name,
+                 versioning_manager):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -468,9 +499,14 @@ def sync_trigger(conn, table_name):
 
     :param conn: SQLAlchemy connection object
     :param table_name: Name of the table to synchronize versioning trigger for
+    :param versioning_manager: (Optional) the versioning manager
 
     .. versionadded: 1.1.0
     """
+    custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
+    version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
+    parent_table_name_regex = reverse_table_name_format(version_table_name_format)
+    
     meta = sa.MetaData()
     version_table = sa.Table(
         table_name,
@@ -478,8 +514,14 @@ def sync_trigger(conn, table_name):
         autoload=True,
         autoload_with=conn
     )
+
+    try:
+        parent_table_name = re.findall(parent_table_name_regex, table_name)[0]
+    except IndexError:
+        raise ValueError('The version table name %s that was provided to sync_trigger does not conform to the format %s' % (table_name, version_table_name_format))
+
     parent_table = sa.Table(
-        table_name[0:-len('_version')],
+        parent_table_name,
         meta,
         autoload=True,
         autoload_with=conn
@@ -488,20 +530,32 @@ def sync_trigger(conn, table_name):
         set(c.name for c in parent_table.c) -
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
-    drop_trigger(conn, parent_table.name)
-    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
+    drop_trigger(conn, parent_table.name, parent_table.schema)
+    create_trigger(conn,
+                   table=parent_table,
+                   versioning_manager=versioning_manager,
+                   excluded_columns=excluded_columns)
 
 
 def create_trigger(
     conn,
     table,
+    versioning_manager,
     transaction_column_name='transaction_id',
     operation_type_column_name='operation_type',
-    version_table_name_format='%s_version',
     excluded_columns=None,
-    use_property_mod_tracking=True,
+    use_property_mod_tracking=False,
     end_transaction_column_name=None,
 ):
+    custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
+    version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
+
+    transaction_table_name = 'transaction'
+    if versioning_manager.transaction_cls:
+        transaction_table_name = versioning_manager.transaction_cls.__table__.name
+        if versioning_manager.transaction_cls.__table__.schema:
+            transaction_table_name = '%s.%s' % (versioning_manager.transaction_cls.__table__.schema, transaction_table_name)
+
     params = dict(
         table=table,
         update_validity_for_tables=[],
@@ -509,18 +563,23 @@ def create_trigger(
         operation_type_column_name=operation_type_column_name,
         version_table_name_format=version_table_name_format,
         excluded_columns=excluded_columns,
-        use_property_mod_tracking=use_property_mod_tracking,
+        use_property_mod_tracking=uses_property_mod_tracking(versioning_manager) if versioning_manager else use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
+        transaction_table_name=transaction_table_name,
     )
     conn.execute(str(CreateTriggerFunctionSQL(**params)))
     conn.execute(str(CreateTriggerSQL(**params)))
 
 
-def drop_trigger(conn, table_name):
+def drop_trigger(conn, table_name, table_schema=None):
+    compound_name = table_name
+    if table_schema:
+        compound_name = '%s_%s' % (table_schema, table_name)
+
     conn.execute(
         'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
             table_name,
             table_name
         )
     )
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_name)

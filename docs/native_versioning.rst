@@ -23,10 +23,11 @@ Schema migrations
 -----------------
 
 When making schema migrations (for example adding new columns to version tables) you need to remember to call sync_trigger in order to keep the version trigger up-to-date.
-
 ::
 
-    from sqlalchemy_continuum.dialects.postgresql import sync_trigger
+    from sqlalchemy_continuum import versioning_manager # or import your custom one, if you have one
+    sync_trigger(conn,
+                 'article_version',
+                 versioning_manager=versioning_manager)
 
 
-    sync_trigger(conn, 'article_version')
