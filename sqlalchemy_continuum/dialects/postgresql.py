@@ -574,14 +574,17 @@ def create_trigger(
 
 
 def drop_trigger(conn, table_name, table_schema=None):
-    compound_name = table_name
+    compound_procedure_name = table_name
+    schema = ''
     if table_schema:
-        compound_name = '%s_%s' % (table_schema, table_name)
+        compound_procedure_name = '%s_%s' % (table_schema, table_name)
+        schema = table_schema + '.'
 
     conn.execute(
-        'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
+        'DROP TRIGGER IF EXISTS %s_trigger ON %s"%s"' % (
             table_name,
+            schema,
             table_name
         )
     )
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_name)
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_procedure_name)
