@@ -172,6 +172,6 @@ class TransactionFactory(ModelFactory):
                     )
                 )
 
-        if manager.options['native_versioning']:
+        if manager.options['native_versioning'] and manager.options['create_trigger_listeners']:
             create_triggers(Transaction)
         return Transaction

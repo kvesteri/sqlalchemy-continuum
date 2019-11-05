@@ -297,6 +297,7 @@ class DeleteUpsertSQL(UpsertSQL):
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
+        validity_strategy_columns = []
         if self.update_validity_for_tables:
             validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
         return parent_columns + validity_strategy_columns + ['%s = 2' % self.operation_type_column_name]
@@ -455,6 +456,9 @@ class TransactionTriggerSQL(object):
 
 
 def create_versioning_trigger_listeners(manager, cls):
+    if not manager.options['create_trigger_listeners']:
+        return
+    
     compound_trigger_name = cls.__table__.name
     if cls.__table__.schema:
        compound_trigger_name = '%s_%s' % (cls.__table__.schema, compound_trigger_name) 
@@ -487,7 +491,8 @@ def reverse_table_name_format(version_table_name_format):
 DEFAULT_VERSION_TABLE_NAME_FORMAT = '%s_version'
 def sync_trigger(conn,
                  table_name,
-                 versioning_manager):
+                 versioning_manager,
+                 schema=None):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -507,7 +512,7 @@ def sync_trigger(conn,
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
     parent_table_name_regex = reverse_table_name_format(version_table_name_format)
     
-    meta = sa.MetaData()
+    meta = sa.MetaData(schema=schema)
     version_table = sa.Table(
         table_name,
         meta,
@@ -572,14 +577,17 @@ def create_trigger(
 
 
 def drop_trigger(conn, table_name, table_schema=None):
-    compound_name = table_name
+    compound_procedure_name = table_name
+    schema = ''
     if table_schema:
-        compound_name = '%s_%s' % (table_schema, table_name)
+        compound_procedure_name = '%s_%s' % (table_schema, table_name)
+        schema = table_schema + '.'
 
     conn.execute(
-        'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
+        'DROP TRIGGER IF EXISTS %s_trigger ON %s"%s"' % (
             table_name,
+            schema,
             table_name
         )
     )
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_name)
+    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % compound_procedure_name)

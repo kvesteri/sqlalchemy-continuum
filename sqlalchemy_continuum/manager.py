@@ -85,6 +85,7 @@ class VersioningManager(object):
             'exclude': [],
             'include': [],
             'native_versioning': False,
+            'create_trigger_listeners': True,
             'create_models': True,
             'create_tables': True,
             'transaction_column_name': 'transaction_id',
