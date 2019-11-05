@@ -456,6 +456,9 @@ class TransactionTriggerSQL(object):
 
 
 def create_versioning_trigger_listeners(manager, cls):
+    if not manager.options['create_trigger_listeners']:
+        return
+    
     compound_trigger_name = cls.__table__.name
     if cls.__table__.schema:
        compound_trigger_name = '%s_%s' % (cls.__table__.schema, compound_trigger_name) 
