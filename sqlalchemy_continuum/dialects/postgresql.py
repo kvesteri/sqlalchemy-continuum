@@ -487,7 +487,8 @@ def reverse_table_name_format(version_table_name_format):
 DEFAULT_VERSION_TABLE_NAME_FORMAT = '%s_version'
 def sync_trigger(conn,
                  table_name,
-                 versioning_manager):
+                 versioning_manager,
+                 schema=None):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -507,7 +508,7 @@ def sync_trigger(conn,
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
     parent_table_name_regex = reverse_table_name_format(version_table_name_format)
     
-    meta = sa.MetaData()
+    meta = sa.MetaData(schema=schema)
     version_table = sa.Table(
         table_name,
         meta,
