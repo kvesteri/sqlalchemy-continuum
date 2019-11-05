@@ -297,6 +297,7 @@ class DeleteUpsertSQL(UpsertSQL):
             '"{name}" = OLD."{name}"'.format(name=c.name)
             for c in self.columns
         ]
+        validity_strategy_columns = []
         if self.update_validity_for_tables:
             validity_strategy_columns = ['{0} = NULL'.format(self.end_transaction_column_name)]
         return parent_columns + validity_strategy_columns + ['%s = 2' % self.operation_type_column_name]
