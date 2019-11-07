@@ -550,7 +550,7 @@ def create_trigger(
     operation_type_column_name='operation_type',
     excluded_columns=None,
     use_property_mod_tracking=False,
-    end_transaction_column_name=None,
+    end_transaction_column_name='end_transaction_id',
 ):
     custom_version_table_name_format = versioning_manager.options.get('table_name') if versioning_manager else None
     version_table_name_format = custom_version_table_name_format or DEFAULT_VERSION_TABLE_NAME_FORMAT
@@ -563,7 +563,7 @@ def create_trigger(
 
     params = dict(
         table=table,
-        update_validity_for_tables=[],
+        update_validity_for_tables=[table],
         transaction_column_name=transaction_column_name,
         operation_type_column_name=operation_type_column_name,
         version_table_name_format=version_table_name_format,
