@@ -249,6 +249,7 @@ class RelationshipBuilder(object):
                 FROM article_tag_version as article_tag_version2
                 WHERE article_tag_version2.tag_id = article_tag_version.tag_id
                 AND article_tag_version2.tx_id <=5
+                AND article_tag_version2.article_id = 3
                 GROUP BY article_tag_version2.tag_id
                 HAVING
                     MAX(article_tag_version2.tx_id) =
@@ -260,6 +261,8 @@ class RelationshipBuilder(object):
         """
 
         tx_column = option(obj, 'transaction_column_name')
+        join_column = self.property.primaryjoin.right.name
+        object_join_column = self.property.primaryjoin.left.name
         reflector = VersionExpressionReflector(obj, self.property)
 
         association_table_alias = self.association_version_table.alias()
@@ -276,6 +279,7 @@ class RelationshipBuilder(object):
                 sa.and_(
                     association_table_alias.c[tx_column] <=
                     getattr(obj, tx_column),
+                    association_table_alias.c[join_column] == getattr(obj, object_join_column),
                     *[association_col ==
                       self.association_version_table.c[association_col.name]
                       for association_col
