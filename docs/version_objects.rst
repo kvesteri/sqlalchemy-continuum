@@ -102,7 +102,7 @@ you can easily check the changeset of given object in current transaction.
 
     article = Article(name=u'Some article')
     changeset(article)
-    # {'name': [u'Some article', None]}
+    # {'name': [None, u'Some article']}
 
 
 Version relationships
