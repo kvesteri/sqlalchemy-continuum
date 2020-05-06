@@ -261,6 +261,7 @@ class ModelBuilder(object):
             name = '%sVersion' % (self.model.__name__,)
         return type(name, self.base_classes(), args)
 
+
     def __call__(self, table, tx_class):
         """
         Build history model and relationships to parent model, transaction
