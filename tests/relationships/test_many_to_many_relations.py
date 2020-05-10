@@ -70,6 +70,33 @@ class ManyToManyRelationshipsTestCase(TestCase):
         self.session.commit()
         assert len(article.versions[0].tags) == 1
 
+    def test_unrelated_change(self):
+        tag1 = self.Tag(name=u'some tag')
+        tag2 = self.Tag(name=u'some tag2')
+
+        self.session.add(tag1)
+        self.session.add(tag2)
+        self.session.commit()
+
+        article1 = self.Article(name="Some article", )
+        article1.name = u'Some article'
+        article1.tags.append(tag1)
+
+        self.session.add(article1)
+        self.session.commit()
+
+        article2 = self.Article()
+        article2.name = u'Some article2'
+        article2.tags.append(tag1)
+
+        self.session.add(article2)
+        self.session.commit()
+
+        article1.name = u'Some other name'
+        self.session.commit()
+
+        assert len(article1.versions[1].tags) == 1
+
     def test_multi_insert(self):
         article = self.Article()
         article.name = u'Some article'
