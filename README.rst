@@ -74,6 +74,39 @@ In order to make your models versioned you need two things:
     article.name
     # 'Some article'
 
+For completeness, below is a working example.
+
+.. code-block:: python
+
+    from sqlalchemy_continuum import make_versioned
+    from sqlalchemy import Column, Integer, Unicode, UnicodeText, create_engine
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import create_session, configure_mappers
+
+    make_versioned(user_cls=None)
+
+    Base = declarative_base()
+    class Article(Base):
+        __versioned__ = {}
+        __tablename__ = 'article'
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        name = Column(Unicode(255))
+        content = Column(UnicodeText)
+
+    configure_mappers()
+    engine = create_engine('sqlite://')
+    Base.metadata.create_all(engine)
+    session = create_session(bind=engine, autocommit=False)
+
+    article = Article(name=u'Some article', content=u'Some content')
+    session.add(article)
+    session.commit()
+    article.versions[0].name
+    article.name = u'Updated name'
+    session.commit()
+    article.versions[1].name
+    article.versions[0].revert()
+    article.name
 
 Resources
 ---------
