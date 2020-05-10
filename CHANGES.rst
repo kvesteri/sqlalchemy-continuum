@@ -8,6 +8,7 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 ^^^^^^^^^^^^^^^^^^^
 
 - Added explicit "pseudo-backref" relationships for version/parent (#240, courtesy of lgedgar)
+- Fixed m2m Bug when an unrelated change is made to a model (#242, courtesy of Andrew-Dickinson)
 
 
 1.3.9 (2019-03-19)
