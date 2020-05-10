@@ -107,6 +107,7 @@ class ModelBuilder(object):
         """
         conditions = []
         foreign_keys = []
+        model_keys = []
         for key, column in sa.inspect(self.model).columns.items():
             if column.primary_key:
                 conditions.append(
@@ -116,6 +117,9 @@ class ModelBuilder(object):
                 )
                 foreign_keys.append(
                     getattr(self.version_class, key)
+                )
+                model_keys.append(
+                    getattr(self.model, key)
                 )
 
         # We need to check if versions relation was already set for parent
@@ -130,10 +134,17 @@ class ModelBuilder(object):
                     option(self.model, 'transaction_column_name')
                 ),
                 lazy='dynamic',
-                backref=sa.orm.backref(
-                    'version_parent'
-                ),
                 viewonly=True
+            )
+            # We must explicitly declare this relationship, instead of
+            # specifying as a backref to the one above, since they are
+            # viewonly=True and SQLAlchemy will warn if using backref.
+            self.version_class.version_parent = sa.orm.relationship(
+                self.model,
+                primaryjoin=sa.and_(*conditions),
+                foreign_keys=model_keys,
+                viewonly=True,
+                uselist=False,
             )
 
     def build_transaction_relationship(self, tx_class):
