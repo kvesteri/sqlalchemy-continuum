@@ -4,6 +4,12 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.11 (2020-05-24)
+^^^^^^^^^^^^^^^^^^^
+
+- Made ModelBuilder create column aliases in version models (#246, courtesy of killthekitten)
+
+
 1.3.10 (2020-05-10)
 ^^^^^^^^^^^^^^^^^^^
 
