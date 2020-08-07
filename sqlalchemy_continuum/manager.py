@@ -370,8 +370,6 @@ class VersioningManager(object):
             uow.reset(session)
             del self.units_of_work[conn]
 
-<<<<<<< HEAD
-=======
         for connection in dict(self.units_of_work).keys():
             if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
@@ -397,7 +395,6 @@ class VersioningManager(object):
                 del self.units_of_work[connection]
 
 
->>>>>>> upstream/master
     def append_association_operation(self, conn, table_name, params, op):
         """
         Append history association operation to pending_statements list.
@@ -411,11 +408,6 @@ class VersioningManager(object):
         try:
             uow = self.units_of_work[conn]
         except KeyError:
-<<<<<<< HEAD
-            uow = self.units_of_work[conn.engine]
-        uow.pending_statements.append(stmt)
-
-=======
             try:
                 uow = self.units_of_work[conn.engine]
             except KeyError:
@@ -436,7 +428,6 @@ class VersioningManager(object):
                 if not connection.closed and connection.connection is c.connection:  # ConnectionFairy is the same - this is a clone
                     self.units_of_work[c] = uow
 
->>>>>>> upstream/master
     def track_association_operations(
         self, conn, cursor, statement, parameters, context, executemany
     ):

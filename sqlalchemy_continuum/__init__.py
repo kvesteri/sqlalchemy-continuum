@@ -108,8 +108,6 @@ def remove_versioning(
         'before_cursor_execute',
         manager.track_association_operations
     )
-<<<<<<< HEAD
-=======
 
     sa.event.remove(
         sa.engine.Engine,
@@ -122,4 +120,3 @@ def remove_versioning(
         'set_connection_execution_options',
         manager.track_cloned_connections
     )
->>>>>>> upstream/master
