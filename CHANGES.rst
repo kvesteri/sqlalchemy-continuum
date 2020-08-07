@@ -4,6 +4,44 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.11 (2020-05-24)
+^^^^^^^^^^^^^^^^^^^
+
+- Made ModelBuilder create column aliases in version models (#246, courtesy of killthekitten)
+
+
+1.3.10 (2020-05-10)
+^^^^^^^^^^^^^^^^^^^
+
+- Added explicit "pseudo-backref" relationships for version/parent (#240, courtesy of lgedgar)
+- Fixed m2m Bug when an unrelated change is made to a model (#242, courtesy of Andrew-Dickinson)
+
+
+1.3.9 (2019-03-19)
+^^^^^^^^^^^^^^^^^^
+
+- Added SA 1.3 support
+- Reverted trigger creation from 1.3.7
+
+
+1.3.8 (2019-02-27)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed revert to ignore non-columns (#197, courtesy of mauler)
+
+
+1.3.7 (2019-01-13)
+^^^^^^^^^^^^^^^^^^
+
+- Fix trigger creation during alembic migrations (#209, courtesy of lyndsysimon)
+
+
+1.3.6 (2018-07-30)
+^^^^^^^^^^^^^^^^^^
+
+- Fixed ResourceClosedErrors from connections leaking when using an external transaction (#196, courtesy of vault)
+
+
 1.3.5 (2018-06-03)
 ^^^^^^^^^^^^^^^^^^
 

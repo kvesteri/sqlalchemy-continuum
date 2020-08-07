@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_continuum import versioning_manager, version_class
 from tests import TestCase, create_test_cases
 
@@ -24,6 +25,10 @@ class SingleTableInheritanceTestCase(TestCase):
         class Article(TextItem):
             __mapper_args__ = {'polymorphic_identity': u'article'}
             name = sa.Column(sa.Unicode(255))
+
+            @sa.ext.declarative.declared_attr
+            def status(cls):
+                return sa.Column("_status", sa.Unicode(255))
 
         class BlogPost(TextItem):
             __mapper_args__ = {'polymorphic_identity': u'blog_post'}
@@ -78,6 +83,9 @@ class SingleTableInheritanceTestCase(TestCase):
         ).first()
         assert transaction.entity_names == [u'Article']
         assert transaction.changed_entities
+
+    def test_declared_attr_inheritance(self):
+        assert self.ArticleVersion.status
 
 
 create_test_cases(SingleTableInheritanceTestCase)

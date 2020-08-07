@@ -144,14 +144,16 @@ class Builder(object):
     def configure_versioned_classes(self):
         """
         Configures all versioned classes that were collected during
-        instrumentation process. The configuration has 4 steps:
+        instrumentation process. The configuration has 6 steps:
 
         1. Build tables for version models.
         2. Build the actual version model declarative classes.
         3. Build relationships between these models.
         4. Empty pending_classes list so that consecutive mapper configuration
            does not create multiple version classes
-        5. Assign all versioned attributes to use active history.
+        5. Build aliases for columns.
+        6. Assign all versioned attributes to use active history.
+
         """
         if not self.manager.options['versioning']:
             return
@@ -168,11 +170,39 @@ class Builder(object):
 
         # Create copy of all pending versioned classes so that we can inspect
         # them later when creating relationships.
-        pending_copy = copy(self.manager.pending_classes)
+        pending_classes_copies = copy(self.manager.pending_classes)
         self.manager.pending_classes = []
-        self.build_relationships(pending_copy)
+        self.build_relationships(pending_classes_copies)
+        self.enable_active_history(pending_classes_copies)
+        self.create_column_aliases(pending_classes_copies)
 
-        for cls in pending_copy:
-            # set the "active_history" flag
+    def enable_active_history(self, version_classes):
+        """
+        Assign all versioned attributes to use active history.
+        """
+        for cls in version_classes:
             for prop in sa.inspect(cls).iterate_properties:
                 getattr(cls, prop.key).impl.active_history = True
+
+    def create_column_aliases(self, version_classes):
+        """
+        Create aliases for the columns from the original model.
+
+        This, for example, imitates the behavior of @declared_attr columns.
+        """
+        for cls in version_classes:
+            model_mapper = sa.inspect(cls)
+            version_class = self.manager.version_class_map.get(cls)
+            if not version_class:
+                continue
+
+            version_class_mapper = sa.inspect(version_class)
+
+            for key, column in model_mapper.columns.items():
+                if key != column.key:
+                    version_class_column = version_class.__table__.c.get(column.key)
+
+                    if version_class_column is None:
+                        continue
+
+                    version_class_mapper.add_property(key, sa.orm.column_property(version_class_column))

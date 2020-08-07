@@ -66,12 +66,12 @@ class TestFlaskPlugin(TestCase):
         :returns: the logged in user
         """
         with self.client.session_transaction() as s:
-            s['user_id'] = user.id
+            s['_user_id'] = user.id
         return user
 
     def logout(self, user=None):
         with self.client.session_transaction() as s:
-            s['user_id'] = None
+            s['_user_id'] = None
 
     def create_models(self):
         TestCase.create_models(self)
@@ -281,5 +281,3 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         uow = versioning_manager.unit_of_work(self.db.session)
         transaction = uow.create_transaction(self.db.session)
         assert transaction.id
-
-
