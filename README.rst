@@ -1,3 +1,17 @@
+CAXIAM MAINTENANCE NOTE
+=======================
+
+In the future, this library may need merge changes from upstream.  To do this:
+
+1. git remote add upstream https://github.com/kvesteri/sqlalchemy-continuum.git
+2. git fetch upstream
+3. git merge upstream/master
+
+https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork
+
+Project was not 100% buildable as of 2020/08/07 on macOS or ubuntu 20.04.  Tests are still runnable on ubuntu if enough requirements are met.  Currently, all tests that pertain to our local changes are runnable.
+
+
 SQLAlchemy-Continuum
 ====================
 
