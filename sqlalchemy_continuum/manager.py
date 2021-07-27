@@ -138,7 +138,6 @@ class VersioningManager(object):
             'after_commit': self.clear,
             'after_rollback': self.clear,
             # The below are only used by native versioning
-            'after_begin': self.after_begin,
             'before_commit': self.before_commit,
         }
         self.mapper_listeners = {
@@ -159,17 +158,6 @@ class VersioningManager(object):
 
         self.metadata = None
 
-    def after_begin(self, session, tx, conn):
-        if not self.options['versioning'] or not self.options['native_versioning']:
-            return
-
-        tx_table = self.transaction_cls.__table__
-
-        stmt = tx_table.insert().values(issued_at=datetime.utcnow()).returning(tx_table.c.id)
-
-        # result of fetchone() is a Tuple[int]
-        self.native_transaction_id = session.execute(stmt).fetchone()[0]
-
     def transaction_args(self, session):
         args = {}
         for plugin in self.plugins:
@@ -182,11 +170,17 @@ class VersioningManager(object):
 
         tx_table = self.transaction_cls.__table__
 
+        fetch_transaction_id_statement = tx_table.insert().values(issued_at=datetime.utcnow()).returning(tx_table.c.id)
+
+        # result of fetchone() is a Tuple[int]
+        self.native_transaction_id = session.execute(fetch_transaction_id_statement).fetchone()[0]
+
         stmt = sa.update(
             table=tx_table,
             whereclause=(tx_table.c.id == self.native_transaction_id),
             values={key: value for (key, value) in list(self.transaction_args(session).items())}
         )
+
         session.execute(stmt)
 
     def create_transaction_model(self):
