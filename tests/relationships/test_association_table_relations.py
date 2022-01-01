@@ -12,7 +12,7 @@ class AssociationTableRelationshipsTestCase(TestCase):
             __tablename__ = 'published_article'
             __table_args__ = (
                 PrimaryKeyConstraint("article_id", "author_id"),
-                {'useexisting': True}
+                {'keep_existing': True}
             )
 
             article_id = sa.Column(sa.Integer, sa.ForeignKey('article.id'))
