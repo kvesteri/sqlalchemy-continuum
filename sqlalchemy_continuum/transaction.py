@@ -132,7 +132,11 @@ class TransactionFactory(ModelFactory):
 
             if manager.user_cls:
                 user_cls = manager.user_cls
-                registry = manager.declarative_base._decl_class_registry
+                Base = manager.declarative_base
+                try:
+                    registry = Base.registry._class_registry
+                except AttributeError:  # SQLAlchemy < 1.4
+                    registry = Base._decl_class_registry
 
                 if isinstance(user_cls, six.string_types):
                     try:
