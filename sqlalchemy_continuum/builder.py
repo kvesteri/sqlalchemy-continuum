@@ -1,5 +1,6 @@
 from copy import copy
 from inspect import getmro
+from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
@@ -9,6 +10,18 @@ from .model_builder import ModelBuilder
 from .relationship_builder import RelationshipBuilder
 from .table_builder import TableBuilder
 
+
+def prevent_reentry(handler):
+    in_handler = False
+    @wraps(handler)
+    def check_reentry(*args, **kwargs):
+        nonlocal in_handler
+        if in_handler:
+            return
+        in_handler = True
+        handler(*args, **kwargs)
+        in_handler = False
+    return check_reentry
 
 class Builder(object):
     def build_triggers(self):
@@ -141,6 +154,7 @@ class Builder(object):
             self.manager.create_transaction_model()
             self.manager.plugins.after_build_tx_class(self.manager)
 
+    @prevent_reentry
     def configure_versioned_classes(self):
         """
         Configures all versioned classes that were collected during
