@@ -59,7 +59,7 @@ class VersionObjectFetcher(object):
             func = sa.func.max
 
         if alias is None:
-            alias = sa.orm.aliased(obj)
+            alias = sa.orm.aliased(obj.__class__)
             table = alias.__table__
             if hasattr(alias, 'c'):
                 attrs = alias.c
@@ -117,7 +117,7 @@ class VersionObjectFetcher(object):
         Returns the query needed for fetching the index of this record relative
         to version history.
         """
-        alias = sa.orm.aliased(obj)
+        alias = sa.orm.aliased(obj.__class__)
 
         subquery = (
             sa.select([sa.func.count('1')], from_obj=[alias.__table__])
