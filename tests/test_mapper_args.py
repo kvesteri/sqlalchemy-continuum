@@ -1,3 +1,6 @@
+from pytest import mark
+from packaging import version
+
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
 from tests import TestCase
@@ -29,6 +32,7 @@ class TestColumnPrefix(TestCase):
         assert self.TextItem._id
 
 
+@mark.skipif("version.parse(sa.__version__) >= version.parse('1.4')")
 class TestOrderByWithStringArg(TestCase):
     def create_models(self):
         class TextItem(self.Model):
@@ -55,6 +59,7 @@ class TestOrderByWithStringArg(TestCase):
         assert self.TextItemVersion.__mapper_args__['order_by'] == 'id'
 
 
+@mark.skipif("version.parse(sa.__version__) >= version.parse('1.4')")
 class TestOrderByWithInstrumentedAttribute(TestCase):
     def create_models(self):
         class TextItem(self.Model):
