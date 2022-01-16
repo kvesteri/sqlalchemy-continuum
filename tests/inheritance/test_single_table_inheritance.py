@@ -19,6 +19,7 @@ class SingleTableInheritanceTestCase(TestCase):
 
             __mapper_args__ = {
                 'polymorphic_on': discriminator,
+                'polymorphic_identity': u'base',
                 'with_polymorphic': '*'
             }
 
