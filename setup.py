@@ -28,7 +28,7 @@ extras_require = {
         'pytest>=2.3.5',
         'flexmock>=0.9.7',
         'psycopg2>=2.4.6',
-        'PyMySQL==0.6.1',
+        'PyMySQL>=0.8.0',
         'six>=1.4.0'
     ],
     'anyjson': ['anyjson>=0.3.3'],
