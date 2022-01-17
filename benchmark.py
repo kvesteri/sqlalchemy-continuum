@@ -50,7 +50,7 @@ def test_versioning(
 
     make_versioned(options=options)
 
-    dns = 'postgres://postgres@localhost/sqlalchemy_continuum_test'
+    dns = 'postgresql://postgres:postgres@localhost/sqlalchemy_continuum_test'
     versioning_manager.plugins = plugins
     versioning_manager.transaction_cls = transaction_cls
     versioning_manager.user_cls = user_cls
