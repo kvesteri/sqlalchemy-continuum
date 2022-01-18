@@ -119,8 +119,8 @@ Resources
 .. image:: http://i.imgur.com/UFaRx.gif
 
 
-.. |Build Status| image:: https://travis-ci.org/kvesteri/sqlalchemy-continuum.png?branch=master
-   :target: https://travis-ci.org/kvesteri/sqlalchemy-continuum
+.. |Build Status| image:: https://github.com/kvesteri/sqlalchemy-continuum/workflows/Test/badge.svg
+   :target: https://github.com/kvesteri/sqlalchemy-continuum/actions?query=workflow%3ATest
 .. |Version Status| image:: https://img.shields.io/pypi/v/SQLAlchemy-Continuum.png
    :target: https://pypi.python.org/pypi/SQLAlchemy-Continuum/
 .. |Downloads| image:: https://img.shields.io/pypi/dm/SQLAlchemy-Continuum.png
