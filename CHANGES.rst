@@ -4,6 +4,11 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
+1.3.12 (2022-01-18)
+^^^^^^^^^^^^^^^^^^^
+
+- Support SA 1.4
+
 1.3.11 (2020-05-24)
 ^^^^^^^^^^^^^^^^^^^
 
