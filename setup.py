@@ -31,7 +31,6 @@ extras_require = {
         'PyMySQL>=0.8.0',
         'six>=1.4.0'
     ],
-    'anyjson': ['anyjson>=0.3.3'],
     'flask': ['Flask>=0.9'],
     'flask-login': ['Flask-Login>=0.2.9'],
     'flask-sqlalchemy': ['Flask-SQLAlchemy>=1.0'],
