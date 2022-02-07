@@ -2,6 +2,8 @@ import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 from tests import TestCase
 from pytest import mark
+from sqlalchemy_continuum.plugins import TransactionMetaPlugin
+
 
 
 class TestTransaction(TestCase):
@@ -37,6 +39,19 @@ class TestTransaction(TestCase):
             ) ==
             repr(transaction)
         )
+
+    def test_changed_entities(self):
+        article_v0 = self.article.versions[0]
+        transaction = article_v0.transaction
+        assert transaction.changed_entities == {
+            self.ArticleVersion: [article_v0],
+            self.TagVersion: [self.article.tags[0].versions[0]],
+        }
+
+
+# Check that the tests pass without TransactionChangesPlugin
+class TestTransactionWithoutChangesPlugin(TestTransaction):
+    plugins = [TransactionMetaPlugin()]
 
 
 class TestAssigningUserClass(TestCase):
