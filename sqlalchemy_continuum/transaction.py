@@ -37,7 +37,7 @@ class TransactionBase(object):
         Raises a NoChangesColumn exception if the 'changes' column does
         not exist, most likely because TransactionChangesPlugin is not enabled.
         """
-        if 'changes' in self.__table__.columns:
+        if hasattr(self, 'changes'):
           return [changes.entity_name for changes in self.changes]
         else:
           raise NoChangesColumn()
