@@ -252,7 +252,7 @@ class UnitOfWork(object):
                     parent,
                     version_obj,
                     alias=sa.orm.aliased(class_.__table__)
-                )
+                ).scalar_subquery()
                 query = (
                     session.query(class_.__table__)
                     .filter(
