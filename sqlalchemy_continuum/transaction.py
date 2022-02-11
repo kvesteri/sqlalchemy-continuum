@@ -23,7 +23,7 @@ def compile_big_integer(element, compiler, **kw):
     return 'INTEGER'
 
 
-class NoChangesColumn(Exception):
+class NoChangesAttribute(Exception):
     pass
 
 
@@ -34,13 +34,13 @@ class TransactionBase(object):
     def entity_names(self):
         """
         Return a list of entity names that changed during this transaction.
-        Raises a NoChangesColumn exception if the 'changes' column does
+        Raises a NoChangesAttribute exception if the 'changes' column does
         not exist, most likely because TransactionChangesPlugin is not enabled.
         """
         if hasattr(self, 'changes'):
           return [changes.entity_name for changes in self.changes]
         else:
-          raise NoChangesColumn()
+          raise NoChangesAttribute()
 
     @property
     def changed_entities(self):
@@ -60,7 +60,7 @@ class TransactionBase(object):
             try:
                 if class_.__name__ not in self.entity_names:
                     continue
-            except NoChangesColumn:
+            except NoChangesAttribute:
                 pass
 
             tx_column = manager.option(class_, 'transaction_column_name')
