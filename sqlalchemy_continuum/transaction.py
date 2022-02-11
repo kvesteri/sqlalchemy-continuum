@@ -23,6 +23,10 @@ def compile_big_integer(element, compiler, **kw):
     return 'INTEGER'
 
 
+class NoChangesAttribute(Exception):
+    pass
+
+
 class TransactionBase(object):
     issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
@@ -30,8 +34,13 @@ class TransactionBase(object):
     def entity_names(self):
         """
         Return a list of entity names that changed during this transaction.
+        Raises a NoChangesAttribute exception if the 'changes' column does
+        not exist, most likely because TransactionChangesPlugin is not enabled.
         """
-        return [changes.entity_name for changes in self.changes]
+        if hasattr(self, 'changes'):
+          return [changes.entity_name for changes in self.changes]
+        else:
+          raise NoChangesAttribute()
 
     @property
     def changed_entities(self):
@@ -48,8 +57,11 @@ class TransactionBase(object):
         session = sa.orm.object_session(self)
 
         for class_, version_class in tuples:
-            if class_.__name__ not in self.entity_names:
-                continue
+            try:
+                if class_.__name__ not in self.entity_names:
+                    continue
+            except NoChangesAttribute:
+                pass
 
             tx_column = manager.option(class_, 'transaction_column_name')
 
