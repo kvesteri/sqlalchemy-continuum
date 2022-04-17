@@ -31,7 +31,7 @@ When making schema migrations (for example adding new columns to version tables)
 
     sync_trigger(conn, 'article_version')
 
-If you don't use `PropertyModTrackerPlugin`, then you need to disable it:
+If you don't use `PropertyModTrackerPlugin`, then you have to disable it:
 
 ::
 
