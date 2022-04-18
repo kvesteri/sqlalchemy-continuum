@@ -456,7 +456,7 @@ def create_versioning_trigger_listeners(manager, cls):
     )
 
 
-def sync_trigger(conn, table_name):
+def sync_trigger(conn, table_name, **kwargs):
     """
     Synchronizes versioning trigger for given table with given connection.
 
@@ -468,6 +468,7 @@ def sync_trigger(conn, table_name):
 
     :param conn: SQLAlchemy connection object
     :param table_name: Name of the table to synchronize versioning trigger for
+    :params **kwargs: kwargs to pass to create_trigger
 
     .. versionadded: 1.1.0
     """
@@ -489,7 +490,7 @@ def sync_trigger(conn, table_name):
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
     drop_trigger(conn, parent_table.name)
-    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns)
+    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns, **kwargs)
 
 
 def create_trigger(
