@@ -36,6 +36,7 @@ extras_require = {
     'flask-sqlalchemy': ['Flask-SQLAlchemy>=1.0'],
     'flexmock': ['flexmock>=0.9.7'],
     'i18n': ['SQLAlchemy-i18n>=0.8.4,!=1.1.0'],
+    'Werkzeug': ['Werkzeug==2.1.2']
 }
 
 
