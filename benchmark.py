@@ -6,7 +6,7 @@ from time import time
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, close_all_sessions
 from sqlalchemy_continuum import (
     make_versioned,
     versioning_manager,
@@ -106,7 +106,7 @@ def test_versioning(
     remove_versioning()
     versioning_manager.reset()
 
-    session.close_all()
+    close_all_sessions()
     session.expunge_all()
     Model.metadata.drop_all(connection)
     engine.dispose()

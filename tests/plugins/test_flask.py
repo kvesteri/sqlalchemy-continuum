@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
 from flexmock import flexmock
 
 import sqlalchemy as sa
+from sqlalchemy.orm import close_all_sessions
 from sqlalchemy_continuum import (
     make_versioned, remove_versioning, versioning_manager
 )
@@ -234,7 +235,7 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         remove_versioning()
         self.db.session.remove()
         self.db.drop_all()
-        self.db.session.close_all()
+        close_all_sessions()
         self.db.engine.dispose()
         self.context.pop()
         self.context = None

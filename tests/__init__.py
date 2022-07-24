@@ -7,7 +7,7 @@ import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions
 from sqlalchemy_continuum import (
     ClassNotVersioned,
     version_class,
@@ -130,7 +130,7 @@ class TestCase(object):
         QueryPool.queries = []
         versioning_manager.reset()
 
-        self.session.close_all()
+        close_all_sessions()
         self.session.expunge_all()
         self.drop_tables()
         self.engine.dispose()
