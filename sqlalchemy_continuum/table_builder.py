@@ -20,12 +20,9 @@ class ColumnReflector(object):
 
         :param column: SQLAlchemy Column object of parent table
         """
-        # Make a copy of the column so that it does not point to wrong
-        # table.
-        column_copy = column.copy()
-        # Remove unique constraints
+        # Make a copy of the column so that it does not point to wrong table.
+        column_copy = column._copy() if hasattr(column, '_copy') else column.copy()
         column_copy.unique = False
-        # Remove onupdate triggers
         column_copy.onupdate = None
         if column_copy.autoincrement:
             column_copy.autoincrement = False
