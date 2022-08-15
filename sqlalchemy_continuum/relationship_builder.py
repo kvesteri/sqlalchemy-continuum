@@ -47,9 +47,7 @@ class RelationshipBuilder(object):
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
         reflector = VersionExpressionReflector(obj, self.property)
-
-        return getattr(self.remote_cls, tx_column) == (
-            sa.select(
+        subquery = sa.select(
                 [sa.func.max(getattr(self.remote_cls, tx_column))]
             ).where(
                 sa.and_(
@@ -58,7 +56,11 @@ class RelationshipBuilder(object):
                     reflector(self.property.primaryjoin)
                 )
             )
-        )
+        try:
+            subquery = subquery.scalar_subquery()
+        except AttributeError:  # SQLAlchemy < 1.4
+            subquery = subquery.as_scalar()
+        return getattr(self.remote_cls, tx_column) == subquery
 
     def query(self, obj):
         session = sa.orm.object_session(obj)
