@@ -7,7 +7,7 @@ import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions
 from sqlalchemy_continuum import (
     ClassNotVersioned,
     version_class,
@@ -20,6 +20,7 @@ from sqlalchemy_continuum.plugins import (
     TransactionMetaPlugin,
     TransactionChangesPlugin
 )
+from packaging import version as py_pkg_version
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
@@ -129,8 +130,10 @@ class TestCase(object):
         remove_versioning()
         QueryPool.queries = []
         versioning_manager.reset()
-
-        self.session.close_all()
+        if py_pkg_version.parse(sa.__version__) >= py_pkg_version.parse('1.3.0'):
+            close_all_sessions() # SA above V1.3.0 supports close_all_sessions() method for teardown scheme(s) Refer: (https://github.com/sqlalchemy/sqlalchemy/blob/a134ec1760df6295d537ff63df7aee83d957bf6a/lib/sqlalchemy/orm/session.py#L4674)
+        else:
+            self.session.close_all()
         self.session.expunge_all()
         self.drop_tables()
         self.engine.dispose()
