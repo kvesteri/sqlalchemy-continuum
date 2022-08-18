@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 from functools import wraps
 
@@ -492,21 +493,32 @@ class VersioningManager(object):
         :param params: tuple or dict of statement parameters
         """
         if isinstance(params, tuple):
+            regex_lookup = {
+                Operation.DELETE:  '^DELETE FROM (.+?) WHERE',
+                Operation.INSERT: '^INSERT INTO (.*?) (VALUES|\()' # INSERT INTO `table_name` VALUES vs INSERT INTO `table_name` (
+            }
             parameters = {}
-            if op == Operation.DELETE:
-                regexp = '^DELETE FROM (.+?) WHERE'
+            regexp = regex_lookup.get(op, None)
+            if regexp is not None:
                 match = re.match(regexp, statement)
                 tablename = match.groups()[0].strip('"').strip("'").strip('`')
                 table = self.metadata.tables[tablename]
-                columns = table.primary_key.columns.values()
+                if op == Operation.DELETE:
+                    columns = table.primary_key.columns.values()
+                elif op == Operation.INSERT:
+                    columns = table.columns.values()
                 for index, column in enumerate(columns):
+                    if column.type.__class__.__name__.lower() in ('datetime', ...): # todo add any other type of datetime column?
+                        # from dateutil.parser import parse # dateutil not part of requirement in setup.py so commenting
+                        # parameters[column.name] = parse(params[index])
+                        parameters[column.name] = datetime.fromisoformat(params[index]) # '2022-08-18 04:45:36.942711' params contains ISO Formated date
+                        continue
                     parameters[column.name] = params[index]
             else:
-                columns = [
-                    column.strip() for column in
-                    statement.split('(')[1].split(')')[0].split(',')
-                ]
-                for index, column in enumerate(columns):
-                    parameters[column] = params[index]
+                # if context flow is here that means
+                # no lookup for Operation 
+                # but @track_association_operations(...) method only supports INSERT AND DELETE OP as of V1.3.12
+                # should raise apt. exception?
+                ... 
             return parameters
         return params
