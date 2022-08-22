@@ -491,11 +491,14 @@ class VersioningManager(object):
 
         :param statement: SQL statement string
         :param params: tuple or dict of statement parameters
+
+        returns: dict with parameters
         """
-        if isinstance(params, tuple):
+
+        if isinstance(params, tuple) and params: # fix for issue raised in #284
             regex_lookup = {
                 Operation.DELETE:  '^DELETE FROM (.+?) WHERE',
-                Operation.INSERT: '^INSERT INTO (.*?) (VALUES|\()' # INSERT INTO `table_name` VALUES vs INSERT INTO `table_name` (
+                Operation.INSERT: '^INSERT INTO (.*?) (VALUES|\()' # INSERT INTO `table_name` VALUES vs INSERT INTO `table_name` (, fix for issue raised in #282
             }
             parameters = {}
             regexp = regex_lookup.get(op, None)
@@ -521,4 +524,4 @@ class VersioningManager(object):
                 # should raise apt. exception?
                 ... 
             return parameters
-        return params
+        return params if params else {} # if empty tuple or dict comes in from event then return dict
