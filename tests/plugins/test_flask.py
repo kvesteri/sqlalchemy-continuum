@@ -69,10 +69,6 @@ class TestFlaskPlugin(TestCase):
             s['_user_id'] = user.id
         return user
 
-    def logout(self, user=None):
-        with self.client.session_transaction() as s:
-            s['_user_id'] = None
-
     def create_models(self):
         TestCase.create_models(self)
 
