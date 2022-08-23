@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 from flask import Flask, url_for
@@ -44,9 +45,6 @@ class TestFlaskPlugin(TestCase):
         self.setup_views()
         login_manager = LoginManager()
         login_manager.init_app(self.app)
-        self.client = self.app.test_client()
-        self.context = self.app.test_request_context()
-        self.context.push()
 
         @login_manager.user_loader
         def load_user(id):
@@ -54,20 +52,21 @@ class TestFlaskPlugin(TestCase):
 
     def teardown_method(self, method):
         TestCase.teardown_method(self, method)
-        self.context.pop()
-        self.context = None
-        self.client = None
         self.app = None
 
+    @contextlib.contextmanager
     def login(self, user):
         """
         Log in the user returned by :meth:`create_user`.
 
         :returns: the logged in user
         """
-        with self.client.session_transaction() as s:
-            s['_user_id'] = user.id
-        return user
+        # request_context -> Needed for the url_for() function
+        # session_transaction -> flask-login reads the user_id from here
+        with self.app.test_request_context(), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess['_user_id'] = user.id
+            yield client
 
     def create_models(self):
         TestCase.create_models(self)
@@ -110,8 +109,8 @@ class TestFlaskPlugin(TestCase):
         user = self.User(name=u'Rambo')
         self.session.add(user)
         self.session.commit()
-        self.login(user)
-        self.client.get(url_for('.test_simple_flush'))
+        with self.login(user) as client:
+            client.get(url_for('.test_simple_flush'))
 
         article = self.session.query(self.Article).first()
         tx = article.versions[-1].transaction
@@ -121,8 +120,8 @@ class TestFlaskPlugin(TestCase):
         user = self.User(name=u'Rambo')
         self.session.add(user)
         self.session.commit()
-        self.login(user)
-        self.client.get(url_for('.test_raw_sql_and_flush'))
+        with self.login(user) as client:
+            client.get(url_for('.test_raw_sql_and_flush'))
         assert (
             self.session.query(versioning_manager.transaction_cls).count() == 2
         )
