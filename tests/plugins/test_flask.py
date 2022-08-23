@@ -239,7 +239,7 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.db.init_app(self.app)
         self.app.secret_key = 'secret'
         self.app.debug = True
-        self.context = self.app.test_request_context()
+        self.context = self.app.app_context()
         self.context.push()
         self.db.create_all()
 
