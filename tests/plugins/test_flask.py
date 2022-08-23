@@ -239,7 +239,6 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.db.init_app(self.app)
         self.app.secret_key = 'secret'
         self.app.debug = True
-        self.client = self.app.test_client()
         self.context = self.app.test_request_context()
         self.context.push()
         self.db.create_all()
@@ -252,7 +251,6 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.db.engine.dispose()
         self.context.pop()
         self.context = None
-        self.client = None
         self.app = None
 
     def test_version_relations(self):
