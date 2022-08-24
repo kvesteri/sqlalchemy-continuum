@@ -1,11 +1,12 @@
 import sqlalchemy as sa
+from cached_property import cached_property
 
 from .reverter import Reverter
 from .utils import get_versioning_manager, is_internal_column, parent_class
 
 
 class VersionClassBase(object):
-    @property
+    @cached_property
     def previous(self):
         """
         Returns the previous version relative to this version in the version
@@ -18,7 +19,7 @@ class VersionClassBase(object):
             .previous(self)
         )
 
-    @property
+    @cached_property
     def next(self):
         """
         Returns the next version relative to this version in the version
@@ -31,7 +32,7 @@ class VersionClassBase(object):
             .next(self)
         )
 
-    @property
+    @cached_property
     def index(self):
         """
         Return the index of this version in the version history.
