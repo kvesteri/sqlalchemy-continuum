@@ -402,11 +402,10 @@ class VersioningManager(object):
         """
         Append history association operation to pending_statements list.
         """
-        params['operation_type'] = op
         stmt = (
             self.metadata.tables[self.options['table_name'] % table_name]
             .insert()
-            .values(params)
+            .values({**params, 'operation_type': op})
         )
         try:
             uow = self.units_of_work[conn]
