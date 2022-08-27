@@ -451,62 +451,21 @@ class VersioningManager(object):
             op = Operation.DELETE
 
         if op is not None:
-            table_name = statement.split(' ')[2]
+            if hasattr(context, 'invoked_statement'):
+                table_name = context.invoked_statement.table.schema + '.' + context.invoked_statement.table.name if context.invoked_statement.table.schema else context.invoked_statement.table.name
+            else: #  SQLA < 1.4
+                table_name = statement.split(' ')[2]
             table_names = [
                 table.name if not table.schema else table.schema + '.' + table.name
                 for table in self.association_tables
             ]
             if table_name in table_names:
-                if executemany:
-                    # SQLAlchemy does not support function based values for
-                    # multi-inserts, hence we need to convert the orignal
-                    # multi-insert into batch of normal inserts
-                    for params in parameters:
-                        self.append_association_operation(
+                for params in context.compiled_parameters:
+                    self.append_association_operation(
                             conn,
                             table_name,
-                            self.positional_args_to_dict(
-                                op, statement, params
-                            ),
+                            params,
                             op
-                        )
-                else:
-                    self.append_association_operation(
-                        conn,
-                        table_name,
-                        self.positional_args_to_dict(
-                            op,
-                            statement,
-                            parameters
-                        ),
-                        op
                     )
 
-    def positional_args_to_dict(self, op, statement, params):
-        """
-        On some drivers (eg sqlite) generated INSERT statements use positional
-        args instead of key value dictionary. This method converts positional
-        args to key value dict.
 
-        :param statement: SQL statement string
-        :param params: tuple or dict of statement parameters
-        """
-        if isinstance(params, tuple):
-            parameters = {}
-            if op == Operation.DELETE:
-                regexp = '^DELETE FROM (.+?) WHERE'
-                match = re.match(regexp, statement)
-                tablename = match.groups()[0].strip('"').strip("'").strip('`')
-                table = self.metadata.tables[tablename]
-                columns = table.primary_key.columns.values()
-                for index, column in enumerate(columns):
-                    parameters[column.name] = params[index]
-            else:
-                columns = [
-                    column.strip() for column in
-                    statement.split('(')[1].split(')')[0].split(',')
-                ]
-                for index, column in enumerate(columns):
-                    parameters[column] = params[index]
-            return parameters
-        return params
