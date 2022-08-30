@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
 from .reverter import Reverter
-from .utils import get_versioning_manager, is_internal_column, parent_class
+from .utils import get_versioning_manager, is_internal_column, is_table_column, parent_class
 
 
 class VersionClassBase(object):
@@ -52,8 +52,9 @@ class VersionClassBase(object):
         previous_version = self.previous
         data = {}
 
-        for key in sa.inspect(self.__class__).columns.keys():
-            if is_internal_column(self, key):
+        for key, column in sa.inspect(self.__class__).columns.items():
+            if is_internal_column(self, key) or not is_table_column(column):
+                # Ignore internal columns and column_property() which are expressions
                 continue
             if not previous_version:
                 old = None
