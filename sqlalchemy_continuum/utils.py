@@ -14,20 +14,31 @@ from sqlalchemy_utils.functions import (
 from .exc import ClassNotVersioned
 
 
-def get_versioning_manager(obj_or_class):
+def get_versioning_manager(obj_or_class_or_table):
     """
     Return the associated SQLAlchemy-Continuum VersioningManager for given
-    SQLAlchemy declarative model class or object.
+    SQLAlchemy declarative model class or object or table.
 
-    :param obj_or_class: SQLAlchemy declarative model object or class
+    :param obj_or_class_or_table: SQLAlchemy declarative model object or class or table
     """
-    if isinstance(obj_or_class, AliasedClass):
-        obj_or_class = sa.inspect(obj_or_class).mapper.class_
-    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+    if isclass(obj_or_class_or_table):
+        cls_or_table = obj_or_class_or_table
+    else:
+        if isinstance(obj_or_class_or_table, AliasedClass):
+            cls_or_table = sa.inspect(obj_or_class_or_table).mapper.class_
+        elif isinstance(obj_or_class_or_table, sa.Table):
+            cls_or_table = obj_or_class_or_table
+        else:
+            cls_or_table = obj_or_class_or_table.__class__
+
     try:
-        return cls.__versioning_manager__
+        return cls_or_table.__versioning_manager__
     except AttributeError:
-        raise ClassNotVersioned(cls.__name__)
+        if issubclass(cls_or_table, sa.Table):
+            name = 'Table "%s"' % cls_or_table.name
+        else:
+            name = cls_or_table.__name__
+        raise ClassNotVersioned(name)
 
 
 def option(obj_or_class, option_name):
