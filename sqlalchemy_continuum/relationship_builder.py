@@ -259,6 +259,7 @@ class RelationshipBuilder(object):
 
         :param obj: SQLAlchemy declarative object
         """
+        self.set_association_version_table(build=False)
 
         tx_column = option(obj, 'transaction_column_name')
         join_column = self.property.primaryjoin.right.name
@@ -306,12 +307,18 @@ class RelationshipBuilder(object):
             ).correlate(self.local_cls, self.remote_cls)
         )
 
-    def build_association_version_tables(self):
+    def set_association_version_table(self, build=True):
         """
-        Builds many-to-many association version table for given property.
+        Set the many-to-many association version table for given property.
         Association version tables are used for tracking change history of
         many-to-many associations.
+
+        :param build:
+            Whether to build the version table if it is not found in the metadata
         """
+        if hasattr(self, 'association_version_table'):
+            return
+
         column = list(self.property.remote_side)[0]
 
         self.manager.association_tables.add(column.table)
@@ -327,7 +334,7 @@ class RelationshipBuilder(object):
         else:
             table_name = builder.table_name
 
-        if table_name not in metadata.tables:
+        if table_name not in metadata.tables and build:
             self.association_version_table = table = builder()
             self.manager.association_version_tables.add(table)
         else:
@@ -351,10 +358,12 @@ class RelationshipBuilder(object):
             self.remote_cls = self.property.mapper.class_
 
         if (self.property.secondary is not None and
-                not self.property.viewonly and
                 not self.manager.is_excluded_property(
                     self.model, self.property.key)):
-            self.build_association_version_tables()
+            if not self.property.viewonly:
+                # viewonly properties don't need set the association_version_table at this time
+                # and are set during query time (when all tables are added to metadata)
+                self.set_association_version_table(build=True)
 
             # store remote cls to association table column pairs
             self.remote_to_association_column_pairs = []

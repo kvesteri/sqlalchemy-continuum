@@ -16,6 +16,7 @@ class ManyToManyRelationshipsTestCase(TestCase):
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
+            is_sponsored = sa.Column(sa.Boolean(), default=False)
 
         article_tag = sa.Table(
             'article_tag',
@@ -47,6 +48,15 @@ class ManyToManyRelationshipsTestCase(TestCase):
             Article,
             secondary=article_tag,
             backref='tags'
+        )
+        Tag.sponsored_articles = sa.orm.relationship(
+            Article,
+            secondary=article_tag,
+            secondaryjoin=sa.and_(
+                article_tag.c.article_id == Article.id,
+                Article.is_sponsored == True,
+            ),
+            viewonly=True,
         )
 
         self.Article = Article
@@ -216,6 +226,24 @@ class ManyToManyRelationshipsTestCase(TestCase):
         assert len(article.versions[2].tags) == 2
         assert tag1.versions[2] in article.versions[2].tags
         assert tag2.versions[0] in article.versions[2].tags
+
+    def test_viewonly_relationships(self):
+        tag = self.Tag(name=u'some tag')
+        article1 = self.Article(
+            name=u'Sponsored Article',
+            is_sponsored=True,
+            tags=[tag],
+        )
+        article2 = self.Article(
+            name=u'Normal Article',
+            tags=[tag],
+        )
+        self.session.add(article1)
+        self.session.add(article2)
+        self.session.commit()
+
+        assert len(tag.versions[0].articles) == 2
+        assert len(tag.versions[0].sponsored_articles) == 1
 
 
 create_test_cases(ManyToManyRelationshipsTestCase)
