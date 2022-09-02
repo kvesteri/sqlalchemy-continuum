@@ -3,6 +3,8 @@ from inspect import getmro
 from functools import wraps
 
 import sqlalchemy as sa
+from sqlalchemy_continuum.expression_reflector import VersionExpressionReflector
+from sqlalchemy_continuum.utils import is_table_column
 from sqlalchemy_utils.functions import get_declarative_base
 
 from .dialects.postgresql import create_versioning_trigger_listeners
@@ -189,6 +191,7 @@ class Builder(object):
         self.build_relationships(pending_classes_copies)
         self.enable_active_history(pending_classes_copies)
         self.create_column_aliases(pending_classes_copies)
+        self.create_column_properties(pending_classes_copies)
 
     def enable_active_history(self, version_classes):
         """
@@ -220,3 +223,23 @@ class Builder(object):
                         continue
 
                     version_class_mapper.add_property(key, sa.orm.column_property(version_class_column))
+
+    def create_column_properties(self, version_classes):
+        """
+        Create equivalent column_property() on the version class (as it is on the parent model)
+
+        This does not handle the simple column aliases - just expressions
+        """
+        for cls in version_classes:
+            model_mapper = sa.inspect(cls)
+            version_class = self.manager.version_class_map.get(cls)
+            if not version_class:
+                continue
+
+            version_class_mapper = sa.inspect(version_class)
+            reflector = VersionExpressionReflector()
+            for key, column in model_mapper.columns.items():
+                if is_table_column(column):  # We ignore simple table columns
+                    continue
+                version_column = reflector(column)
+                version_class_mapper.add_property(key, sa.orm.column_property(version_column))

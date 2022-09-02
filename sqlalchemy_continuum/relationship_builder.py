@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
 from .exc import ClassNotVersioned
-from .expression_reflector import VersionExpressionReflector
+from .expression_reflector import RelationshipPrimaryJoinReflector
 from .operation import Operation
 from .table_builder import TableBuilder
 from .utils import adapt_columns, version_class, option
@@ -46,7 +46,7 @@ class RelationshipBuilder(object):
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
-        reflector = VersionExpressionReflector(obj, self.property)
+        reflector = RelationshipPrimaryJoinReflector(obj, self.property)
 
         return getattr(self.remote_cls, tx_column) == (
             sa.select(
@@ -93,7 +93,7 @@ class RelationshipBuilder(object):
             elif direction.name == 'MANYTOONE':
                 return self.many_to_one_criteria(obj)
         else:
-            reflector = VersionExpressionReflector(obj, self.property)
+            reflector = RelationshipPrimaryJoinReflector(obj, self.property)
             return reflector(self.property.primaryjoin)
 
     def many_to_many_criteria(self, obj):
@@ -171,7 +171,7 @@ class RelationshipBuilder(object):
         AND operation_type != 2
 
         """
-        reflector = VersionExpressionReflector(obj, self.property)
+        reflector = RelationshipPrimaryJoinReflector(obj, self.property)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.many_to_one_subquery(obj),
@@ -209,7 +209,7 @@ class RelationshipBuilder(object):
         )
 
         """
-        reflector = VersionExpressionReflector(obj, self.property)
+        reflector = RelationshipPrimaryJoinReflector(obj, self.property)
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.one_to_many_subquery(obj),
@@ -263,7 +263,7 @@ class RelationshipBuilder(object):
         tx_column = option(obj, 'transaction_column_name')
         join_column = self.property.primaryjoin.right.name
         object_join_column = self.property.primaryjoin.left.name
-        reflector = VersionExpressionReflector(obj, self.property)
+        reflector = RelationshipPrimaryJoinReflector(obj, self.property)
 
         association_table_alias = self.association_version_table.alias()
         association_cols = [
