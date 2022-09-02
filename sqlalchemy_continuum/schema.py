@@ -25,6 +25,10 @@ def get_end_tx_column_query(
             ]
         )
     )
+    try:
+        tx_criterion = tx_criterion.scalar_subquery()
+    except AttributeError:  # SQLAlchemy < 1.4
+        tx_criterion = tx_criterion.as_scalar()
     return sa.select(
         columns=[
             getattr(v1.c, column)

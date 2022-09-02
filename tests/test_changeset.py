@@ -93,12 +93,15 @@ class TestChangeSetWhenParentContainsAdditionalColumns(ChangeSetTestCase):
             name = sa.Column(sa.Unicode(255))
             article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
             article = sa.orm.relationship(Article, backref='tags')
-
-        Article.tag_count = sa.orm.column_property(
-            sa.select([sa.func.count(Tag.id)])
-            .where(Tag.article_id == Article.id)
-            .correlate_except(Tag)
-        )
+        
+        subquery = (sa.select([sa.func.count(Tag.id)])
+        .where(Tag.article_id == Article.id)
+        .correlate_except(Tag))
+        try:
+            subquery = subquery.scalar_subquery()
+        except AttributeError:  # SQLAlchemy < 1.4
+            subquery = subquery.as_scalar()
+        Article.tag_count = sa.orm.column_property(subquery)
 
         self.Article = Article
         self.Tag = Tag
