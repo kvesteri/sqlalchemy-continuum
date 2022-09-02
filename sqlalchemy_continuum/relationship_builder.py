@@ -61,7 +61,6 @@ class RelationshipBuilder(object):
         except AttributeError:  # SQLAlchemy < 1.4
             subquery = subquery.as_scalar()
 
-
         return getattr(self.remote_cls, tx_column) == subquery
 
     def query(self, obj):
