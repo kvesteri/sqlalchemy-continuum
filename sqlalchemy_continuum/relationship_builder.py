@@ -97,7 +97,7 @@ class RelationshipBuilder(object):
                 return self.many_to_one_criteria(obj)
         else:
             reflector = VersionExpressionReflector(obj, self.property)
-            return reflector(self.property.primaryjoin)
+            return reflector(self.property.primaryjoin if self.property.secondaryjoin is None else self.property.secondaryjoin)
 
     def many_to_many_criteria(self, obj):
         """
