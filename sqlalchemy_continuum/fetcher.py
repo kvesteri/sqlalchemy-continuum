@@ -97,6 +97,15 @@ class VersionObjectFetcher(object):
 
     def _next_prev_query(self, obj, next_or_prev='next'):
         session = sa.orm.object_session(obj)
+
+        subquery = self._transaction_id_subquery(
+            obj, next_or_prev=next_or_prev
+        )
+        try:
+            subquery = subquery.scalar_subquery()
+        except AttributeError:  # SQLAlchemy < 1.4
+            subquery = subquery.as_scalar()
+
         return (
             session.query(obj.__class__)
             .filter(
@@ -104,11 +113,7 @@ class VersionObjectFetcher(object):
                     getattr(
                         obj.__class__,
                         tx_column_name(obj)
-                    )
-                    ==
-                    self._transaction_id_subquery(
-                        obj, next_or_prev=next_or_prev
-                    ),
+                    ) == subquery,
                     *parent_criteria(obj)
                 )
             )
