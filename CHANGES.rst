@@ -4,7 +4,7 @@ Changelog
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
 
-1.3.13 (2022-01-18)
+1.3.13 (2022-09-07)
 ^^^^^^^^^^^^^^^^^^^
 
 - Fixes for Flask 2.2 and Flask-Login 0.6.2 (#288, thanks to AbdealiJK)
