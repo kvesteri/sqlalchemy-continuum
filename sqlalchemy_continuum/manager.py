@@ -129,6 +129,7 @@ class VersioningManager(object):
         self.tables = {}
         self.pending_classes = []
         self.association_tables = set()
+        self.association_tables_map = {}
         self.association_version_tables = set()
         self.declarative_base = None
         self.version_class_map = {}

@@ -337,7 +337,7 @@ class RelationshipBuilder(object):
             # may have already been created if we visiting the 'other' side of
             # a self-referential many-to-many relationship
             self.association_version_table = metadata.tables[table_name]
-
+        self.manager.association_tables_map[self.association_version_table] = column.table
     def __call__(self):
         """
         Builds reflected relationship between version classes based on given
