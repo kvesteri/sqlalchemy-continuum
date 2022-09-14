@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import column_property
 from sqlalchemy_utils.functions import get_declarative_base
 
-from .utils import adapt_columns, option
+from .utils import adapt_columns, option, tx_column_name
 from .version import VersionClassBase
 
 
@@ -131,7 +131,7 @@ class ModelBuilder(object):
                 foreign_keys=foreign_keys,
                 order_by=lambda: getattr(
                     self.version_class,
-                    option(self.model, 'transaction_column_name')
+                    tx_column_name(self.model)
                 ),
                 lazy='dynamic',
                 viewonly=True
@@ -159,7 +159,7 @@ class ModelBuilder(object):
 
         transaction_column = getattr(
             self.version_class,
-            option(self.model, 'transaction_column_name')
+            tx_column_name(self.model)
         )
 
         if not hasattr(self.version_class, 'transaction'):

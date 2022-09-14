@@ -4,7 +4,7 @@ from .exc import ClassNotVersioned
 from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
 from .table_builder import TableBuilder
-from .utils import adapt_columns, version_class, option
+from .utils import adapt_columns, tx_column_name, version_class, option
 
 
 class RelationshipBuilder(object):
@@ -14,7 +14,7 @@ class RelationshipBuilder(object):
         self.model = model
 
     def one_to_many_subquery(self, obj):
-        tx_column = option(obj, 'transaction_column_name')
+        tx_column = tx_column_name(obj)
 
         remote_alias = sa.orm.aliased(self.remote_cls)
         primary_keys = [
@@ -45,7 +45,7 @@ class RelationshipBuilder(object):
         )
 
     def many_to_one_subquery(self, obj):
-        tx_column = option(obj, 'transaction_column_name')
+        tx_column = tx_column_name(obj)
         reflector = VersionExpressionReflector(obj, self.property)
         subquery = sa.select(
             [sa.func.max(getattr(self.remote_cls, tx_column))]
@@ -263,7 +263,7 @@ class RelationshipBuilder(object):
         :param obj: SQLAlchemy declarative object
         """
 
-        tx_column = option(obj, 'transaction_column_name')
+        tx_column = tx_column_name(obj)
         join_column = self.property.primaryjoin.right.name
         object_join_column = self.property.primaryjoin.left.name
         reflector = VersionExpressionReflector(obj, self.property)
