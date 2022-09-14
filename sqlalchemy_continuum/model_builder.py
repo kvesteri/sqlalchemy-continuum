@@ -169,6 +169,19 @@ class ModelBuilder(object):
                 foreign_keys=[transaction_column],
             )
 
+        if self.manager.option(self.model, 'strategy') == 'validity':
+            end_transaction_column = getattr(
+                self.version_class,
+                option(self.model, 'end_transaction_column_name')
+            )
+
+            if not hasattr(self.version_class, 'end_transaction'):
+                self.version_class.end_transaction = sa.orm.relationship(
+                    tx_class,
+                    primaryjoin=tx_class.id == end_transaction_column,
+                    foreign_keys=[end_transaction_column],
+                )
+
     def base_classes(self):
         """
         Returns all base classes for history model.
