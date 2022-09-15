@@ -34,14 +34,14 @@ def get_versioning_manager(obj_or_class_or_table):
     try:
         return cls_or_table.__versioning_manager__
     except AttributeError:
-        if issubclass(cls_or_table, sa.Table):
+        if isinstance(cls_or_table, sa.Table):
             name = 'Table "%s"' % cls_or_table.name
         else:
             name = cls_or_table.__name__
         raise ClassNotVersioned(name)
 
 
-def option(obj_or_class, option_name):
+def option(obj_or_class_or_table, option_name):
     """
     Return the option value of given option for given versioned object or
     class.
@@ -49,13 +49,19 @@ def option(obj_or_class, option_name):
     :param obj_or_class: SQLAlchemy declarative model object or class
     :param option_name: The name of an option to return
     """
-    if isinstance(obj_or_class, AliasedClass):
-        obj_or_class = sa.inspect(obj_or_class).mapper.class_
-    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
-    if not hasattr(cls, '__versioned__'):
-        cls = parent_class(cls)
-    return get_versioning_manager(cls).option(
-        cls, option_name
+    if isclass(obj_or_class_or_table):
+        cls_or_table = obj_or_class_or_table
+    else:
+        if isinstance(obj_or_class_or_table, AliasedClass):
+            cls_or_table = sa.inspect(obj_or_class_or_table).mapper.class_
+        elif isinstance(obj_or_class_or_table, sa.Table):
+            cls_or_table = obj_or_class_or_table
+        else:
+            cls_or_table = obj_or_class_or_table.__class__
+    if isclass(cls_or_table) and not hasattr(cls_or_table, '__versioned__'):
+        cls_or_table = parent_class(cls_or_table)
+    return get_versioning_manager(cls_or_table).option(
+        cls_or_table, option_name
     )
 
 
@@ -144,17 +150,12 @@ def version_table(table):
 
     :param table: SQLAlchemy Table object
     """
-    if table.schema:
-        return table.metadata.tables[
-            table.schema + '.' + table.name + '_version'
-        ]
-    elif table.metadata.schema:
-        return table.metadata.tables[
-            table.metadata.schema + '.' + table.name + '_version'
-        ]
-    else:
-        return table.metadata.tables[
-            table.name + '_version'
+    try:
+        suffixed_table = option(table, 'table_name') % table.fullname
+    except ClassNotVersioned:
+        suffixed_table = table.name + '_version' # to have same behaviour and generate key error for expression_reflector
+    return table.metadata.tables[
+            suffixed_table
         ]
 
 

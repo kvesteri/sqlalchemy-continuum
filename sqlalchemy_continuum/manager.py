@@ -3,7 +3,7 @@ from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils import get_column_key
+from sqlalchemy_utils import get_column_key, get_mapper
 
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
@@ -186,16 +186,27 @@ class VersioningManager(object):
             return False
         return key in self.option(model, 'exclude')
 
-    def option(self, model, name):
+    def option(self, model_or_table, name):
         """
         Returns the option value for given model. If the option is not found
         from given model falls back to default values of this manager object.
         If the option is not found from this manager object either this method
         throws a KeyError.
 
-        :param model: SQLAlchemy declarative object
+        :param model_or_table: SQLAlchemy declarative object
         :param name: name of the versioning option
         """
+        if isinstance(model_or_table, sa.Table):
+            table = model_or_table
+            if table in self.association_tables:
+                return self.options[name]
+            if hasattr(table, 'model'):
+                model = table.model
+            else:
+                raise TypeError('Table %r is not versioned.' % table)
+        else:
+            model = model_or_table    
+
         if not hasattr(model, '__versioned__'):
             raise TypeError('Model %r is not versioned.' % model)
         try:
