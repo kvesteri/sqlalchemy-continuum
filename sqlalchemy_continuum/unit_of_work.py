@@ -254,30 +254,24 @@ class UnitOfWork(object):
                 )
                 subquery = subquery.scalar_subquery()
 
+                vobj_tx_col = getattr(class_, tx_column_name(version_obj))
+                values = {end_tx_column_name(version_obj): self.current_transaction.id}
                 query = (
-                    session.query(class_.__table__)
-                    .filter(
-                        sa.and_(
-                            getattr(
-                                class_,
-                                tx_column_name(version_obj)
-                            ) == subquery,
-                            *[
-                                getattr(version_obj, pk) ==
-                                getattr(class_.__table__.c, pk)
-                                for pk in get_primary_keys(class_)
-                                if pk != tx_column_name(class_)
-                            ]
-                        )
+                    sa.update(class_)
+                    .values(values)
+                    .where(
+                        vobj_tx_col == subquery,
+                        *[
+                            getattr(version_obj, pk) ==
+                            getattr(class_.__table__.c, pk)
+                            for pk in get_primary_keys(class_)
+                            if pk != tx_column_name(class_)
+                        ]
                     )
+                    .execution_options(synchronize_session=False)
                 )
-                query.update(
-                    {
-                        end_tx_column_name(version_obj):
-                        self.current_transaction.id
-                    },
-                    synchronize_session=False
-                )
+                session.execute(query)
+
 
     def create_association_versions(self, session):
         """
