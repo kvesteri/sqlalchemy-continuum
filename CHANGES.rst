@@ -13,6 +13,22 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 - Allow sync_trigger to pass arguments through to create_trigger (#273, thanks to nanvel)
 - Fix association tables on Oracle (#291, thanks to AbdealiJK)
 - Fix some deprecation warnings in SA 1.4 (#269, #277, #279, #300, #302, thanks to TomGoBravo, edhaz, and indiVar0508)
+- User Id in Transaction table uses get_id() method instead of id attribute (#149)
+  - For backward compatibility, developers should override the `get_id` of the User class:
+
+```python
+class User(db.Model, UserMixin):
+    __versioned__ = {}
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+
+   ......
+
+    def get_id(self) -> int:
+        return self.id
+```
+
+
 
 1.3.12 (2022-01-18)
 ^^^^^^^^^^^^^^^^^^^
