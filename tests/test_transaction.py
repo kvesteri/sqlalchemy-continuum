@@ -1,9 +1,8 @@
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
-from tests import TestCase
+from tests import TestCase, is_sqlite
 from pytest import mark
 from sqlalchemy_continuum.plugins import TransactionMetaPlugin
-
 
 
 class TestTransaction(TestCase):
@@ -74,7 +73,7 @@ class TestAssigningUserClass(TestCase):
         assert isinstance(attr.property.columns[0].type, sa.Unicode)
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
+@mark.skipif('is_sqlite()')
 class TestAssigningUserClassInOtherSchema(TestCase):
     user_cls = 'User'
 
@@ -99,4 +98,3 @@ class TestAssigningUserClassInOtherSchema(TestCase):
     def test_can_build_transaction_model(self):
         # If create_models didn't crash this should be good
         pass
-

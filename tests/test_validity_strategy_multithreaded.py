@@ -2,7 +2,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
-from tests import TestCase
+from tests import TestCase, is_sqlite
 from threading import Thread
 
 
@@ -46,7 +46,7 @@ class TestValidityStrategyMultithreaded(TestCase):
 
         self.Article = Article
 
-    @pytest.mark.skipif("os.environ.get('DB') == 'sqlite'")
+    @pytest.mark.skipif('is_sqlite()')
     def test_for_deadlock_with_many_multithreaded_inserts(self):
         threads = [
             self.WrappedThread(target=self._insert_articles, args=(n,))

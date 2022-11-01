@@ -2,7 +2,7 @@ from copy import copy
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
-from tests import TestCase
+from tests import TestCase, is_sqlite
 from pytest import mark
 
 
@@ -71,7 +71,8 @@ class TestTableBuilderWithOnUpdate(TestCase):
         table = version_class(self.Article).__table__
         assert table.c.last_update.onupdate is None
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
+
+@mark.skipif('is_sqlite()')
 class TestTableBuilderInOtherSchema(TestCase):
     def create_models(self):
         class Article(self.Model):
@@ -97,4 +98,3 @@ class TestTableBuilderInOtherSchema(TestCase):
         table = version_class(self.Article).__table__
         assert table.schema is not None
         assert table.schema == self.Article.__table__.schema
-

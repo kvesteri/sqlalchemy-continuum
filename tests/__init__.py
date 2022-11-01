@@ -51,12 +51,20 @@ def get_dns_from_driver(driver):
         raise Exception('Unknown driver given: %r' % driver)
 
 
+def _get_db():
+    return os.environ.get('DB', 'sqlite')
+
+
 def get_driver_name(driver):
     return driver[0:-len('-native')] if driver.endswith('-native') else driver
 
 
 def uses_native_versioning():
-    return os.environ.get('DB', 'sqlite').endswith('-native')
+    return _get_db().endswith('-native')
+
+
+def is_sqlite():
+    return _get_db() == 'sqlite'
 
 
 class TestCase(object):
@@ -84,7 +92,7 @@ class TestCase(object):
         self.Model = declarative_base()
         make_versioned(options=self.options)
 
-        driver = os.environ.get('DB', 'sqlite')
+        driver = _get_db()
         self.driver = get_driver_name(driver)
         versioning_manager.plugins = self.plugins
         versioning_manager.transaction_cls = self.transaction_cls

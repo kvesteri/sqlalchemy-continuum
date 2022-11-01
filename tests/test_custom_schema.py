@@ -1,12 +1,10 @@
-import os
 import sqlalchemy as sa
-from six import PY3
 from pytest import mark
 from sqlalchemy.ext.declarative import declarative_base
-from tests import TestCase
+from tests import TestCase, is_sqlite
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
+@mark.skipif('is_sqlite()')
 class TestCustomSchema(TestCase):
     def create_models(self):
         self.Model = declarative_base(metadata=sa.MetaData(schema='continuum'))

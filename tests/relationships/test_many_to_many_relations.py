@@ -3,7 +3,7 @@ from pytest import mark
 import sqlalchemy as sa
 from sqlalchemy_continuum import versioning_manager
 
-from tests import TestCase, create_test_cases
+from tests import TestCase, create_test_cases, is_sqlite
 
 
 class ManyToManyRelationshipsTestCase(TestCase):
@@ -273,7 +273,7 @@ class TestManyToManyRelationshipWithViewOnly(TestCase):
 
 
 class TestManyToManySelfReferential(TestCase):
-    
+
     def create_models(self):
         class Article(self.Model):
             __tablename__ = 'article'
@@ -324,8 +324,8 @@ class TestManyToManySelfReferential(TestCase):
 
         assert len(reference1.versions[0].cited_by) == 1
         assert article.versions[0] in reference1.versions[0].cited_by
-        
-        
+
+
     def test_multiple_inserts_over_multiple_transactions(self):
         if (
             self.driver == 'mysql' and
@@ -370,7 +370,7 @@ class TestManyToManySelfReferential(TestCase):
         assert article.versions[2] in reference1.versions[2].cited_by
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
+@mark.skipif('is_sqlite()')
 class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
     def create_models(self):
         class Article(self.Model):
@@ -416,7 +416,7 @@ class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
         TestManyToManySelfReferential.create_tables(self)
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
+@mark.skipif('is_sqlite()')
 class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCase):
     def create_models(self):
         class Article(self.Model):
@@ -473,4 +473,3 @@ class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCa
         ManyToManyRelationshipsTestCase.create_tables(self)
 
 create_test_cases(ManyToManyRelationshipsInOtherSchemaTestCase)
-
