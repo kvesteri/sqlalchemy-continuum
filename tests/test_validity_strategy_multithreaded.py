@@ -59,7 +59,6 @@ class TestValidityStrategyMultithreaded(TestCase):
         for t in threads:
             t.join()
 
-
     def _insert_articles(self, num):
         Session = sessionmaker(bind=self.engine.connect())
         session = Session(autoflush=False)
@@ -70,5 +69,5 @@ class TestValidityStrategyMultithreaded(TestCase):
             article.name = article.name + '.2'
             session.commit()
         assert session.query(func.count(self.Article.id)). \
-               where(self.Article.name.like(f'Article {num}-%')). \
+               filter(self.Article.name.like(f'Article {num}-%')). \
                scalar() == NUM_ROWS
