@@ -12,15 +12,15 @@ from sqlalchemy.ext.compiler import compiles
 from .dialects.postgresql import (
     CreateTemporaryTransactionTableSQL,
     InsertTemporaryTransactionSQL,
-    TransactionTriggerSQL
+    TransactionTriggerSQL,
 )
 from .exc import ImproperlyConfigured
 from .factory import ModelFactory
 
 
-@compiles(sa.types.BigInteger, 'sqlite')
+@compiles(sa.types.BigInteger, "sqlite")
 def compile_big_integer(element, compiler, **kw):
-    return 'INTEGER'
+    return "INTEGER"
 
 
 class NoChangesAttribute(Exception):
@@ -37,10 +37,10 @@ class TransactionBase(object):
         Raises a NoChangesAttribute exception if the 'changes' column does
         not exist, most likely because TransactionChangesPlugin is not enabled.
         """
-        if hasattr(self, 'changes'):
-          return [changes.entity_name for changes in self.changes]
+        if hasattr(self, "changes"):
+            return [changes.entity_name for changes in self.changes]
         else:
-          raise NoChangesAttribute()
+            raise NoChangesAttribute()
 
     @property
     def changed_entities(self):
@@ -63,12 +63,12 @@ class TransactionBase(object):
             except NoChangesAttribute:
                 pass
 
-            tx_column = manager.option(class_, 'transaction_column_name')
+            tx_column = manager.option(class_, "transaction_column_name")
 
             entities[version_class] = (
-                session
-                .query(version_class)
-                .filter(getattr(version_class, tx_column) == self.id)
+                session.query(version_class).filter(
+                    getattr(version_class, tx_column) == self.id
+                )
             ).all()
         return entities
 
@@ -89,34 +89,28 @@ LANGUAGE plpgsql
 def create_triggers(cls):
     sa.event.listen(
         cls.__table__,
-        'after_create',
+        "after_create",
         sa.schema.DDL(
             procedure_sql.format(
                 temporary_transaction_sql=CreateTemporaryTransactionTableSQL(),
                 insert_temporary_transaction_sql=(
-                    InsertTemporaryTransactionSQL(
-                        transaction_id_values='NEW.id'
-                    )
+                    InsertTemporaryTransactionSQL(transaction_id_values="NEW.id")
                 ),
             )
-        )
+        ),
+    )
+    sa.event.listen(
+        cls.__table__, "after_create", sa.schema.DDL(str(TransactionTriggerSQL(cls)))
     )
     sa.event.listen(
         cls.__table__,
-        'after_create',
-        sa.schema.DDL(str(TransactionTriggerSQL(cls)))
-    )
-    sa.event.listen(
-        cls.__table__,
-        'after_drop',
-        sa.schema.DDL(
-            'DROP FUNCTION IF EXISTS transaction_temp_table_generator()'
-        )
+        "after_drop",
+        sa.schema.DDL("DROP FUNCTION IF EXISTS transaction_temp_table_generator()"),
     )
 
 
 class TransactionFactory(ModelFactory):
-    model_name = 'Transaction'
+    model_name = "Transaction"
 
     def __init__(self, remote_addr=True):
         self.remote_addr = remote_addr
@@ -125,18 +119,19 @@ class TransactionFactory(ModelFactory):
         """
         Create Transaction class.
         """
-        class Transaction(
-            manager.declarative_base,
-            TransactionBase
-        ):
-            __tablename__ = 'transaction'
+
+        class Transaction(manager.declarative_base, TransactionBase):
+            __tablename__ = "transaction"
             __versioning_manager__ = manager
 
             id = sa.Column(
                 sa.types.BigInteger,
-                sa.schema.Sequence('transaction_id_seq'),
+                sa.schema.Sequence(
+                    "transaction_id_seq",
+                    schema=manager.declarative_base.metadata.schema,
+                ),
                 primary_key=True,
-                autoincrement=True
+                autoincrement=True,
             )
 
             if self.remote_addr:
@@ -155,40 +150,40 @@ class TransactionFactory(ModelFactory):
                         user_cls = registry[user_cls]
                     except KeyError:
                         raise ImproperlyConfigured(
-                            'Could not build relationship between Transaction'
-                            ' and %s. %s was not found in declarative class '
-                            'registry. Either configure VersioningManager to '
-                            'use different user class or disable this '
-                            'relationship ' % (user_cls, user_cls)
+                            "Could not build relationship between Transaction"
+                            " and %s. %s was not found in declarative class "
+                            "registry. Either configure VersioningManager to "
+                            "use different user class or disable this "
+                            "relationship " % (user_cls, user_cls)
                         )
 
                 user_id = sa.Column(
                     sa.inspect(user_cls).primary_key[0].type,
                     sa.ForeignKey(sa.inspect(user_cls).primary_key[0]),
-                    index=True
+                    index=True,
                 )
 
                 user = sa.orm.relationship(user_cls)
 
             def __repr__(self):
-                fields = ['id', 'issued_at', 'user']
+                fields = ["id", "issued_at", "user"]
                 field_values = OrderedDict(
                     (field, getattr(self, field))
                     for field in fields
                     if hasattr(self, field)
                 )
-                return '<Transaction %s>' % ', '.join(
+                return "<Transaction %s>" % ", ".join(
                     (
-                        '%s=%r' % (field, value)
+                        "%s=%r" % (field, value)
                         if not isinstance(value, six.integer_types)
                         # We want the following line to ensure that longs get
                         # shown without the ugly L suffix on python 2.x
                         # versions
-                        else '%s=%d' % (field, value)
+                        else "%s=%d" % (field, value)
                         for field, value in field_values.items()
                     )
                 )
 
-        if manager.options['native_versioning']:
+        if manager.options["native_versioning"]:
             create_triggers(Transaction)
         return Transaction
