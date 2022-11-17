@@ -21,31 +21,27 @@ from __future__ import absolute_import
 flask = None
 try:
     import flask
-    from flask import request
-    from flask.globals import _app_ctx_stack, _request_ctx_stack
+    from flask import current_app, has_app_context, has_request_context, request
 except ImportError:
     pass
 from sqlalchemy_utils import ImproperlyConfigured
+
 from .base import Plugin
 
 
 def fetch_current_user_id():
-    from flask_login import current_user
+    if has_request_context():
+        from flask_login import current_user
 
-    # Return None if we are outside of request context.
-    if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
-        return
-    try:
-        return current_user.get_id()
-    except AttributeError:
-        return
+        try:
+            return current_user.get_id()
+        except AttributeError:
+            return
 
 
 def fetch_remote_addr():
-    # Return None if we are outside of request context.
-    if _app_ctx_stack.top is None or _request_ctx_stack.top is None:
-        return
-    return request.remote_addr
+    if has_app_context() and has_request_context():
+        return request.remote_addr
 
 
 class FlaskPlugin(Plugin):
