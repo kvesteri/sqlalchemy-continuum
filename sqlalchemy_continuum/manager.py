@@ -392,7 +392,7 @@ class VersioningManager(object):
 
 
         for connection in dict(self.units_of_work).keys():
-            if connection.closed or conn.connection is connection.connection:
+            if connection.closed or connection.invalidated or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset()
                 del self.units_of_work[connection]
