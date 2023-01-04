@@ -3,6 +3,11 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
+1.3.14 (2023-01-04)
+^^^^^^^^^^^^^^^^^^^
+
+- Undo unneeded change to Flask-Login that breaks alternative IDs (#325, thanks to anthraxx)
+
 
 1.3.13 (2022-09-07)
 ^^^^^^^^^^^^^^^^^^^
