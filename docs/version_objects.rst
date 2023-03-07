@@ -80,7 +80,7 @@ property which holds a dict of changed fields in that version.
     # }
 
     session.delete(article)
-    version = article.versions[1]
+    version = article.versions[2]
     version.changeset
     # {
     #   'id': [1, None]
