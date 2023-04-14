@@ -92,6 +92,7 @@ class OneToManyRelationshipsTestCase(TestCase):
         tag.name = u'updated tag'
         tag2 = self.Tag(name=u'other tag',
                         article=article)
+        self.session.add(tag2)
         self.session.commit()
 
         # update the article and the tag again
@@ -220,6 +221,7 @@ class TestOneToManySelfReferential(TestCase):
         child_article1.name = u'Updated child article1'
         child_article2 = self.Article(name=u'Child article2',
                                       parent_article=parent_article)
+        self.session.add(child_article2)
         self.session.commit()
         # update the parent and 1st child
         parent_article.name = u'Updated article x2'

@@ -23,7 +23,7 @@ class TestTriggerSyncing(object):
         self.engine = sa.create_engine(get_dns_from_driver(self.driver))
         self.connection = self.engine.connect()
         if driver == 'postgres-native':
-            self.connection.execute('CREATE EXTENSION IF NOT EXISTS hstore')
+            self.connection.execute(sa.text('CREATE EXTENSION IF NOT EXISTS hstore'))
 
         self.connection.execute(
             'CREATE TABLE article '
@@ -36,8 +36,8 @@ class TestTriggerSyncing(object):
         )
 
     def teardown_method(self, method):
-        self.connection.execute('DROP TABLE IF EXISTS article')
-        self.connection.execute('DROP TABLE IF EXISTS article_version')
+        self.connection.execute(sa.text('DROP TABLE IF EXISTS article'))
+        self.connection.execute(sa.text('DROP TABLE IF EXISTS article_version'))
         self.engine.dispose()
         self.connection.close()
 

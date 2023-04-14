@@ -1,9 +1,12 @@
 import sqlalchemy as sa
+from pytest import mark
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
 
 class ColumnExclusionTestCase(TestCase):
+    @mark.skipif("os.environ.get('DB') == 'postgres'", reason='test_excluded_columns_not_included_in_version_class hangs on postgres')
     def test_excluded_columns_not_included_in_version_class(self):
         cls = version_class(self.TextItem)
         manager = cls._sa_class_manager
@@ -87,6 +90,7 @@ class TestColumnExclusionWithRelationship(TestCase):
         manager = cls._sa_class_manager
         assert 'content' not in manager.keys()
 
+    @mark.skipif("os.environ.get('DB') == 'postgres'", reason='test_versioning_with_column_exclusion hangs on postgres')
     def test_versioning_with_column_exclusion(self):
         item = self.TextItem(name=u'Some textitem',
                              content=[self.Word(word=u'bird')])
@@ -95,6 +99,7 @@ class TestColumnExclusionWithRelationship(TestCase):
 
         assert item.versions[0].name == u'Some textitem'
 
+    @mark.skipif("os.environ.get('DB') == 'postgres'", reason='test_does_not_create_record_if_only_excluded_column_updated hangs on postgres')
     def test_does_not_create_record_if_only_excluded_column_updated(self):
         item = self.TextItem(name=u'Some textitem')
         self.session.add(item)

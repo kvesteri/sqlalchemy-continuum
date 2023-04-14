@@ -411,8 +411,8 @@ class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
         self.referenced_articles_table = article_references
 
     def create_tables(self):
-        self.connection.execute('DROP SCHEMA IF EXISTS other')
-        self.connection.execute('CREATE SCHEMA other')
+        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
+        self.connection.execute(sa.text('CREATE SCHEMA other'))
         TestManyToManySelfReferential.create_tables(self)
 
 
@@ -468,8 +468,8 @@ class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCa
 
 
     def create_tables(self):
-        self.connection.execute('DROP SCHEMA IF EXISTS other')
-        self.connection.execute('CREATE SCHEMA other')
+        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
+        self.connection.execute(sa.text('CREATE SCHEMA other'))
         ManyToManyRelationshipsTestCase.create_tables(self)
 
 create_test_cases(ManyToManyRelationshipsInOtherSchemaTestCase)

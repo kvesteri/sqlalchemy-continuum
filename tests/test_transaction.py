@@ -92,8 +92,8 @@ class TestAssigningUserClassInOtherSchema(TestCase):
         self.User = User
 
     def create_tables(self):
-        self.connection.execute('DROP SCHEMA IF EXISTS other')
-        self.connection.execute('CREATE SCHEMA other')
+        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
+        self.connection.execute(sa.text('CREATE SCHEMA other'))
         TestCase.create_tables(self)
 
     def test_can_build_transaction_model(self):

@@ -79,7 +79,7 @@ def update_end_tx_column(
     )
     stmt = conn.execute(query)
     primary_keys = [c.name for c in table.c if c.primary_key]
-    for row in stmt:
+    for row in stmt.mappings():
         if row[end_tx_column_name]:
             criteria = [
                 getattr(table.c, pk) == row[pk]
@@ -171,7 +171,7 @@ def update_property_mod_flags(
     stmt = conn.execute(query)
 
     primary_keys = [c.name for c in table.c if c.primary_key]
-    for row in stmt:
+    for row in stmt.mappings():
         values = dict([
             (column + mod_suffix, row[column + mod_suffix])
             for column in tracked_columns
