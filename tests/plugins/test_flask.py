@@ -1,11 +1,8 @@
 import os
 
-import pytest
-pytest.skip(allow_module_level=True)
 from flask import Flask, url_for
 from flask_login import LoginManager, UserMixin, login_user
-from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
-from flexmock import flexmock
+from flask_sqlalchemy import SQLAlchemy
 
 import sqlalchemy as sa
 from sqlalchemy.orm import close_all_sessions
@@ -87,14 +84,14 @@ class TestFlaskPlugin(TestCase):
         @self.app.route('/raw-sql-and-flush')
         def test_raw_sql_and_flush():
             self.session.execute(
-                "INSERT INTO article (name) VALUES ('some article')"
+                sa.text("INSERT INTO article (name) VALUES ('some article')")
             )
             article = self.Article()
             article.name = u'Some article'
             self.session.add(article)
             self.session.flush()
             self.session.execute(
-                "INSERT INTO article (name) VALUES ('some article')"
+                sa.text("INSERT INTO article (name) VALUES ('some article')")
             )
             self.session.commit()
             return ''
@@ -203,11 +200,6 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.Tag = Tag
 
     def setup_method(self, method):
-        # Mock the event registering of Flask-SQLAlchemy. Currently there is no
-        # way of unregistering Flask-SQLAlchemy event listeners, hence the
-        # event listeners would affect other tests.
-        flexmock(_SessionSignalEvents).should_receive('register')
-
         self.db = SQLAlchemy()
         make_versioned()
 
