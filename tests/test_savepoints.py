@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy import select
 
 from tests import TestCase
 

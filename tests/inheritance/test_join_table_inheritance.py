@@ -1,6 +1,5 @@
 import pytest
 import sqlalchemy as sa
-from sqlalchemy import text
 
 from sqlalchemy_continuum import version_class
 from tests import TestCase, uses_native_versioning, create_test_cases
@@ -104,10 +103,10 @@ class JoinTableInheritanceTestCase(TestCase):
         self.session.add(article)
         self.session.commit()
         assert self.session.execute(
-            text('SELECT %s FROM article_version' % tx_column)
+            sa.text('SELECT %s FROM article_version' % tx_column)
         ).fetchone()[0]
         assert self.session.execute(
-            text('SELECT %s FROM text_item_version' % tx_column)
+            sa.text('SELECT %s FROM text_item_version' % tx_column)
         ).fetchone()[0]
 
     def test_primary_keys(self):
@@ -136,11 +135,11 @@ class JoinTableInheritanceTestCase(TestCase):
         assert article.versions.count() == 2
 
         assert self.session.execute(
-            text('SELECT %s FROM text_item_version '
+            sa.text('SELECT %s FROM text_item_version '
             'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column))
         ).scalar()
         assert self.session.execute(
-            text('SELECT %s FROM article_version '
+            sa.text('SELECT %s FROM article_version '
             'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column))
         ).scalar()
 
@@ -197,11 +196,11 @@ class TestDeepJoinedTableInheritance(TestCase):
         self.session.add(document)
         self.session.commit()
         assert self.session.execute(
-            text('SELECT COUNT(1) FROM document_version')
+            sa.text('SELECT COUNT(1) FROM document_version')
         ).scalar() == 1
         assert self.session.execute(
-            text('SELECT COUNT(1) FROM content_version')
+            sa.text('SELECT COUNT(1) FROM content_version')
         ).scalar() == 1
         assert self.session.execute(
-            text('SELECT COUNT(1) FROM node_version')
+            sa.text('SELECT COUNT(1) FROM node_version')
         ).scalar() == 1

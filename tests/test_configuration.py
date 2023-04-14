@@ -1,6 +1,5 @@
 from pytest import raises, skip
 import sqlalchemy as sa
-from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_continuum import (
     versioning_manager, ImproperlyConfigured, TransactionFactory
@@ -94,7 +93,7 @@ class TestWithCreateModelsAsFalse(TestCase):
         self.session.commit()
 
         version = dict(
-            self.session.execute(text('SELECT * FROM article_version'))
+            self.session.execute(sa.text('SELECT * FROM article_version'))
             .fetchone()
         )
         assert version['transaction_id'] > 0

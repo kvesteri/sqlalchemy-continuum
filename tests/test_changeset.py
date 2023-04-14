@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy import text
 
 from sqlalchemy_continuum import get_versioning_manager
 from tests import TestCase
@@ -50,7 +49,7 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         tx_log = self.session.query(tx_log_class).first()
 
         self.session.execute(
-            text('''INSERT INTO article_version
+            sa.text('''INSERT INTO article_version
             (id, %s, name, content, operation_type)
             VALUES
             (1, %d, 'something', 'some content', 1)
