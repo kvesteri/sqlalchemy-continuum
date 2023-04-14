@@ -98,7 +98,7 @@ class TestActivity(ActivityTestCase):
         assert activity
         assert activity.transaction_id
         assert activity.object is None
-        assert activity.object_version == versions.all()[-1]
+        assert activity.object_version == versions[-1]
 
     def test_activity_queries(self):
         article = self.create_article()
