@@ -5,7 +5,7 @@ import itertools as it
 import os
 import warnings
 import sqlalchemy as sa
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions
 from sqlalchemy_continuum import (
@@ -113,7 +113,7 @@ class TestCase(object):
         Session = sessionmaker(bind=self.connection)
         self.session = Session(autoflush=False)
         if driver == 'postgres-native':
-            self.session.execute('CREATE EXTENSION IF NOT EXISTS hstore')
+            self.session.execute(text('CREATE EXTENSION IF NOT EXISTS hstore'))
 
     def create_tables(self):
         self.Model.metadata.create_all(self.connection)
@@ -134,7 +134,7 @@ class TestCase(object):
         self.session.expunge_all()
         self.drop_tables()
         self.engine.dispose()
-        self.connection.close()
+        # self.connection.close()
 
         assert not uow_leaks
         assert not session_map_leaks

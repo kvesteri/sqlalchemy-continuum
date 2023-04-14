@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import select
 
 from tests import TestCase
 
@@ -14,7 +15,7 @@ class TestSavepoints(TestCase):
         self.session.rollback()
         self.session.commit()
         assert article.versions.count() == 1
-        assert article.versions[-1].name == u'Some article'
+        assert article.versions.all()[-1].name == u'Some article'
 
     def test_partial_rollback(self):
         article = self.Article(name=u'Some article')
@@ -25,7 +26,7 @@ class TestSavepoints(TestCase):
         self.session.rollback()
         self.session.commit()
         assert article.versions.count() == 1
-        assert article.versions[-1].name == u'Some article'
+        assert article.versions.all()[-1].name == u'Some article'
 
     def test_multiple_savepoints(self):
         if self.driver == 'sqlite':
@@ -42,4 +43,4 @@ class TestSavepoints(TestCase):
         self.session.commit()
         self.session.commit()
         assert article.versions.count() == 1
-        assert article.versions[-1].name == u'Another article'
+        assert article.versions.all()[-1].name == u'Another article'

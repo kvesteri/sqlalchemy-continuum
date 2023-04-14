@@ -1,4 +1,6 @@
 import sqlalchemy as sa
+from sqlalchemy import text
+
 from sqlalchemy_continuum import get_versioning_manager
 from tests import TestCase
 
@@ -48,11 +50,11 @@ class ChangeSetTestCase(ChangeSetBaseTestCase):
         tx_log = self.session.query(tx_log_class).first()
 
         self.session.execute(
-            '''INSERT INTO article_version
+            text('''INSERT INTO article_version
             (id, %s, name, content, operation_type)
             VALUES
             (1, %d, 'something', 'some content', 1)
-            ''' % (self.transaction_column_name, tx_log.id)
+            ''' % (self.transaction_column_name, tx_log.id))
         )
 
         assert self.session.query(self.ArticleVersion).first().changeset == {
@@ -94,7 +96,7 @@ class TestChangeSetWhenParentContainsAdditionalColumns(ChangeSetTestCase):
             article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
             article = sa.orm.relationship(Article, backref='tags')
         
-        subquery = (sa.select([sa.func.count(Tag.id)])
+        subquery = (sa.select(sa.func.count(Tag.id))
         .where(Tag.article_id == Article.id)
         .correlate_except(Tag))
         try:

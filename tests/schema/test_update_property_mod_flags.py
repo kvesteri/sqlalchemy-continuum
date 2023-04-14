@@ -1,6 +1,8 @@
 from copy import copy
 
 import sqlalchemy as sa
+from sqlalchemy import text
+
 from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
 from sqlalchemy_continuum.schema import update_property_mod_flags
@@ -85,7 +87,7 @@ class TestSchemaTools(TestCase):
             conn=self.session
         )
         rows = self.session.execute(
-            'SELECT * FROM article_version ORDER BY transaction_id'
+            text('SELECT * FROM article_version ORDER BY transaction_id')
         ).fetchall()
         assert rows[0].transaction_id == 1
         assert rows[0].name_mod

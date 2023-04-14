@@ -58,7 +58,7 @@ class TestUpdate(TestCase):
         article.name = u'Some other article'
 
         self.session.commit()
-        assert article.versions[-1].operation_type == 1
+        assert article.versions.all()[-1].operation_type == 1
 
     def test_multiple_updates_within_same_transaction(self):
         article = self.Article()

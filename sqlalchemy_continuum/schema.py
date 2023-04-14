@@ -14,7 +14,7 @@ def get_end_tx_column_query(
     primary_keys = [c.name for c in table.c if c.primary_key]
 
     tx_criterion = sa.select(
-        [sa.func.min(getattr(v3.c, tx_column_name))]
+        sa.func.min(getattr(v3.c, tx_column_name))
     ).where(
         sa.and_(
             getattr(v3.c, tx_column_name) > getattr(v1.c, tx_column_name),
@@ -30,13 +30,12 @@ def get_end_tx_column_query(
     except AttributeError:  # SQLAlchemy < 1.4
         tx_criterion = tx_criterion.as_scalar()
     return sa.select(
-        columns=[
+        *[
             getattr(v1.c, column)
             for column in primary_keys
-        ] + [
-            getattr(v2.c, tx_column_name).label(end_tx_column_name)
         ],
-        from_obj=v1.outerjoin(
+        getattr(v2.c, tx_column_name).label(end_tx_column_name),
+        v1.outerjoin(
             v2,
             sa.and_(
                 getattr(v2.c, tx_column_name) ==
@@ -107,7 +106,7 @@ def get_property_mod_flags_query(
     primary_keys = [c.name for c in table.c if c.primary_key]
 
     return sa.select(
-        columns=[
+        *[
             getattr(v1.c, column)
             for column in primary_keys
         ] + [
@@ -117,7 +116,7 @@ def get_property_mod_flags_query(
             )).label(column + mod_suffix)
             for column in tracked_columns
         ],
-        from_obj=v1.outerjoin(
+        v1.outerjoin(
             v2,
             sa.and_(
                 getattr(v2.c, end_tx_column_name) ==

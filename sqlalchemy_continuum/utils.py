@@ -3,6 +3,7 @@ from inspect import isclass
 from collections import defaultdict
 
 import sqlalchemy as sa
+from sqlalchemy import text
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy_utils.functions import (
@@ -392,10 +393,10 @@ def count_versions(obj):
         '%s = %r' % (pk, getattr(obj, pk))
         for pk in get_primary_keys(obj)
     ]
-    query = 'SELECT COUNT(1) FROM %s WHERE %s' % (
+    query = text('SELECT COUNT(1) FROM %s WHERE %s' % (
         table_name,
         ' AND '.join(criteria)
-    )
+    ))
     return session.execute(query).scalar()
 
 

@@ -39,7 +39,7 @@ class TestValidityStrategy(TestCase):
         article = self.Article(name=u'Something')
         self.session.add(article)
         self.session.commit()
-        assert article.versions[-1].end_transaction_id is None
+        assert article.versions.all()[-1].end_transaction_id is None
 
     def test_updated_end_transaction_id_of_previous_version(self):
         article = self.Article(name=u'Something')
@@ -49,8 +49,8 @@ class TestValidityStrategy(TestCase):
         article.name = u'Some other thing'
         self.session.commit()
         assert (
-            article.versions[-2].end_transaction_id ==
-            article.versions[-1].transaction_id
+            article.versions.all()[-2].end_transaction_id ==
+            article.versions.all()[-1].transaction_id
         )
 
 
