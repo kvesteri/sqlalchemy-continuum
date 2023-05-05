@@ -15,7 +15,7 @@ class TestInsert(TestCase):
 
     def test_insert_creates_version(self):
         article = self._insert()
-        version = article.versions.all()[-1]
+        version = list(article.versions)[-1]
         assert version.name == u'Some article'
         assert version.content == u'Some content'
         assert version.transaction.id == version.transaction_id

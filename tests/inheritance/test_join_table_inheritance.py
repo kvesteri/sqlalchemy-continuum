@@ -101,12 +101,12 @@ class JoinTableInheritanceTestCase(TestCase):
         article = self.Article()
         self.session.add(article)
         self.session.commit()
-        assert self.session.execute(
+        assert self.session.execute(sa.text(
             'SELECT %s FROM article_version' % tx_column
-        ).fetchone()[0]
-        assert self.session.execute(
+        )).fetchone()[0]
+        assert self.session.execute(sa.text(
             'SELECT %s FROM text_item_version' % tx_column
-        ).fetchone()[0]
+        )).fetchone()[0]
 
     def test_primary_keys(self):
         tx_column = self.options['transaction_column_name']
@@ -133,14 +133,14 @@ class JoinTableInheritanceTestCase(TestCase):
         self.session.commit()
         assert article.versions.count() == 2
 
-        assert self.session.execute(
+        assert self.session.execute(sa.text(
             'SELECT %s FROM text_item_version '
             'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
-        ).scalar()
-        assert self.session.execute(
+        )).scalar()
+        assert self.session.execute(sa.text(
             'SELECT %s FROM article_version '
             'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
-        ).scalar()
+        )).scalar()
 
 
 create_test_cases(JoinTableInheritanceTestCase)
@@ -194,12 +194,12 @@ class TestDeepJoinedTableInheritance(TestCase):
         document = self.Document()
         self.session.add(document)
         self.session.commit()
-        assert self.session.execute(
+        assert self.session.execute(sa.text(
             'SELECT COUNT(1) FROM document_version'
-        ).scalar() == 1
-        assert self.session.execute(
+        )).scalar() == 1
+        assert self.session.execute(sa.text(
             'SELECT COUNT(1) FROM content_version'
-        ).scalar() == 1
-        assert self.session.execute(
+        )).scalar() == 1
+        assert self.session.execute(sa.text(
             'SELECT COUNT(1) FROM node_version'
-        ).scalar() == 1
+        )).scalar() == 1

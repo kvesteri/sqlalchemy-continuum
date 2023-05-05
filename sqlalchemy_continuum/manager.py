@@ -362,7 +362,7 @@ class VersioningManager(object):
 
         :param session: SQLAlchemy session object
         """
-        if session.transaction.nested:
+        if session.in_nested_transaction():
             return
         conn = self.session_connection_map.pop(session, None)
         if conn is None:

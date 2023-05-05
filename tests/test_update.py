@@ -15,7 +15,7 @@ class TestUpdate(TestCase):
 
         self.session.commit()
         self.session.refresh(article)
-        version = article.versions.all()[-1]
+        version = list(article.versions)[-1]
         assert version.name == u'Updated name'
         assert version.content == u'Updated content'
         assert version.transaction.id == version.transaction_id
@@ -31,7 +31,7 @@ class TestUpdate(TestCase):
 
         self.session.commit()
         self.session.refresh(article)
-        version = article.versions.all()[-1]
+        version = list(article.versions)[-1]
         assert version.name == u'Some article'
         assert version.content == u'Updated content'
         assert version.transaction.id == version.transaction_id
@@ -58,7 +58,7 @@ class TestUpdate(TestCase):
         article.name = u'Some other article'
 
         self.session.commit()
-        assert article.versions[-1].operation_type == 1
+        assert list(article.versions)[-1].operation_type == 1
 
     def test_multiple_updates_within_same_transaction(self):
         article = self.Article()
@@ -72,7 +72,7 @@ class TestUpdate(TestCase):
         article.content = u'Updated content 2'
         self.session.commit()
         assert article.versions.count() == 2
-        version = article.versions.all()[-1]
+        version = list(article.versions)[-1]
         assert version.name == u'Some article'
         assert version.content == u'Updated content 2'
 
@@ -101,5 +101,5 @@ class TestUpdateWithDefaultValues(TestCase):
 
         article.is_editable = True
         self.session.commit()
-        article = article.versions.all()[-1]
+        article = list(article.versions)[-1]
         assert article.name == u'Some article'

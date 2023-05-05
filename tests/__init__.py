@@ -133,8 +133,8 @@ class TestCase(object):
         close_all_sessions()
         self.session.expunge_all()
         self.drop_tables()
-        self.engine.dispose()
         self.connection.close()
+        self.engine.dispose()
 
         assert not uow_leaks
         assert not session_map_leaks

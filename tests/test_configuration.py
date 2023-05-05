@@ -93,7 +93,7 @@ class TestWithCreateModelsAsFalse(TestCase):
         self.session.commit()
 
         version = dict(
-            self.session.execute('SELECT * FROM article_version')
+            self.session.execute(sa.text('SELECT * FROM article_version'))
             .fetchone()
         )
         assert version['transaction_id'] > 0

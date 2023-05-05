@@ -18,10 +18,10 @@ class TestSessions(TestCase):
 
         self.session.commit()
         self.session2.commit()
-        assert article.versions[-1].transaction_id
+        assert list(article.versions)[-1].transaction_id
         assert (
-            article2.versions[-1].transaction_id >
-            article.versions[-1].transaction_id
+            list(article2.versions)[-1].transaction_id >
+            list(article.versions)[-1].transaction_id
         )
 
     def test_connection_binded_to_engine(self):
@@ -29,7 +29,7 @@ class TestSessions(TestCase):
         article = self.Article(name=u'Session1 article')
         self.session2.add(article)
         self.session2.commit()
-        assert article.versions[-1].transaction_id
+        assert list(article.versions)[-1].transaction_id
 
     def test_manual_transaction_creation(self):
         uow = versioning_manager.unit_of_work(self.session)
@@ -42,7 +42,7 @@ class TestSessions(TestCase):
         assert uow.current_transaction.id
 
         self.session.commit()
-        assert article.versions[-1].transaction_id
+        assert list(article.versions)[-1].transaction_id
 
     def test_commit_without_objects(self):
         self.session.commit()

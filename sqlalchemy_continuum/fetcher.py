@@ -70,11 +70,11 @@ class VersionObjectFetcher(object):
             attrs = alias.c
         query = (
             sa.select(
-                [func(
+                func(
                     getattr(attrs, tx_column_name(obj))
-                )],
-                from_obj=[table]
+                )
             )
+            .select_from(table)
             .where(
                 sa.and_(
                     op(
@@ -127,7 +127,7 @@ class VersionObjectFetcher(object):
         alias = sa.orm.aliased(obj.__class__)
 
         subquery = (
-            sa.select([sa.func.count('1')], from_obj=[alias.__table__])
+            sa.select(sa.func.count()).select_from(alias.__table__)
             .where(
                 getattr(alias, tx_column_name(obj))
                 <
@@ -137,7 +137,7 @@ class VersionObjectFetcher(object):
             .label('position')
         )
         query = (
-            sa.select([subquery], from_obj=[obj.__table__])
+            sa.select(subquery).select_from(obj.__table__)
             .where(
                 sa.and_(*eqmap(identity, (obj.__class__, obj)))
             )

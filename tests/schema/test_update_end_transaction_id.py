@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.schema import update_end_tx_column
 from tests import TestCase
@@ -55,9 +56,9 @@ class TestSchemaTools(TestCase):
         )
 
         update_end_tx_column(table, conn=self.session)
-        rows = self.session.execute(
+        rows = self.session.execute(sa.text(
             'SELECT * FROM article_version ORDER BY transaction_id'
-        ).fetchall()
+        )).fetchall()
         assert rows[0].transaction_id == 1
         assert rows[0].end_transaction_id == 2
         assert rows[1].transaction_id == 2

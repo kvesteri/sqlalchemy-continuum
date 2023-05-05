@@ -84,16 +84,16 @@ class TestFlaskPlugin(TestCase):
 
         @self.app.route('/raw-sql-and-flush')
         def test_raw_sql_and_flush():
-            self.session.execute(
+            self.session.execute(sa.text(
                 "INSERT INTO article (name) VALUES ('some article')"
-            )
+            ))
             article = self.Article()
             article.name = u'Some article'
             self.session.add(article)
             self.session.flush()
-            self.session.execute(
+            self.session.execute(sa.text(
                 "INSERT INTO article (name) VALUES ('some article')"
-            )
+            ))
             self.session.commit()
             return ''
 
@@ -105,7 +105,7 @@ class TestFlaskPlugin(TestCase):
         self.client.get(url_for('.test_simple_flush'))
 
         article = self.session.query(self.Article).first()
-        tx = article.versions[-1].transaction
+        tx = list(article.versions)[-1].transaction
         assert tx.user.id == user.id
 
     def test_raw_sql_and_flush(self):

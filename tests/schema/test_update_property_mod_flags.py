@@ -84,9 +84,9 @@ class TestSchemaTools(TestCase):
             ['name'],
             conn=self.session
         )
-        rows = self.session.execute(
+        rows = self.session.execute(sa.text(
             'SELECT * FROM article_version ORDER BY transaction_id'
-        ).fetchall()
+        )).fetchall()
         assert rows[0].transaction_id == 1
         assert rows[0].name_mod
         assert rows[1].transaction_id == 2

@@ -31,10 +31,10 @@ class OneToManyRelationshipsTestCase(TestCase):
         article.tags.append(self.Tag(name=u'some tag'))
         self.session.add(article)
         self.session.commit()
-        version = article.versions.all()[0]
+        version = list(article.versions)[0]
         assert version.name == u'Some article'
         assert version.content == u'Some content'
-        version = article.tags[0].versions.all()[0]
+        version = list(article.tags[0].versions)[0]
         assert version.name == u'some tag'
 
     def test_consecutive_inserts_and_removes(self):
@@ -92,6 +92,7 @@ class OneToManyRelationshipsTestCase(TestCase):
         tag.name = u'updated tag'
         tag2 = self.Tag(name=u'other tag',
                         article=article)
+        self.session.add(tag2)
         self.session.commit()
 
         # update the article and the tag again
@@ -220,6 +221,7 @@ class TestOneToManySelfReferential(TestCase):
         child_article1.name = u'Updated child article1'
         child_article2 = self.Article(name=u'Child article2',
                                       parent_article=parent_article)
+        self.session.add(child_article2)
         self.session.commit()
         # update the parent and 1st child
         parent_article.name = u'Updated article x2'

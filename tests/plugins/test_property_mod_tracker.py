@@ -37,7 +37,7 @@ class TestPropertyModificationsTracking(TestCase):
         self.session.add(user)
         self.session.commit()
 
-        assert user.versions[-1].name_mod
+        assert list(user.versions)[-1].name_mod
 
     def test_mod_properties_with_update(self):
         user = self.User(name=u'John')
@@ -45,8 +45,8 @@ class TestPropertyModificationsTracking(TestCase):
         self.session.commit()
         user.age = 14
         self.session.commit()
-        assert user.versions[-1].age_mod
-        assert not user.versions[-1].name_mod
+        assert list(user.versions)[-1].age_mod
+        assert not list(user.versions)[-1].name_mod
 
     def test_mod_properties_with_delete(self):
         user = self.User(name=u'John')
@@ -69,8 +69,8 @@ class TestPropertyModificationsTracking(TestCase):
         self.session.flush()
         user.age = 15
         self.session.commit()
-        assert user.versions[-1].age_mod
-        assert user.versions[-1].name_mod
+        assert list(user.versions)[-1].age_mod
+        assert list(user.versions)[-1].name_mod
 
     def test_consequtive_update_and_update(self):
         user = self.User(name=u'John')
@@ -80,8 +80,8 @@ class TestPropertyModificationsTracking(TestCase):
         self.session.flush()
         user.age = 15
         self.session.commit()
-        assert user.versions[-1].age_mod
-        assert user.versions[-1].name_mod
+        assert list(user.versions)[-1].age_mod
+        assert list(user.versions)[-1].name_mod
 
 
 class TestChangeSetWithPropertyModPlugin(TestCase):
@@ -93,7 +93,7 @@ class TestChangeSetWithPropertyModPlugin(TestCase):
         article.content = u'Some content'
         self.session.add(article)
         self.session.commit()
-        assert article.versions[0].changeset == {
+        assert list(article.versions)[0].changeset == {
             'content': [None, u'Some content'],
             'name': [None, u'Some article'],
             'id': [None, 1]
@@ -110,7 +110,7 @@ class TestChangeSetWithPropertyModPlugin(TestCase):
         article.content = u'Updated content'
         self.session.commit()
 
-        assert article.versions[1].changeset == {
+        assert list(article.versions)[1].changeset == {
             'content': [u'Some content', u'Updated content'],
             'name': [u'Some article', u'Updated name']
         }
@@ -179,7 +179,7 @@ class TestModTrackingWithRelationships(TestCase):
         tag = self.Tag(article=self.Article(name=u'Some article'))
         self.session.add(tag)
         self.session.commit()
-        assert tag.versions[-1]
+        assert list(tag.versions)[-1]
 
     def test_with_update(self):
         tag = self.Tag(article=self.Article(name=u'Some article'))
@@ -188,4 +188,4 @@ class TestModTrackingWithRelationships(TestCase):
         tag.article = None
         self.session.commit()
 
-        assert tag.versions[-1].article_id_mod
+        assert list(tag.versions)[-1].article_id_mod

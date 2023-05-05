@@ -162,7 +162,7 @@ class VersionModelAccessorsTestCase(TestCase):
         article.content = u'Updated content'
         self.session.commit()
 
-        versions = article.versions.all()
+        versions = list(article.versions)
         version = versions[0]
         assert version.next == versions[1]
         assert version.next.next == versions[2]
