@@ -4,6 +4,11 @@ from sqlalchemy_i18n import Translatable, make_translatable, translation_base
 from sqlalchemy_utils import i18n
 from . import TestCase
 
+# sqlalchemy-i18n doesn't fully support 1.4 yet
+# See https://github.com/kvesteri/sqlalchemy-i18n/issues/34
+import pytest
+pytest.skip(allow_module_level=True)
+
 
 i18n.get_locale = lambda: 'en'
 make_translatable()
