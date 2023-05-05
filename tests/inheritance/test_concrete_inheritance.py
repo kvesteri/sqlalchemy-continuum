@@ -4,7 +4,7 @@ from sqlalchemy_continuum import versioning_manager, version_class
 from tests import TestCase
 
 
-class TestConreteTableInheritance(TestCase):
+class TestConcreteTableInheritance(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'

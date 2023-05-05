@@ -4,6 +4,7 @@ from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy_utils.functions import get_declarative_base
+from sqlalchemy.orm.descriptor_props import ConcreteInheritedProperty
 
 from .dialects.postgresql import create_versioning_trigger_listeners
 from .model_builder import ModelBuilder
@@ -196,7 +197,12 @@ class Builder(object):
         """
         for cls in version_classes:
             for prop in sa.inspect(cls).iterate_properties:
-                getattr(cls, prop.key).impl.active_history = True
+                if isinstance(prop, ConcreteInheritedProperty):
+                    # ConcreteInheritedProperty doesn't have a dispatch, so we can't set active_history
+                    continue
+
+                impl = getattr(cls, prop.key).impl
+                impl.active_history = True
 
     def create_column_aliases(self, version_classes):
         """
