@@ -2,8 +2,7 @@ import os
 
 from flask import Flask, url_for
 from flask_login import LoginManager, UserMixin, login_user
-from flask_sqlalchemy import SQLAlchemy, _SessionSignalEvents
-from flexmock import flexmock
+from flask_sqlalchemy import SQLAlchemy
 
 import sqlalchemy as sa
 from sqlalchemy.orm import close_all_sessions
@@ -201,11 +200,6 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.Tag = Tag
 
     def setup_method(self, method):
-        # Mock the event registering of Flask-SQLAlchemy. Currently there is no
-        # way of unregistering Flask-SQLAlchemy event listeners, hence the
-        # event listeners would affect other tests.
-        flexmock(_SessionSignalEvents).should_receive('register')
-
         self.db = SQLAlchemy()
         make_versioned()
 
