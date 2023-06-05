@@ -89,8 +89,8 @@ class TestTableBuilderInOtherSchema(TestCase):
         self.Article = Article
 
     def create_tables(self):
-        self.connection.execute('DROP SCHEMA IF EXISTS other')
-        self.connection.execute('CREATE SCHEMA other')
+        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
+        self.connection.execute(sa.text('CREATE SCHEMA other'))
         TestCase.create_tables(self)
 
     def test_created_tables_retain_schema(self):

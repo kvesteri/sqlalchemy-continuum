@@ -513,15 +513,15 @@ def create_trigger(
         use_property_mod_tracking=use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
     )
-    conn.execute(str(CreateTriggerFunctionSQL(**params)))
-    conn.execute(str(CreateTriggerSQL(**params)))
+    conn.execute(sa.text(str(CreateTriggerFunctionSQL(**params))))
+    conn.execute(sa.text(str(CreateTriggerSQL(**params))))
 
 
 def drop_trigger(conn, table_name):
-    conn.execute(
+    conn.execute(sa.text(
         'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
             table_name,
             table_name
         )
-    )
-    conn.execute('DROP FUNCTION IF EXISTS %s_audit()' % table_name)
+    ))
+    conn.execute(sa.text('DROP FUNCTION IF EXISTS %s_audit()' % table_name))

@@ -56,8 +56,8 @@ class TestCustomSchema(TestCase):
         self.Tag = Tag
 
     def create_tables(self):
-        self.connection.execute('DROP SCHEMA IF EXISTS continuum')
-        self.connection.execute('CREATE SCHEMA continuum')
+        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS continuum'))
+        self.connection.execute(sa.text('CREATE SCHEMA continuum'))
         TestCase.create_tables(self)
 
     def test_version_relations(self):

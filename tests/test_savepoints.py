@@ -28,15 +28,12 @@ class TestSavepoints(TestCase):
         assert list(article.versions)[-1].name == u'Some article'
 
     def test_multiple_savepoints(self):
-        if self.driver == 'sqlite':
-            pytest.skip()
-
         article = self.Article(name=u'Some article')
         self.session.add(article)
         self.session.flush()
         savepoint = self.session.begin_nested()
         article.name = u'Updated name'
-        self.session.commit()
+        savepoint.commit()
         savepoint2 = self.session.begin_nested()
         article.name = u'Another article'
         self.session.commit()

@@ -113,13 +113,15 @@ class TestCase(object):
         Session = sessionmaker(bind=self.connection)
         self.session = Session(autoflush=False)
         if driver == 'postgres-native':
-            self.session.execute('CREATE EXTENSION IF NOT EXISTS hstore')
+            self.session.execute(sa.text('CREATE EXTENSION IF NOT EXISTS hstore'))
 
     def create_tables(self):
         self.Model.metadata.create_all(self.connection)
+        self.connection.commit()
 
     def drop_tables(self):
         self.Model.metadata.drop_all(self.connection)
+        self.connection.commit()
 
     def teardown_method(self, method):
         self.session.rollback()
@@ -133,6 +135,7 @@ class TestCase(object):
         close_all_sessions()
         self.session.expunge_all()
         self.drop_tables()
+        self.connection.commit()
         self.connection.close()
         self.engine.dispose()
 

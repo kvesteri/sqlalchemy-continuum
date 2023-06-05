@@ -224,11 +224,13 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         self.context = self.app.test_request_context()
         self.context.push()
         self.db.create_all()
+        self.db.session.commit()
 
     def teardown_method(self, method):
         remove_versioning()
         self.db.session.remove()
         self.db.drop_all()
+        self.db.session.commit()
         close_all_sessions()
         self.db.engine.dispose()
         self.context.pop()
