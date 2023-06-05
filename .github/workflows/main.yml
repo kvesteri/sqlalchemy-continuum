@@ -29,6 +29,7 @@ jobs:
         sqlalchemy-version:
           - "<1.4"
           - ">=1.4,<2.0"
+          - ">=2.0"
         db-engine:
           - sqlite
           - postgres
