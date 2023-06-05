@@ -66,7 +66,7 @@ def make_versioned(
 
     sa.event.listen(
         sa.engine.Engine,
-        'before_cursor_execute',
+        'before_execute',
         manager.track_association_operations
     )
 
@@ -105,7 +105,7 @@ def remove_versioning(
     manager.remove_session_tracking(session)
     sa.event.remove(
         sa.engine.Engine,
-        'before_cursor_execute',
+        'before_execute',
         manager.track_association_operations
     )
 

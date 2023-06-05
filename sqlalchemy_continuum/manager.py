@@ -11,7 +11,7 @@ from .operation import Operation
 from .plugins import PluginCollection
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
-from .utils import is_modified, is_versioned
+from .utils import is_modified, is_versioned, version_table
 
 
 def tracked_operation(func):
@@ -20,19 +20,7 @@ def tracked_operation(func):
         if not is_versioned(target):
             return
         session = object_session(target)
-        conn = session.connection()
-        try:
-            uow = self.units_of_work[conn]
-        except KeyError:
-            try:
-                uow = self.units_of_work[conn.engine]
-            except KeyError:
-                for connection in self.units_of_work.keys():
-                    if not connection.closed and connection.connection is conn.connection:
-                        uow = self.unit_of_work(session)
-                        break  # The ConnectionFairy is the same, this connection is a clone
-                else:
-                    raise
+        uow = self._uow_from_conn(session.connection())
         return func(self, uow, target)
     return wrapper
 
@@ -325,6 +313,22 @@ class VersioningManager(object):
             self.units_of_work[conn] = uow
             return uow
 
+    def _uow_from_conn(self, conn):
+        try:
+            uow = self.units_of_work[conn]
+        except KeyError:
+            try:
+                uow = self.units_of_work[conn.engine]
+            except KeyError:
+                for connection in self.units_of_work.keys():
+                    if not connection.closed and connection.connection is conn.connection:
+                        uow = self.unit_of_work(session)
+                        break  # The ConnectionFairy is the same, this connection is a clone
+                else:
+                    raise
+
+        return uow
+
     def before_flush(self, session, flush_context, instances):
         """
         Before flush listener for SQLAlchemy sessions. If this manager has
@@ -407,18 +411,7 @@ class VersioningManager(object):
             .insert()
             .values({**params, 'operation_type': op})
         )
-        try:
-            uow = self.units_of_work[conn]
-        except KeyError:
-            try:
-                uow = self.units_of_work[conn.engine]
-            except KeyError:
-                for connection in self.units_of_work.keys():
-                    if not connection.closed and connection.connection is conn.connection:
-                        uow = self.unit_of_work(conn.session)
-                        break  # The ConnectionFairy is the same, this connection is a clone
-                else:
-                    raise
+        uow = self.uow_from_conn(conn)
         uow.pending_statements.append(stmt)
 
     def track_cloned_connections(self, c, opt):
@@ -431,81 +424,32 @@ class VersioningManager(object):
                     self.units_of_work[c] = uow
 
     def track_association_operations(
-        self, conn, cursor, statement, parameters, context, executemany
+        self, conn, clauseelement, multiparams, params, execution_options,
     ):
-        """
-        Track association operations and adds the generated history
-        association operations to pending_statements list.
-        """
+
         if (
             not self.options['versioning'] and
             not self.options['native_versioning']
         ):
             return
 
-        op = None
-        if context.isinsert:
+        if clauseelement.is_insert:
             op = Operation.INSERT
-        elif context.isdelete:
+        elif clauseelement.is_delete:
             op = Operation.DELETE
+        else:
+            op = None
 
-        if op is not None:
-            table_name = statement.split(' ')[2]
-            table_names = [
-                table.name if not table.schema else table.schema + '.' + table.name
-                for table in self.association_tables
-            ]
-            if table_name in table_names:
-                if executemany:
-                    # SQLAlchemy does not support function based values for
-                    # multi-inserts, hence we need to convert the orignal
-                    # multi-insert into batch of normal inserts
-                    for params in parameters:
-                        self.append_association_operation(
-                            conn,
-                            table_name,
-                            self.positional_args_to_dict(
-                                op, statement, params
-                            ),
-                            op
-                        )
-                else:
-                    self.append_association_operation(
-                        conn,
-                        table_name,
-                        self.positional_args_to_dict(
-                            op,
-                            statement,
-                            parameters
-                        ),
-                        op
-                    )
+        if op is not None and clauseelement.table in self.association_tables:
+            if not multiparams:
+                multiparams = [params]
 
-    def positional_args_to_dict(self, op, statement, params):
-        """
-        On some drivers (eg sqlite) generated INSERT statements use positional
-        args instead of key value dictionary. This method converts positional
-        args to key value dict.
+            uow = self._uow_from_conn(conn)
 
-        :param statement: SQL statement string
-        :param params: tuple or dict of statement parameters
-        """
-        if isinstance(params, tuple):
-            parameters = {}
-            if op == Operation.DELETE:
-                regexp = '^DELETE FROM (.+?) WHERE'
-                match = re.match(regexp, statement)
-                tablename = match.groups()[0].strip('"').strip("'").strip('`')
-                table = self.metadata.tables[tablename]
-                columns = table.primary_key.columns.values()
-                for index, column in enumerate(columns):
-                    parameters[column.name] = params[index]
-            else:
-                columns = [
-                    column.strip() for column in
-                    statement.split('(')[1].split(')')[0].split(',')
-                ]
-                for index, column in enumerate(columns):
-                    parameters[column] = params[index]
-            return parameters
-        return params
+            for params in multiparams:
+                stmt = version_table(clauseelement.table).insert().values({
+                    **params,
+                    'operation_type': op,
+                })
+                uow.pending_statements.append(stmt)
+
