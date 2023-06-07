@@ -88,10 +88,9 @@ class TestTableBuilderInOtherSchema(TestCase):
             )
         self.Article = Article
 
-    def create_tables(self):
-        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
-        self.connection.execute(sa.text('CREATE SCHEMA other'))
-        TestCase.create_tables(self)
+    def create_extra(self):
+        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
+        self.session.execute(sa.text('CREATE SCHEMA other'))
 
     def test_created_tables_retain_schema(self):
         table = version_class(self.Article).__table__

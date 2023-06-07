@@ -96,8 +96,6 @@ class TestCase(object):
 
         sa.orm.configure_mappers()
 
-        self.connection = self.engine.connect()
-
         if hasattr(self, 'Article'):
             try:
                 self.ArticleVersion = version_class(self.Article)
@@ -108,20 +106,22 @@ class TestCase(object):
                 self.TagVersion = version_class(self.Tag)
             except ClassNotVersioned:
                 pass
-        self.create_tables()
 
+        self.connection = self.engine.connect()
         Session = sessionmaker(bind=self.connection)
         self.session = Session(autoflush=False)
+
         if driver == 'postgres-native':
             self.session.execute(sa.text('CREATE EXTENSION IF NOT EXISTS hstore'))
 
-    def create_tables(self):
-        self.Model.metadata.create_all(self.connection)
-        self.connection.commit()
+        self.create_extra()
 
-    def drop_tables(self):
-        self.Model.metadata.drop_all(self.connection)
-        self.connection.commit()
+        self.session.commit()
+
+        # Using an engine here instead of connection will call commit for us,
+        # which lets us use the same syntax for 1.4 and 2.0
+        self.Model.metadata.create_all(self.engine)
+
 
     def teardown_method(self, method):
         self.session.rollback()
@@ -134,8 +134,9 @@ class TestCase(object):
 
         close_all_sessions()
         self.session.expunge_all()
-        self.drop_tables()
-        self.connection.commit()
+
+        self.Model.metadata.drop_all(self.engine)
+
         self.connection.close()
         self.engine.dispose()
 
@@ -166,6 +167,9 @@ class TestCase(object):
 
         self.Article = Article
         self.Tag = Tag
+
+    def create_extra(self):
+        pass
 
 
 setting_variants = {

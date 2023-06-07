@@ -410,10 +410,9 @@ class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
         self.Article = Article
         self.referenced_articles_table = article_references
 
-    def create_tables(self):
-        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
-        self.connection.execute(sa.text('CREATE SCHEMA other'))
-        TestManyToManySelfReferential.create_tables(self)
+    def create_extra(self):
+        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
+        self.session.execute(sa.text('CREATE SCHEMA other'))
 
 
 @mark.skipif("os.environ.get('DB') == 'sqlite'")
@@ -467,10 +466,9 @@ class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCa
         self.Tag = Tag
 
 
-    def create_tables(self):
-        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
-        self.connection.execute(sa.text('CREATE SCHEMA other'))
-        ManyToManyRelationshipsTestCase.create_tables(self)
+    def create_extra(self):
+        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
+        self.session.execute(sa.text('CREATE SCHEMA other'))
 
 create_test_cases(ManyToManyRelationshipsInOtherSchemaTestCase)
 

@@ -91,10 +91,9 @@ class TestAssigningUserClassInOtherSchema(TestCase):
 
         self.User = User
 
-    def create_tables(self):
-        self.connection.execute(sa.text('DROP SCHEMA IF EXISTS other'))
-        self.connection.execute(sa.text('CREATE SCHEMA other'))
-        TestCase.create_tables(self)
+    def create_extra(self):
+        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
+        self.session.execute(sa.text('CREATE SCHEMA other'))
 
     def test_can_build_transaction_model(self):
         # If create_models didn't crash this should be good
