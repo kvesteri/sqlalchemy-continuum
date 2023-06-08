@@ -456,17 +456,18 @@ def create_versioning_trigger_listeners(manager, cls):
     )
 
 
-def sync_trigger(conn, table_name, **kwargs):
+def sync_trigger(session, table_name, **kwargs):
     """
-    Synchronizes versioning trigger for given table with given connection.
+    Synchronizes versioning trigger for given table with given session.
 
     ::
 
 
-        sync_trigger(conn, 'my_table')
+        sync_trigger(session, 'my_table')
+        session.commit()
 
 
-    :param conn: SQLAlchemy connection object
+    :param session: SQLAlchemy session object
     :param table_name: Name of the table to synchronize versioning trigger for
     :params **kwargs: kwargs to pass to create_trigger
 
@@ -476,25 +477,23 @@ def sync_trigger(conn, table_name, **kwargs):
     version_table = sa.Table(
         table_name,
         meta,
-        autoload=True,
-        autoload_with=conn
+        autoload_with=session.connection()
     )
     parent_table = sa.Table(
         table_name[0:-len('_version')],
         meta,
-        autoload=True,
-        autoload_with=conn
+        autoload_with=session.connection()
     )
     excluded_columns = (
         set(c.name for c in parent_table.c) -
         set(c.name for c in version_table.c if not c.name.endswith('_mod'))
     )
-    drop_trigger(conn, parent_table.name)
-    create_trigger(conn, table=parent_table, excluded_columns=excluded_columns, **kwargs)
+    drop_trigger(session, parent_table.name)
+    create_trigger(session, table=parent_table, excluded_columns=excluded_columns, **kwargs)
 
 
 def create_trigger(
-    conn,
+    session,
     table,
     transaction_column_name='transaction_id',
     operation_type_column_name='operation_type',
@@ -513,15 +512,15 @@ def create_trigger(
         use_property_mod_tracking=use_property_mod_tracking,
         end_transaction_column_name=end_transaction_column_name,
     )
-    conn.execute(sa.text(str(CreateTriggerFunctionSQL(**params))))
-    conn.execute(sa.text(str(CreateTriggerSQL(**params))))
+    session.execute(sa.text(str(CreateTriggerFunctionSQL(**params))))
+    session.execute(sa.text(str(CreateTriggerSQL(**params))))
 
 
-def drop_trigger(conn, table_name):
-    conn.execute(sa.text(
+def drop_trigger(session, table_name):
+    session.execute(sa.text(
         'DROP TRIGGER IF EXISTS %s_trigger ON "%s"' % (
             table_name,
             table_name
         )
     ))
-    conn.execute(sa.text('DROP FUNCTION IF EXISTS %s_audit()' % table_name))
+    session.execute(sa.text('DROP FUNCTION IF EXISTS %s_audit()' % table_name))

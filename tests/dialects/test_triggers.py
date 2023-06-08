@@ -11,51 +11,33 @@ from tests import (
     get_dns_from_driver,
     get_driver_name,
     QueryPool,
-    uses_native_versioning
+    TestCase,
+    uses_native_versioning,
 )
 
 
 @pytest.mark.skipif('not uses_native_versioning()')
-class TestTriggerSyncing(object):
+class TestTriggerSyncing(TestCase):
     def setup_method(self, method):
-        driver = os.environ.get('DB', 'sqlite')
-        self.driver = get_driver_name(driver)
-        self.engine = sa.create_engine(get_dns_from_driver(self.driver))
-        self.connection = self.engine.connect()
-        if driver == 'postgres-native':
-            self.connection.execute(sa.text('CREATE EXTENSION IF NOT EXISTS hstore'))
-
-        self.connection.execute(sa.text(
-            'CREATE TABLE article '
-            '(id INT PRIMARY KEY, name VARCHAR(200), content TEXT)'
-        ))
-        self.connection.execute(sa.text(
-            'CREATE TABLE article_version '
-            '(id INT, transaction_id INT, name VARCHAR(200), '
-            'name_mod BOOLEAN, PRIMARY KEY (id, transaction_id))'
-        ))
-
-    def teardown_method(self, method):
-        self.connection.execute(sa.text('DROP TABLE IF EXISTS article'))
-        self.connection.execute(sa.text('DROP TABLE IF EXISTS article_version'))
-        self.engine.dispose()
-        self.connection.close()
+        TestCase.setup_method(self, method)
 
     def test_sync_triggers(self):
-        sync_trigger(self.connection, 'article_version')
+        sync_trigger(self.session, 'article_version')
         assert (
             'DROP TRIGGER IF EXISTS article_trigger ON "article"'
             in QueryPool.queries[-4]
         )
-        assert 'DROP FUNCTION ' in QueryPool.queries[-3]
-        assert 'CREATE OR REPLACE FUNCTION ' in QueryPool.queries[-2]
-        assert 'CREATE TRIGGER ' in QueryPool.queries[-1]
-        sync_trigger(self.connection, 'article_version')
+        assert 'DROP FUNCTION IF EXISTS article_audit' in QueryPool.queries[-3]
+        assert 'CREATE OR REPLACE FUNCTION article_audit' in QueryPool.queries[-2]
+        assert 'CREATE TRIGGER article_trigger' in QueryPool.queries[-1]
+        sync_trigger(self.session, 'article_version')
+        self.session.commit()
 
     def test_drop_triggers(self):
-        drop_trigger(self.connection, 'article')
+        drop_trigger(self.session, 'article')
         assert (
             'DROP TRIGGER IF EXISTS article_trigger ON "article"'
             in QueryPool.queries[-2]
         )
-        assert 'DROP FUNCTION ' in QueryPool.queries[-1]
+        assert 'DROP FUNCTION IF EXISTS article_audit' in QueryPool.queries[-1]
+        self.session.commit()
