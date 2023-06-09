@@ -137,7 +137,10 @@ class TestCase(object):
         QueryPool.queries = []
         versioning_manager.reset()
 
-        close_all_sessions()
+        try:
+            close_all_sessions()
+        except Exception:
+            pass
         self.session.expunge_all()
 
         self.Model.metadata.drop_all(self.engine)
