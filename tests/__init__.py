@@ -40,7 +40,11 @@ def log_sql(
     QueryPool.queries.append(statement)
 
 
-def get_dns_from_driver(driver):
+def get_url_from_driver(driver):
+    url = os.environ.get('DATABASE_URL')
+    if url:
+        return url
+
     if driver == 'postgres':
         return 'postgresql://postgres:postgres@localhost/main'
     elif driver == 'mysql':
@@ -91,7 +95,7 @@ class TestCase(object):
         versioning_manager.transaction_cls = self.transaction_cls
         versioning_manager.user_cls = self.user_cls
 
-        self.engine = create_engine(get_dns_from_driver(self.driver))
+        self.engine = create_engine(get_url_from_driver(self.driver))
         # self.engine.echo = True
         self.create_models()
 
@@ -178,7 +182,7 @@ class TestCase(object):
 
         elif self.driver == 'mysql':
             self.session.execute(sa.text(f'CREATE DATABASE {schema}'))
-            # This user must match the value in get_dns_from_driver
+            # This user must match the value in get_url_from_driver
             self.session.execute(sa.text(f'GRANT ALL PRIVILEGES ON {schema}.* TO root'))
 
         elif self.driver == 'sqlite':

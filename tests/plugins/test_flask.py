@@ -14,7 +14,7 @@ from sqlalchemy_continuum.transaction import TransactionFactory
 from tests import (
     TestCase,
     get_driver_name,
-    get_dns_from_driver,
+    get_url_from_driver,
     uses_native_versioning
 )
 
@@ -214,7 +214,7 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
 
         self.app = Flask(__name__)
         # self.app.config['SQLALCHEMY_ECHO'] = True
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = get_dns_from_driver(
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = get_url_from_driver(
             get_driver_name(os.environ.get('DB', 'sqlite'))
         )
         self.db.init_app(self.app)

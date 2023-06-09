@@ -8,8 +8,6 @@ from sqlalchemy_continuum.dialects.postgresql import (
     sync_trigger
 )
 from tests import (
-    get_dns_from_driver,
-    get_driver_name,
     QueryPool,
     TestCase,
     uses_native_versioning,
