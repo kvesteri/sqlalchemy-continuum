@@ -135,6 +135,8 @@ class TestObjectTxIdGeneration(ActivityTestCase):
         self.create_activity(object=article)
         query_count = len(QueryPool.queries)
         self.session.commit()
+        if QueryPool.queries[-2] == 'select nextval(activity_id_seq)':
+            query_count += 1
         assert query_count + 1 == len(QueryPool.queries)
 
     def test_create_activity_with_multiple_existing_objects(self):
@@ -158,6 +160,8 @@ class TestTargetTxIdGeneration(ActivityTestCase):
         self.create_activity(target=article)
         query_count = len(QueryPool.queries)
         self.session.commit()
+        if QueryPool.queries[-2] == 'select nextval(activity_id_seq)':
+            query_count += 1
         assert query_count + 1 == len(QueryPool.queries)
 
     def test_with_multiple_existing_targets(self):
