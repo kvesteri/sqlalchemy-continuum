@@ -54,10 +54,7 @@ class RelationshipBuilder(object):
                 reflector(self.property.primaryjoin)
             )
         )
-        try:
-            subquery = subquery.scalar_subquery()
-        except AttributeError:  # SQLAlchemy < 1.4
-            subquery = subquery.as_scalar()
+        subquery = subquery.scalar_subquery()
 
         return getattr(self.remote_cls, tx_column) == subquery
 

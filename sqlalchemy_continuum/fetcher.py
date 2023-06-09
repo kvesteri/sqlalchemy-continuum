@@ -90,10 +90,7 @@ class VersionObjectFetcher(object):
             )
             .correlate(table)
         )
-        try:
-            return query.scalar_subquery()
-        except AttributeError:  # SQLAlchemy < 1.4
-            return query.as_scalar()
+        return query.scalar_subquery()
 
     def _next_prev_query(self, obj, next_or_prev='next'):
         session = sa.orm.object_session(obj)
@@ -101,10 +98,7 @@ class VersionObjectFetcher(object):
         subquery = self._transaction_id_subquery(
             obj, next_or_prev=next_or_prev
         )
-        try:
-            subquery = subquery.scalar_subquery()
-        except AttributeError:  # SQLAlchemy < 1.4
-            subquery = subquery.as_scalar()
+        subquery = subquery.scalar_subquery()
 
         return (
             session.query(obj.__class__)
