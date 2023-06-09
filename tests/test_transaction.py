@@ -74,7 +74,6 @@ class TestAssigningUserClass(TestCase):
         assert isinstance(attr.property.columns[0].type, sa.Unicode)
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
 class TestAssigningUserClassInOtherSchema(TestCase):
     user_cls = 'User'
 
@@ -90,10 +89,6 @@ class TestAssigningUserClassInOtherSchema(TestCase):
             name = sa.Column(sa.Unicode(255), nullable=False)
 
         self.User = User
-
-    def create_extra(self):
-        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
-        self.session.execute(sa.text('CREATE SCHEMA other'))
 
     def test_can_build_transaction_model(self):
         # If create_models didn't crash this should be good

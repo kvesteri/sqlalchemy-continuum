@@ -42,9 +42,10 @@ def log_sql(
 
 def get_dns_from_driver(driver):
     if driver == 'postgres':
-        return 'postgresql://postgres:postgres@localhost/sqlalchemy_continuum_test'
+        return 'postgresql://postgres:postgres@localhost/main'
     elif driver == 'mysql':
-        return 'mysql+pymysql://root@localhost/sqlalchemy_continuum_test'
+        # NB username is also in create_schema
+        return 'mysql+pymysql://root@localhost/main'
     elif driver == 'sqlite':
         return 'sqlite:///:memory:'
     else:
@@ -114,8 +115,8 @@ class TestCase(object):
         if driver == 'postgres-native':
             self.session.execute(sa.text('CREATE EXTENSION IF NOT EXISTS hstore'))
 
-        self.create_extra()
-
+        # Run any other custom SQL in here
+        self.create_schema('other')
         self.session.commit()
 
         # Using an engine here instead of connection will call commit for us,
@@ -136,6 +137,9 @@ class TestCase(object):
         self.session.expunge_all()
 
         self.Model.metadata.drop_all(self.engine)
+
+        self.drop_schema('other')
+        self.session.commit()
 
         self.connection.close()
         self.engine.dispose()
@@ -168,9 +172,34 @@ class TestCase(object):
         self.Article = Article
         self.Tag = Tag
 
-    def create_extra(self):
-        pass
+    def create_schema(self, schema):
+        if self.driver == 'postgres':
+            self.session.execute(sa.text(f'CREATE SCHEMA {schema}'))
 
+        elif self.driver == 'mysql':
+            self.session.execute(sa.text(f'CREATE DATABASE {schema}'))
+            # This user must match the value in get_dns_from_driver
+            self.session.execute(sa.text(f'GRANT ALL PRIVILEGES ON {schema}.* TO root'))
+
+        elif self.driver == 'sqlite':
+            self.session.execute(sa.text(f"ATTACH DATABASE ':memory:' AS {schema}"))
+
+        else:
+            raise NotImplementedError
+
+
+    def drop_schema(self, schema):
+        if self.driver == 'postgres':
+            self.session.execute(sa.text(f'DROP SCHEMA IF EXISTS {schema} CASCADE'))
+
+        elif self.driver == 'mysql':
+            self.session.execute(sa.text(f'DROP DATABASE IF EXISTS {schema}'))
+
+        elif self.driver == 'sqlite':
+            self.session.execute(sa.text(f'DETACH DATABASE {schema}'))
+
+        else:
+            raise NotImplementedError
 
 setting_variants = {
     'versioning_strategy': [

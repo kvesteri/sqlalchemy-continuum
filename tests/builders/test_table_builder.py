@@ -71,7 +71,6 @@ class TestTableBuilderWithOnUpdate(TestCase):
         table = version_class(self.Article).__table__
         assert table.c.last_update.onupdate is None
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
 class TestTableBuilderInOtherSchema(TestCase):
     def create_models(self):
         class Article(self.Model):
@@ -87,10 +86,6 @@ class TestTableBuilderInOtherSchema(TestCase):
                 nullable=False
             )
         self.Article = Article
-
-    def create_extra(self):
-        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
-        self.session.execute(sa.text('CREATE SCHEMA other'))
 
     def test_created_tables_retain_schema(self):
         table = version_class(self.Article).__table__

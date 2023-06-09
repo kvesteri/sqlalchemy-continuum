@@ -6,10 +6,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from tests import TestCase
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
 class TestCustomSchema(TestCase):
     def create_models(self):
-        self.Model = declarative_base(metadata=sa.MetaData(schema='continuum'))
+        self.Model = declarative_base(metadata=sa.MetaData(schema='other'))
 
         class Article(self.Model):
             __tablename__ = 'article'
@@ -54,10 +53,6 @@ class TestCustomSchema(TestCase):
 
         self.Article = Article
         self.Tag = Tag
-
-    def create_extra(self):
-        self.session.execute(sa.text('DROP SCHEMA IF EXISTS continuum CASCADE'))
-        self.session.execute(sa.text('CREATE SCHEMA continuum'))
 
     def test_version_relations(self):
         article = self.Article()

@@ -370,7 +370,6 @@ class TestManyToManySelfReferential(TestCase):
         assert article.versions[2] in reference1.versions[2].cited_by
 
 
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
 class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
     def create_models(self):
         class Article(self.Model):
@@ -410,12 +409,7 @@ class TestManyToManySelfReferentialInOtherSchema(TestManyToManySelfReferential):
         self.Article = Article
         self.referenced_articles_table = article_references
 
-    def create_extra(self):
-        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
-        self.session.execute(sa.text('CREATE SCHEMA other'))
 
-
-@mark.skipif("os.environ.get('DB') == 'sqlite'")
 class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCase):
     def create_models(self):
         class Article(self.Model):
@@ -465,10 +459,6 @@ class ManyToManyRelationshipsInOtherSchemaTestCase(ManyToManyRelationshipsTestCa
         self.Article = Article
         self.Tag = Tag
 
-
-    def create_extra(self):
-        self.session.execute(sa.text('DROP SCHEMA IF EXISTS other CASCADE'))
-        self.session.execute(sa.text('CREATE SCHEMA other'))
 
 create_test_cases(ManyToManyRelationshipsInOtherSchemaTestCase)
 
