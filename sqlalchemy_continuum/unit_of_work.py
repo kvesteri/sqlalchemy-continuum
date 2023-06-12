@@ -222,12 +222,6 @@ class UnitOfWork(object):
             next_or_prev='prev',
             alias=alias
         )
-        if session.connection().engine.dialect.name == 'mysql':
-            return sa.select(
-                sa.text('max_1'),
-            ).select_from(
-                sa.sql.expression.alias(subquery.subquery() if hasattr(subquery, 'subquery') else subquery, name='subquery')
-            )
         return subquery
 
     def update_version_validity(self, parent, version_obj):
