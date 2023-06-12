@@ -255,10 +255,8 @@ class UnitOfWork(object):
                 subquery = subquery.scalar_subquery()
 
                 vobj_tx_col = getattr(class_, tx_column_name(version_obj))
-                values = {end_tx_column_name(version_obj): self.current_transaction.id}
                 query = (
-                    sa.update(class_)
-                    .values(values)
+                    sa.select(class_)
                     .where(
                         vobj_tx_col == subquery,
                         *[
@@ -270,7 +268,10 @@ class UnitOfWork(object):
                     )
                     .execution_options(synchronize_session=False)
                 )
-                session.execute(query)
+
+                old_versions = session.scalars(query).all()
+                for old_version in old_versions:
+                    setattr(old_version, end_tx_column_name(version_obj), self.current_transaction.id)
 
 
     def create_association_versions(self, session):
