@@ -21,7 +21,7 @@ class ColumnReflector(object):
         :param column: SQLAlchemy Column object of parent table
         """
         # Make a copy of the column so that it does not point to wrong table.
-        column_copy = column._copy() if hasattr(column, '_copy') else column.copy()
+        column_copy = column._copy()
         column_copy.unique = False
         column_copy.onupdate = None
         if column_copy.autoincrement:
