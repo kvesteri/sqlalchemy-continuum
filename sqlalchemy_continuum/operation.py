@@ -1,10 +1,6 @@
 from copy import copy
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
+from collections import OrderedDict
 
-import six
 import sqlalchemy as sa
 from sqlalchemy_utils import identity
 
@@ -69,10 +65,7 @@ class Operations(object):
 
         :param session: SQLAlchemy session object
         """
-        return set(key[0] for key, _ in self.iteritems())
-
-    def iteritems(self):
-        return six.iteritems(self.objects)
+        return set(k[0] for k in self.objects)
 
     def items(self):
         return self.objects.items()

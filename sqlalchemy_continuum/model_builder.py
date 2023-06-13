@@ -1,5 +1,4 @@
 from copy import copy
-import six
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import column_property
@@ -71,12 +70,12 @@ def copy_mapper_args(model):
             arg = model.__mapper_args__['order_by']
             # Only allow string based order_by reflection to version
             # classes.
-            if isinstance(arg, six.string_types):
+            if isinstance(arg, str):
                 args['order_by'] = arg
 
         if 'polymorphic_on' in model.__mapper_args__:
             column = model.__mapper_args__['polymorphic_on']
-            if isinstance(column, six.string_types):
+            if isinstance(column, str):
                 args['polymorphic_on'] = column
             else:
                 args['polymorphic_on'] = column.key

@@ -95,7 +95,7 @@ class TestCase(object):
         versioning_manager.transaction_cls = self.transaction_cls
         versioning_manager.user_cls = self.user_cls
 
-        self.engine = create_engine(get_url_from_driver(self.driver))
+        self.engine = create_engine(get_url_from_driver(self.driver), echo=True)
         # self.engine.echo = True
         self.create_models()
 
