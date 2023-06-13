@@ -5,8 +5,7 @@ from time import time
 
 import sqlalchemy as sa
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, close_all_sessions
+from sqlalchemy.orm import sessionmaker, close_all_sessions, declarative_base
 from sqlalchemy_continuum import (
     make_versioned,
     versioning_manager,

@@ -80,8 +80,7 @@ For completeness, below is a working example.
 
     from sqlalchemy_continuum import make_versioned
     from sqlalchemy import Column, Integer, Unicode, UnicodeText, create_engine
-    from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy.orm import create_session, configure_mappers
+    from sqlalchemy.orm import create_session, configure_mappers, declarative_base
 
     make_versioned(user_cls=None)
 

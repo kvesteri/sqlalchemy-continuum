@@ -1,7 +1,7 @@
 import os
 import sqlalchemy as sa
 from pytest import mark
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from tests import TestCase
 
 

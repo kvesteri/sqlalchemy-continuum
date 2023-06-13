@@ -6,8 +6,7 @@ import os
 import warnings
 import sqlalchemy as sa
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions
+from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions, declarative_base
 from sqlalchemy_continuum import (
     ClassNotVersioned,
     version_class,

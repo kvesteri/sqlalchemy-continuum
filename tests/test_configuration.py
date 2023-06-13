@@ -1,6 +1,6 @@
 from pytest import raises, skip
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy_continuum import (
     versioning_manager, ImproperlyConfigured, TransactionFactory
 )
