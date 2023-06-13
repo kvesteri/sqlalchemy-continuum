@@ -25,7 +25,7 @@ versioning_manager = VersioningManager()
 
 
 def make_versioned(
-    mapper=sa.orm.mapper,
+    mapper=sa.orm.Mapper,
     session=sa.orm.session.Session,
     manager=versioning_manager,
     plugins=None,
@@ -84,7 +84,7 @@ def make_versioned(
 
 
 def remove_versioning(
-    mapper=sa.orm.mapper,
+    mapper=sa.orm.Mapper,
     session=sa.orm.session.Session,
     manager=versioning_manager
 ):
