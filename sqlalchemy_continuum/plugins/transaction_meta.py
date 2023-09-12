@@ -5,7 +5,7 @@ You can use the plugin in same way as other plugins::
 
     meta_plugin = TransactionMetaPlugin()
 
-    versioning_manager.plugins.add(meta_plugin)
+    versioning_manager.plugins.append(meta_plugin)
 
 
 TransactionMetaPlugin creates a simple model called TransactionMeta. This class
