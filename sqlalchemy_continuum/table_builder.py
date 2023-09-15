@@ -141,12 +141,17 @@ class TableBuilder(object):
         """
         Builds version table.
         """
+        self.parent_table.__versioning_manager__ = self.manager
+        self.parent_table.model = self.model
         columns = self.columns if extends is None else []
         self.manager.plugins.after_build_version_table_columns(self, columns)
-        return sa.schema.Table(
+        version_table = sa.schema.Table(
             extends.name if extends is not None else self.table_name,
             self.parent_table.metadata,
             *columns,
             schema=self.parent_table.schema,
             extend_existing=extends is not None
         )
+        version_table.__versioning_manager__ = self.manager
+        version_table.model = self.model
+        return version_table
