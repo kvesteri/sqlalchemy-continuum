@@ -251,7 +251,7 @@ def vacuum(session, model, yield_per=1000):
 
     query = (
         session.query(version_cls)
-        .order_by(option(version_cls, 'transaction_column_name'))
+        .order_by(tx_column_name(version_cls))
     ).yield_per(yield_per)
 
     primary_key_col = sa.inspection.inspect(model).primary_key[0].name
@@ -286,8 +286,8 @@ def is_internal_column(model, column_name):
     :param column_name: Name of the column
     """
     return column_name in (
-        option(model, 'transaction_column_name'),
-        option(model, 'end_transaction_column_name'),
+        tx_column_name(model),
+        end_tx_column_name(model),
         option(model, 'operation_type_column_name')
     )
 
