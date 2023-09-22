@@ -14,20 +14,31 @@ from sqlalchemy_utils.functions import (
 from .exc import ClassNotVersioned
 
 
-def get_versioning_manager(obj_or_class):
+def get_versioning_manager(obj_or_class_or_table):
     """
     Return the associated SQLAlchemy-Continuum VersioningManager for given
-    SQLAlchemy declarative model class or object.
+    SQLAlchemy declarative model class or object or table.
 
-    :param obj_or_class: SQLAlchemy declarative model object or class
+    :param obj_or_class_or_table: SQLAlchemy declarative model object or class or table
     """
-    if isinstance(obj_or_class, AliasedClass):
-        obj_or_class = sa.inspect(obj_or_class).mapper.class_
-    cls = obj_or_class if isclass(obj_or_class) else obj_or_class.__class__
+    if isclass(obj_or_class_or_table):
+        cls_or_table = obj_or_class_or_table
+    else:
+        if isinstance(obj_or_class_or_table, AliasedClass):
+            cls_or_table = sa.inspect(obj_or_class_or_table).mapper.class_
+        elif isinstance(obj_or_class_or_table, sa.Table):
+            cls_or_table = obj_or_class_or_table
+        else:
+            cls_or_table = obj_or_class_or_table.__class__
+
     try:
-        return cls.__versioning_manager__
+        return cls_or_table.__versioning_manager__
     except AttributeError:
-        raise ClassNotVersioned(cls.__name__)
+        if issubclass(cls_or_table, sa.Table):
+            name = 'Table "%s"' % cls_or_table.name
+        else:
+            name = cls_or_table.__name__
+        raise ClassNotVersioned(name)
 
 
 def option(obj_or_class, option_name):
@@ -77,6 +88,22 @@ def parent_class(version_cls):
     .. seealso:: :func:`version_class`
     """
     return get_versioning_manager(version_cls).parent_class_map[version_cls]
+
+
+def parent_table(table):
+    versioning_manager = get_versioning_manager(table)
+    if table in versioning_manager.association_version_tables:
+        return versioning_manager.association_tables_map.get(table, None)
+
+    parent_table = next(
+        iter(
+            parent_class(m).__table__
+            for m in versioning_manager.parent_class_map
+            if m.__table__ == table
+        ),
+        None,
+    )
+    return parent_table
 
 
 def transaction_class(cls):
