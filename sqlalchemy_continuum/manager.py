@@ -433,7 +433,9 @@ class VersioningManager(object):
         ):
             return
 
-        if clauseelement.is_insert:
+        if isinstance(clauseelement, str):
+            op = None
+        elif clauseelement.is_insert:
             op = Operation.INSERT
         elif clauseelement.is_delete:
             op = Operation.DELETE
