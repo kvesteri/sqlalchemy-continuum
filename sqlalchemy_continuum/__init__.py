@@ -18,7 +18,7 @@ from .utils import (
 )
 
 
-__version__ = '1.4.0'
+__version__ = '1.4.1'
 
 
 versioning_manager = VersioningManager()
