@@ -29,7 +29,7 @@ class ColumnReflector(object):
         if column_copy.name == self.option('transaction_column_name'):
             column_copy.nullable = False
 
-        if not column_copy.primary_key:
+        if not column_copy.primary_key and column_copy.nullable:
             column_copy.nullable = True
 
         # Find the right column key
