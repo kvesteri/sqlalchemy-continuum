@@ -2,7 +2,7 @@ from copy import copy
 from collections import OrderedDict
 
 import sqlalchemy as sa
-from sqlalchemy_utils import identity
+from sqlalchemy_utils.functions.orm import identity
 
 
 class Operation(object):

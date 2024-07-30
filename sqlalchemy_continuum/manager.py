@@ -1,9 +1,8 @@
-import re
 from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils import get_column_key
+from sqlalchemy_utils.functions import get_column_key
 
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
@@ -454,4 +453,3 @@ class VersioningManager(object):
                     'operation_type': op,
                 })
                 uow.pending_statements.append(stmt)
-

@@ -1,5 +1,4 @@
 import sqlalchemy as sa
-from sqlalchemy_utils import get_column_key
 
 
 class ColumnReflector(object):

@@ -1,7 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils import get_primary_keys, identity
+from sqlalchemy_utils.functions.orm import get_primary_keys, identity
 from .operation import Operations
 from .utils import (
     end_tx_column_name,

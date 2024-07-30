@@ -24,7 +24,7 @@ try:
     from flask import current_app, has_app_context, has_request_context, request
 except ImportError:
     pass
-from sqlalchemy_utils import ImproperlyConfigured
+from sqlalchemy_utils.exceptions import ImproperlyConfigured
 
 from .base import Plugin
 

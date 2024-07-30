@@ -192,7 +192,8 @@ target is the given article.
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect
-from sqlalchemy_utils import JSONType, generic_relationship
+from sqlalchemy_utils.generic import generic_relationship
+from sqlalchemy_utils.types.json import JSONType
 
 from .base import Plugin
 from ..factory import ModelFactory
@@ -318,7 +319,7 @@ class ActivityFactory(ModelFactory):
 
 class ActivityPlugin(Plugin):
     activity_cls = None
-    
+
     def after_build_models(self, manager):
         self.activity_cls = ActivityFactory()(manager)
         manager.activity_cls = self.activity_cls

@@ -1,6 +1,6 @@
 import operator
 import sqlalchemy as sa
-from sqlalchemy_utils import get_primary_keys, identity
+from sqlalchemy_utils.functions.orm import get_primary_keys, identity
 from .utils import tx_column_name, end_tx_column_name
 
 
