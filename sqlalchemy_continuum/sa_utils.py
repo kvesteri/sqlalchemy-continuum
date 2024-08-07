@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from collections.abc import Iterable
 from inspect import isclass
 import json
@@ -394,9 +393,9 @@ def get_declarative_base(model):
     return model
 
 
-def get_primary_keys(mixed):
+def get_primary_key_columns(mixed):
     """
-    Return an OrderedDict of all primary keys for given Table object,
+    Return all primary key names for given Table object,
     declarative class or declarative class instance.
 
     :param mixed:
@@ -404,33 +403,22 @@ def get_primary_keys(mixed):
 
     ::
 
-        get_primary_keys(User)
+        get_primary_key_columns(User)
 
-        get_primary_keys(User())
+        get_primary_key_columns(User())
 
-        get_primary_keys(User.__table__)
+        get_primary_key_columns(User.__table__)
 
-        get_primary_keys(User.__mapper__)
+        get_primary_key_columns(User.__mapper__)
 
-        get_primary_keys(sa.orm.aliased(User))
+        get_primary_key_columns(sa.orm.aliased(User))
 
-        get_primary_keys(sa.orm.aliased(User.__table__))
-
-
-    .. versionchanged: 0.25.3
-        Made the function return an ordered dictionary instead of generator.
-        This change was made to support primary key aliases.
-
-        Renamed this function to 'get_primary_keys', formerly 'primary_keys'
-
-    .. seealso:: :func:`get_columns`
+        get_primary_key_columns(sa.orm.aliased(User.__table__))
     """
-    return OrderedDict(
-        (
-            (key, column) for key, column in _get_columns(mixed).items()
-            if column.primary_key
-        )
-    )
+    return [
+        key  for key, column in _get_columns(mixed).items()
+        if column.primary_key
+    ]
 
 
 def has_changes(obj, attrs=None, exclude=None):
@@ -545,7 +533,7 @@ def identity(obj_or_class):
     """
     return tuple(
         getattr(obj_or_class, column_key)
-        for column_key in get_primary_keys(obj_or_class).keys()
+        for column_key in get_primary_key_columns(obj_or_class)
     )
 
 

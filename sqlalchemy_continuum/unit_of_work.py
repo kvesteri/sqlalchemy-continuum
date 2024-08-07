@@ -3,7 +3,7 @@ from copy import copy
 import sqlalchemy as sa
 
 from .operation import Operations
-from .sa_utils import get_primary_keys, identity
+from .sa_utils import get_primary_key_columns, identity
 from .utils import (
     end_tx_column_name,
     version_class,
@@ -257,7 +257,7 @@ class UnitOfWork(object):
                         *[
                             getattr(version_obj, pk) ==
                             getattr(class_.__table__.c, pk)
-                            for pk in get_primary_keys(class_)
+                            for pk in get_primary_key_columns(class_)
                             if pk != tx_column_name(class_)
                         ]
                     )

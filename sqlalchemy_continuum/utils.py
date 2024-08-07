@@ -7,7 +7,7 @@ from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
 
 from .exc import ClassNotVersioned
-from .sa_utils import get_primary_keys, identity, naturally_equivalent
+from .sa_utils import get_primary_key_columns, identity, naturally_equivalent
 
 
 def get_versioning_manager(obj_or_class):
@@ -386,7 +386,7 @@ def count_versions(obj):
     table_name = manager.option(obj, 'table_name') % obj.__table__.name
     criteria = [
         '%s = %r' % (pk, getattr(obj, pk))
-        for pk in get_primary_keys(obj)
+        for pk in get_primary_key_columns(obj)
     ]
     query = sa.text('SELECT COUNT(1) FROM %s WHERE %s' % (
         table_name,

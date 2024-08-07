@@ -1,14 +1,14 @@
 import operator
 import sqlalchemy as sa
 
-from .sa_utils import get_primary_keys, identity
+from .sa_utils import get_primary_key_columns, identity
 from .utils import tx_column_name, end_tx_column_name
 
 
 def parent_identity(obj_or_class):
     return tuple(
         getattr(obj_or_class, column_key)
-        for column_key in get_primary_keys(obj_or_class).keys()
+        for column_key in get_primary_key_columns(obj_or_class)
         if column_key != tx_column_name(obj_or_class)
     )
 
@@ -84,7 +84,7 @@ class VersionObjectFetcher(object):
                     ),
                     *[
                         getattr(attrs, pk) == getattr(obj, pk)
-                        for pk in get_primary_keys(obj.__class__)
+                        for pk in get_primary_key_columns(obj.__class__)
                         if pk != tx_column_name(obj)
                     ]
                 )
