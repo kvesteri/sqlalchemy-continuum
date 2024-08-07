@@ -209,34 +209,3 @@ def identity(obj_or_class):
         getattr(obj_or_class, column_key)
         for column_key in get_primary_key_columns(obj_or_class)
     )
-
-
-def naturally_equivalent(obj, obj2):
-    """
-    Returns whether two given SQLAlchemy declarative instances are
-    naturally equivalent (all their non-primary key properties are equivalent).
-
-
-    ::
-
-        from sqlalchemy_continuum.sa_utils import naturally_equivalent
-
-
-        user = User(name='someone')
-        user2 = User(name='someone')
-
-        user == user2  # False
-
-        naturally_equivalent(user, user2)  # True
-
-
-    :param obj: SQLAlchemy declarative model object
-    :param obj2: SQLAlchemy declarative model object to compare with `obj`
-    """
-    for column_key, column in sa.inspect(obj.__class__).columns.items():
-        if column.primary_key:
-            continue
-
-        if not (getattr(obj, column_key) == getattr(obj2, column_key)):
-            return False
-    return True

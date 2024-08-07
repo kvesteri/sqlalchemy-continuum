@@ -7,7 +7,34 @@ from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
 
 from .exc import ClassNotVersioned
-from .sa_utils import get_primary_key_columns, identity, naturally_equivalent
+from .sa_utils import get_primary_key_columns, identity
+
+
+def _naturally_equivalent(obj, obj2):
+    """
+    Returns whether two given SQLAlchemy declarative instances are
+    naturally equivalent (all their non-primary key properties are equivalent).
+
+
+    ::
+        user = User(name='someone')
+        user2 = User(name='someone')
+
+        user == user2  # False
+
+        _naturally_equivalent(user, user2)  # True
+
+
+    :param obj: SQLAlchemy declarative model object
+    :param obj2: SQLAlchemy declarative model object to compare with `obj`
+    """
+    for column_key, column in sa.inspect(obj.__class__).columns.items():
+        if column.primary_key:
+            continue
+
+        if not (getattr(obj, column_key) == getattr(obj2, column_key)):
+            return False
+    return True
 
 
 def get_versioning_manager(obj_or_class):
@@ -256,7 +283,7 @@ def vacuum(session, model, yield_per=1000):
         version_id = getattr(version, primary_key_col)
         if versions[version_id]:
             prev_version = versions[version_id][-1]
-            if naturally_equivalent(prev_version, version):
+            if _naturally_equivalent(prev_version, version):
                 session.delete(version)
         else:
             versions[version_id].append(version)
