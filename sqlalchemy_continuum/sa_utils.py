@@ -52,41 +52,6 @@ def _get_columns(mixed):
     return sa.inspect(mixed).columns
 
 
-def get_column_key(model, column):
-    """
-    Return the key for given column in given model.
-
-    :param model: SQLAlchemy declarative model object
-
-    ::
-
-        class User(Base):
-            __tablename__ = 'user'
-            id = sa.Column(sa.Integer, primary_key=True)
-            name = sa.Column('_name', sa.String)
-
-
-        get_column_key(User, User.__table__.c._name)  # 'name'
-
-    .. versionadded: 0.26.5
-
-    .. versionchanged: 0.27.11
-        Throws UnmappedColumnError instead of ValueError when no property was
-        found for given column. This is consistent with how SQLAlchemy works.
-    """
-    mapper = sa.inspect(model)
-    try:
-        return mapper.get_property_by_column(column).key
-    except sa.orm.exc.UnmappedColumnError:
-        for key, c in mapper.columns.items():
-            if c.name == column.name and c.table is column.table:
-                return key
-    raise sa.orm.exc.UnmappedColumnError(
-        'No column %s is configured on mapper %s...' %
-        (column, mapper)
-    )
-
-
 def get_declarative_base(model):
     """
     Returns the declarative base for given model class.
