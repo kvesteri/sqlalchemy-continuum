@@ -5,13 +5,9 @@ from collections import defaultdict
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
-from sqlalchemy_utils.functions import (
-    get_primary_keys,
-    identity,
-    naturally_equivalent,
-)
 
 from .exc import ClassNotVersioned
+from .sa_utils import get_primary_keys, identity, naturally_equivalent
 
 
 def get_versioning_manager(obj_or_class):

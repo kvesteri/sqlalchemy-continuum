@@ -3,12 +3,12 @@ from inspect import getmro
 from functools import wraps
 
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import get_declarative_base
 from sqlalchemy.orm.descriptor_props import ConcreteInheritedProperty
 
 from .dialects.postgresql import create_versioning_trigger_listeners
 from .model_builder import ModelBuilder
 from .relationship_builder import RelationshipBuilder
+from .sa_utils import get_declarative_base
 from .table_builder import TableBuilder
 
 

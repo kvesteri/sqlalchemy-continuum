@@ -3,6 +3,12 @@ Changelog
 
 Here you can see the full list of changes between each SQLAlchemy-Continuum release.
 
+2.0.0 (Unreleased)
+^^^^^^^^^^^^^^^^^
+
+- Removed direct dependency on SQLAlchemy-Utils to improve initialization times
+
+
 1.3.14 (2023-01-04)
 ^^^^^^^^^^^^^^^^^^^
 

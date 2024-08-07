@@ -192,11 +192,10 @@ target is the given article.
 import sqlalchemy as sa
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect
-from sqlalchemy_utils.generic import generic_relationship
-from sqlalchemy_utils.types.json import JSONType
 
 from .base import Plugin
 from ..factory import ModelFactory
+from ..sa_utils import JSONType, generic_relationship
 from ..utils import version_class, version_obj
 
 

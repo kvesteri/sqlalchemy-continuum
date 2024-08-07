@@ -2,12 +2,12 @@ from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils.functions import get_column_key
 
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
 from .operation import Operation
 from .plugins import PluginCollection
+from .sa_utils import get_column_key
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
 from .utils import is_modified, is_versioned, version_table
