@@ -26,7 +26,6 @@ except ImportError:
     pass
 
 from .base import Plugin
-from ..sa_utils import ImproperlyConfigured
 
 
 def fetch_current_user_id():
@@ -60,7 +59,7 @@ class FlaskPlugin(Plugin):
         )
 
         if not flask:
-            raise ImproperlyConfigured(
+            raise ImportError(
                 'Flask is required with FlaskPlugin. Please install Flask by'
                 ' running pip install Flask'
             )
