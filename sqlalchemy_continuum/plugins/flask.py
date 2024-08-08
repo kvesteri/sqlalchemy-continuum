@@ -24,7 +24,6 @@ try:
     from flask import current_app, has_app_context, has_request_context, request
 except ImportError:
     pass
-from sqlalchemy_utils import ImproperlyConfigured
 
 from .base import Plugin
 
@@ -60,7 +59,7 @@ class FlaskPlugin(Plugin):
         )
 
         if not flask:
-            raise ImproperlyConfigured(
+            raise ImportError(
                 'Flask is required with FlaskPlugin. Please install Flask by'
                 ' running pip install Flask'
             )

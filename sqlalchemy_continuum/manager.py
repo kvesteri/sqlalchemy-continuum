@@ -1,9 +1,7 @@
-import re
 from functools import wraps
 
 import sqlalchemy as sa
 from sqlalchemy.orm import object_session
-from sqlalchemy_utils import get_column_key
 
 from .builder import Builder
 from .fetcher import SubqueryFetcher, ValidityFetcher
@@ -12,6 +10,41 @@ from .plugins import PluginCollection
 from .transaction import TransactionFactory
 from .unit_of_work import UnitOfWork
 from .utils import is_modified, is_versioned, version_table
+
+
+def _get_column_key(model, column):
+    """
+    Return the key for given column in given model.
+
+    :param model: SQLAlchemy declarative model object
+
+    ::
+
+        class User(Base):
+            __tablename__ = 'user'
+            id = sa.Column(sa.Integer, primary_key=True)
+            name = sa.Column('_name', sa.String)
+
+
+        get_column_key(User, User.__table__.c._name)  # 'name'
+
+    .. versionadded: 0.26.5
+
+    .. versionchanged: 0.27.11
+        Throws UnmappedColumnError instead of ValueError when no property was
+        found for given column. This is consistent with how SQLAlchemy works.
+    """
+    mapper = sa.inspect(model)
+    try:
+        return mapper.get_property_by_column(column).key
+    except sa.orm.exc.UnmappedColumnError:
+        for key, c in mapper.columns.items():
+            if c.name == column.name and c.table is column.table:
+                return key
+    raise sa.orm.exc.UnmappedColumnError(
+        'No column %s is configured on mapper %s...' %
+        (column, mapper)
+    )
 
 
 def tracked_operation(func):
@@ -156,7 +189,7 @@ class VersioningManager(object):
 
     def is_excluded_column(self, model, column):
         try:
-            key = get_column_key(model, column)
+            key = _get_column_key(model, column)
         except sa.orm.exc.UnmappedColumnError:
             return False
 
@@ -454,4 +487,3 @@ class VersioningManager(object):
                     'operation_type': op,
                 })
                 uow.pending_statements.append(stmt)
-
