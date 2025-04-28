@@ -13,7 +13,7 @@ Enabling versions for SQLModel tables is identical to pure SQLAlchemy
 
 ::
 
-    import sqlmodel
+    from sqlmodel import SQLModel, Field
     import sqlalchemy as sa
     from sqlalchemy_continuum import make_versioned
 
@@ -21,13 +21,13 @@ Enabling versions for SQLModel tables is identical to pure SQLAlchemy
     make_versioned(user_cls=None)
 
 
-    class Article(sqlmodel.SQLModel, table=True):
+    class Article(SQLModel, table=True):
         __versioned__ = {}
         __tablename__ = 'article'
 
-        id: int | None = sqlmodel.Field(default=None, primary_key=True)
-        name: str = sqlmodel.Field(max_length=255, sa_type=sa.Unicode(255))
-        content: str = sqlmodel.Field(sa_type=sa.UnicodeText)
+        id: int | None = Field(default=None, primary_key=True)
+        name: str = Field(max_length=255, sa_type=sa.Unicode(255))
+        content: str = Field(sa_type=sa.UnicodeText)
 
 
     # after you have defined all your models, call configure_mappers:

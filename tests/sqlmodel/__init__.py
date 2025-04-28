@@ -1,6 +1,4 @@
-from copy import copy
 import os
-import pathlib
 
 import sqlmodel
 from sqlmodel import Field, Relationship, Session
@@ -12,9 +10,6 @@ from sqlalchemy_continuum.exc import ClassNotVersioned
 from sqlalchemy_continuum.transaction import TransactionFactory
 from sqlalchemy_continuum.utils import version_class
 from tests import TestCase, get_driver_name, get_url_from_driver
-
-
-models_path = pathlib.Path(__file__).parent.absolute() / "_models.py"
 
 
 class SQLModelTestCase(TestCase):
