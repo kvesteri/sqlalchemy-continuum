@@ -28,6 +28,7 @@ extras_require = {
         'pytest>=2.3.5',
         'psycopg2>=2.4.6',
         'PyMySQL>=0.8.0',
+        'SQLModel>=0.0.24',
     ],
     'flask': ['Flask>=0.9'],
     'flask-login': ['Flask-Login>=0.2.9'],

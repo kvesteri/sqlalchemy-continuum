@@ -3,13 +3,13 @@ from inspect import getmro
 from functools import wraps
 
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import get_declarative_base
 from sqlalchemy.orm.descriptor_props import ConcreteInheritedProperty
 
 from .dialects.postgresql import create_versioning_trigger_listeners
 from .model_builder import ModelBuilder
 from .relationship_builder import RelationshipBuilder
 from .table_builder import TableBuilder
+from .utils import declarative_base_resolver
 
 
 def prevent_reentry(handler):
@@ -151,7 +151,7 @@ class Builder(object):
     def build_transaction_class(self):
         if self.manager.pending_classes:
             cls = self.manager.pending_classes[0]
-            self.manager.declarative_base = get_declarative_base(cls)
+            self.manager.declarative_base = declarative_base_resolver(cls)
             self.manager.create_transaction_model()
             self.manager.plugins.after_build_tx_class(self.manager)
 
@@ -172,7 +172,6 @@ class Builder(object):
         """
         if not self.manager.options['versioning']:
             return
-
         self.build_triggers()
         self.build_tables()
         self.build_transaction_class()
