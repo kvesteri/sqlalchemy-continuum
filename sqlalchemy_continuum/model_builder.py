@@ -2,9 +2,8 @@ from copy import copy
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import column_property
-from sqlalchemy_utils.functions import get_declarative_base
 
-from .utils import adapt_columns, option
+from .utils import adapt_columns, option, declarative_base_resolver
 from .version import VersionClassBase
 
 
@@ -32,7 +31,7 @@ def get_base_class(manager, model):
     return (
         option(model, 'base_classes')
         or
-        (get_declarative_base(model), )
+        (declarative_base_resolver(model), )
     )
 
 

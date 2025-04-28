@@ -1,5 +1,4 @@
 from datetime import datetime
-from functools import partial
 
 from collections import OrderedDict
 import sqlalchemy as sa
@@ -12,6 +11,7 @@ from .dialects.postgresql import (
 )
 from .exc import ImproperlyConfigured
 from .factory import ModelFactory
+from .utils import declarative_base_resolver
 
 
 @compiles(sa.types.BigInteger, 'sqlite')
@@ -140,7 +140,7 @@ class TransactionFactory(ModelFactory):
 
             if manager.user_cls:
                 user_cls = manager.user_cls
-                Base = manager.declarative_base
+                Base = declarative_base_resolver(manager.declarative_base)
                 registry = Base.registry._class_registry
 
                 if isinstance(user_cls, str):
