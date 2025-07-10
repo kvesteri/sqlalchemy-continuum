@@ -1,12 +1,13 @@
 import sqlalchemy as sa
+
 from tests import TestCase
 
 
 class TestDelete(TestCase):
     def _delete(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.session.add(article)
         self.session.commit()
 
@@ -22,8 +23,8 @@ class TestDelete(TestCase):
         self._delete()
         versions = self.session.query(self.ArticleVersion).all()
         assert len(versions) == 2
-        assert versions[1].name == u'Some article'
-        assert versions[1].content == u'Some content'
+        assert versions[1].name == 'Some article'
+        assert versions[1].content == 'Some content'
 
 
 class TestDeleteWithDeferredColumn(TestCase):

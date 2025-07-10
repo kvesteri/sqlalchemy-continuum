@@ -36,13 +36,13 @@ class TestRevertDeepRelations(TestCase):
 
     def test_revert_deep_relationships(self):
         category = self.Category()
-        category.name = u'Some category'
+        category.name = 'Some category'
 
         article = self.Article(
-            name=u'Some article',
+            name='Some article',
         )
         category.articles.append(article)
-        tag = self.Tag(name=u'some tag')
+        tag = self.Tag(name='some tag')
         article.tags.append(tag)
         self.session.add(article)
         self.session.commit()
@@ -58,6 +58,6 @@ class TestRevertDeepRelations(TestCase):
         self.session.refresh(category)
         article = category.articles[0]
 
-        assert article.name == u'Some article'
+        assert article.name == 'Some article'
         assert len(article.tags) == 1
-        assert article.tags[0].name == u'some tag'
+        assert article.tags[0].name == 'some tag'

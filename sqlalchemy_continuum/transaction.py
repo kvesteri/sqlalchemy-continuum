@@ -1,14 +1,13 @@
-from datetime import datetime
-from functools import partial
-
 from collections import OrderedDict
+from datetime import datetime
+
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 
 from .dialects.postgresql import (
     CreateTemporaryTransactionTableSQL,
     InsertTemporaryTransactionSQL,
-    TransactionTriggerSQL
+    TransactionTriggerSQL,
 )
 from .exc import ImproperlyConfigured
 from .factory import ModelFactory
@@ -23,7 +22,7 @@ class NoChangesAttribute(Exception):
     pass
 
 
-class TransactionBase(object):
+class TransactionBase:
     issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
 
     @property
@@ -34,9 +33,9 @@ class TransactionBase(object):
         not exist, most likely because TransactionChangesPlugin is not enabled.
         """
         if hasattr(self, 'changes'):
-          return [changes.entity_name for changes in self.changes]
+            return [changes.entity_name for changes in self.changes]
         else:
-          raise NoChangesAttribute()
+            raise NoChangesAttribute()
 
     @property
     def changed_entities(self):
@@ -62,9 +61,9 @@ class TransactionBase(object):
             tx_column = manager.option(class_, 'transaction_column_name')
 
             entities[version_class] = (
-                session
-                .query(version_class)
-                .filter(getattr(version_class, tx_column) == self.id)
+                session.query(version_class).filter(
+                    getattr(version_class, tx_column) == self.id
+                )
             ).all()
         return entities
 
@@ -90,24 +89,18 @@ def create_triggers(cls):
             procedure_sql.format(
                 temporary_transaction_sql=CreateTemporaryTransactionTableSQL(),
                 insert_temporary_transaction_sql=(
-                    InsertTemporaryTransactionSQL(
-                        transaction_id_values='NEW.id'
-                    )
+                    InsertTemporaryTransactionSQL(transaction_id_values='NEW.id')
                 ),
             )
-        )
+        ),
     )
     sa.event.listen(
-        cls.__table__,
-        'after_create',
-        sa.schema.DDL(str(TransactionTriggerSQL(cls)))
+        cls.__table__, 'after_create', sa.schema.DDL(str(TransactionTriggerSQL(cls)))
     )
     sa.event.listen(
         cls.__table__,
         'after_drop',
-        sa.schema.DDL(
-            'DROP FUNCTION IF EXISTS transaction_temp_table_generator()'
-        )
+        sa.schema.DDL('DROP FUNCTION IF EXISTS transaction_temp_table_generator()'),
     )
 
 
@@ -121,10 +114,8 @@ class TransactionFactory(ModelFactory):
         """
         Create Transaction class.
         """
-        class Transaction(
-            manager.declarative_base,
-            TransactionBase
-        ):
+
+        class Transaction(manager.declarative_base, TransactionBase):
             __tablename__ = 'transaction'
             __versioning_manager__ = manager
 
@@ -132,7 +123,7 @@ class TransactionFactory(ModelFactory):
                 sa.types.BigInteger,
                 sa.schema.Sequence('transaction_id_seq'),
                 primary_key=True,
-                autoincrement=True
+                autoincrement=True,
             )
 
             if self.remote_addr:
@@ -149,16 +140,16 @@ class TransactionFactory(ModelFactory):
                     except KeyError:
                         raise ImproperlyConfigured(
                             'Could not build relationship between Transaction'
-                            ' and %s. %s was not found in declarative class '
+                            f' and {user_cls}. {user_cls} was not found in declarative class '
                             'registry. Either configure VersioningManager to '
                             'use different user class or disable this '
-                            'relationship ' % (user_cls, user_cls)
+                            'relationship '
                         )
 
                 user_id = sa.Column(
                     sa.inspect(user_cls).primary_key[0].type,
                     sa.ForeignKey(sa.inspect(user_cls).primary_key[0]),
-                    index=True
+                    index=True,
                 )
 
                 user = sa.orm.relationship(user_cls)
@@ -170,15 +161,17 @@ class TransactionFactory(ModelFactory):
                     for field in fields
                     if hasattr(self, field)
                 )
-                return '<Transaction %s>' % ', '.join(
-                    (
-                        '%s=%r' % (field, value)
-                        if not isinstance(value, int)
-                        # We want the following line to ensure that longs get
-                        # shown without the ugly L suffix on python 2.x
-                        # versions
-                        else '%s=%d' % (field, value)
-                        for field, value in field_values.items()
+                return '<Transaction {}>'.format(
+                    ', '.join(
+                        (
+                            f'{field}={value!r}'
+                            if not isinstance(value, int)
+                            # We want the following line to ensure that longs get
+                            # shown without the ugly L suffix on python 2.x
+                            # versions
+                            else f'{field}={value}'
+                            for field, value in field_values.items()
+                        )
                     )
                 )
 

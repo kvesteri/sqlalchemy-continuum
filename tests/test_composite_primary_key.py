@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -24,13 +25,13 @@ class TestCompositePrimaryKey(TestCase):
                 sa.Integer,
                 sa.ForeignKey(User.id, ondelete='CASCADE'),
                 primary_key=True,
-                nullable=False
+                nullable=False,
             )
             team_id = sa.Column(
                 sa.Integer,
                 sa.ForeignKey(Team.id, ondelete='CASCADE'),
                 primary_key=True,
-                nullable=False
+                nullable=False,
             )
             role = sa.Column(sa.Unicode(255))
 
@@ -53,18 +54,10 @@ class TestCompositePrimaryKeyWithPkConstraint(TestCase):
         class TeamMember(self.Model):
             __tablename__ = 'team_member'
             __versioned__ = {}
-            user_id = sa.Column(
-                sa.Integer,
-                nullable=False
-            )
-            team_id = sa.Column(
-                sa.Integer,
-                nullable=False
-            )
+            user_id = sa.Column(sa.Integer, nullable=False)
+            team_id = sa.Column(sa.Integer, nullable=False)
             role = sa.Column(sa.Unicode(255))
-            __table_args__ = (
-                sa.schema.PrimaryKeyConstraint('user_id', 'team_id'),
-            )
+            __table_args__ = (sa.schema.PrimaryKeyConstraint('user_id', 'team_id'),)
 
         self.TeamMember = TeamMember
 

@@ -1,8 +1,9 @@
 import pytest
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import versioning_manager
 from sqlalchemy_continuum.plugins import ActivityPlugin
-from tests import TestCase, QueryPool, uses_native_versioning
+from tests import QueryPool, TestCase, uses_native_versioning
 
 
 class ActivityTestCase(TestCase):
@@ -13,16 +14,15 @@ class ActivityTestCase(TestCase):
 
         class User(self.Model):
             __tablename__ = 'user'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
+
         self.User = User
 
     def create_article(self):
-        article = self.Article(name=u'Some article')
+        article = self.Article(name='Some article')
         self.session.add(article)
         return article
 
@@ -30,29 +30,27 @@ class ActivityTestCase(TestCase):
         activity = versioning_manager.activity_cls(
             object=object,
             target=target,
-            verb=u'create',
+            verb='create',
         )
         self.session.add(activity)
         return activity
 
 
 class TestActivityNotId(ActivityTestCase):
-
     def create_models(self):
         TestCase.create_models(self)
 
         class NotIdModel(self.Model):
             __tablename__ = 'not_id'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             pk = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
+
         self.NotIdModel = NotIdModel
 
     def test_create_activity_with_pk(self):
-        not_id_model = self.NotIdModel(name=u'Some model without id PK')
+        not_id_model = self.NotIdModel(name='Some model without id PK')
         self.session.add(not_id_model)
         self.session.commit()
         self.create_activity(not_id_model)
@@ -86,7 +84,7 @@ class TestActivity(ActivityTestCase):
         self.session.delete(article)
         activity = versioning_manager.activity_cls(
             object=article,
-            verb=u'delete',
+            verb='delete',
         )
         self.session.add(activity)
         self.session.commit()
@@ -105,24 +103,19 @@ class TestActivity(ActivityTestCase):
         self.session.flush()
         self.create_activity(article)
         self.session.commit()
-        tag = self.Tag(name=u'some tag', article=article)
+        tag = self.Tag(name='some tag', article=article)
         self.session.add(tag)
         self.session.flush()
         Activity = versioning_manager.activity_cls
         activity = Activity(
             object=tag,
             target=article,
-            verb=u'create',
+            verb='create',
         )
         self.session.add(activity)
         self.session.commit()
-        activities = self.session.query(
-            Activity
-        ).filter(
-            sa.or_(
-                Activity.object == article,
-                Activity.target == article
-            )
+        activities = self.session.query(Activity).filter(
+            sa.or_(Activity.object == article, Activity.target == article)
         )
         assert activities.count() == 2
 
@@ -180,19 +173,21 @@ class TestTargetTxIdGeneration(ActivityTestCase):
         article = self.create_article()
         self.create_activity(article)
         self.session.commit()
-        tag = self.Tag(name=u'some tag', article=article)
+        tag = self.Tag(name='some tag', article=article)
         self.session.add(tag)
         self.session.flush()
         activity = versioning_manager.activity_cls(
             object=tag,
             target=article,
-            verb=u'create',
+            verb='create',
         )
         self.session.add(activity)
         self.session.commit()
-        activity = self.session.query(
-            versioning_manager.activity_cls
-        ).filter_by(id=activity.id).one()
+        activity = (
+            self.session.query(versioning_manager.activity_cls)
+            .filter_by(id=activity.id)
+            .one()
+        )
         assert activity
         assert activity.transaction_id
         assert activity.object == tag

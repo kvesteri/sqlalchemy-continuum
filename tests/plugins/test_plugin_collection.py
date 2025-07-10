@@ -1,7 +1,7 @@
 from sqlalchemy_continuum.plugins import PluginCollection
 
 
-class TestPluginCollection(object):
+class TestPluginCollection:
     def test_init(self):
         assert PluginCollection([1, 2, 3]).plugins == [1, 2, 3]
 
@@ -31,8 +31,9 @@ class TestPluginCollection(object):
         assert list(coll) == [1, 2, 3]
 
     def test_getattr(self):
-        class MyPlugin(object):
+        class MyPlugin:
             def some_action(self):
                 return 4
+
         coll = PluginCollection([MyPlugin(), MyPlugin()])
         assert list(coll.some_action()) == [4, 4]

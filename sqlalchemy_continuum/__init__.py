@@ -1,22 +1,41 @@
 import sqlalchemy as sa
-from .exc import ClassNotVersioned, ImproperlyConfigured
-from .manager import VersioningManager
-from .operation import Operation
-from .transaction import TransactionFactory
-from .unit_of_work import UnitOfWork
-from .utils import (
-    changeset,
-    count_versions,
-    get_versioning_manager,
-    is_modified,
-    is_session_modified,
-    parent_class,
-    transaction_class,
-    tx_column_name,
-    vacuum,
-    version_class,
-)
 
+from .exc import ClassNotVersioned as ClassNotVersioned
+from .exc import ImproperlyConfigured as ImproperlyConfigured
+from .manager import VersioningManager
+from .operation import Operation as Operation
+from .transaction import TransactionFactory as TransactionFactory
+from .unit_of_work import UnitOfWork as UnitOfWork
+from .utils import (
+    changeset as changeset,
+)
+from .utils import (
+    count_versions as count_versions,
+)
+from .utils import (
+    get_versioning_manager as get_versioning_manager,
+)
+from .utils import (
+    is_modified as is_modified,
+)
+from .utils import (
+    is_session_modified as is_session_modified,
+)
+from .utils import (
+    parent_class as parent_class,
+)
+from .utils import (
+    transaction_class as transaction_class,
+)
+from .utils import (
+    tx_column_name as tx_column_name,
+)
+from .utils import (
+    vacuum as vacuum,
+)
+from .utils import (
+    version_class as version_class,
+)
 
 __version__ = '1.4.2'
 
@@ -30,7 +49,7 @@ def make_versioned(
     manager=versioning_manager,
     plugins=None,
     options=None,
-    user_cls='User'
+    user_cls='User',
 ):
     """
     This is the public API function of SQLAlchemy-Continuum for making certain
@@ -65,28 +84,20 @@ def make_versioned(
     manager.track_session(session)
 
     sa.event.listen(
-        sa.engine.Engine,
-        'before_execute',
-        manager.track_association_operations
+        sa.engine.Engine, 'before_execute', manager.track_association_operations
     )
 
-    sa.event.listen(
-        sa.engine.Engine,
-        'rollback',
-        manager.clear_connection
-    )
+    sa.event.listen(sa.engine.Engine, 'rollback', manager.clear_connection)
 
     sa.event.listen(
         sa.engine.Engine,
         'set_connection_execution_options',
-        manager.track_cloned_connections
+        manager.track_cloned_connections,
     )
 
 
 def remove_versioning(
-    mapper=sa.orm.Mapper,
-    session=sa.orm.session.Session,
-    manager=versioning_manager
+    mapper=sa.orm.Mapper, session=sa.orm.session.Session, manager=versioning_manager
 ):
     """
     Remove the versioning from given mapper / session and manager.
@@ -104,19 +115,13 @@ def remove_versioning(
     manager.remove_operations_tracking(mapper)
     manager.remove_session_tracking(session)
     sa.event.remove(
-        sa.engine.Engine,
-        'before_execute',
-        manager.track_association_operations
+        sa.engine.Engine, 'before_execute', manager.track_association_operations
     )
 
-    sa.event.remove(
-        sa.engine.Engine,
-        'rollback',
-        manager.clear_connection
-    )
+    sa.event.remove(sa.engine.Engine, 'rollback', manager.clear_connection)
 
     sa.event.remove(
         sa.engine.Engine,
         'set_connection_execution_options',
-        manager.track_cloned_connections
+        manager.track_cloned_connections,
     )

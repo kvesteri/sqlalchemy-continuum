@@ -194,17 +194,17 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect
 from sqlalchemy_utils import JSONType, generic_relationship
 
-from .base import Plugin
 from ..factory import ModelFactory
 from ..utils import version_class, version_obj
+from .base import Plugin
 
 
-class ActivityBase(object):
+class ActivityBase:
     id = sa.Column(
         sa.BigInteger,
         sa.schema.Sequence('activity_id_seq'),
         primary_key=True,
-        autoincrement=True
+        autoincrement=True,
     )
 
     verb = sa.Column(sa.Unicode(255))
@@ -221,18 +221,12 @@ class ActivityFactory(ModelFactory):
         """
         Create Activity class.
         """
-        class Activity(
-            manager.declarative_base,
-            ActivityBase
-        ):
+
+        class Activity(manager.declarative_base, ActivityBase):
             __tablename__ = 'activity'
             manager = self
 
-            transaction_id = sa.Column(
-                sa.BigInteger,
-                index=True,
-                nullable=False
-            )
+            transaction_id = sa.Column(sa.BigInteger, index=True, nullable=False)
 
             data = sa.Column(JSONType)
 
@@ -258,11 +252,14 @@ class ActivityFactory(ModelFactory):
                     model = obj.__class__
                     version_cls = version_class(model)
                     primary_key = inspect(model).primary_key[0].name
-                    return session.query(
-                        sa.func.max(version_cls.transaction_id)
-                    ).filter(
-                        getattr(version_cls, primary_key) == getattr(obj, primary_key)
-                    ).scalar()
+                    return (
+                        session.query(sa.func.max(version_cls.transaction_id))
+                        .filter(
+                            getattr(version_cls, primary_key)
+                            == getattr(obj, primary_key)
+                        )
+                        .scalar()
+                    )
 
             def calculate_object_tx_id(self):
                 self.object_tx_id = self._calculate_tx_id(self.object)
@@ -270,9 +267,7 @@ class ActivityFactory(ModelFactory):
             def calculate_target_tx_id(self):
                 self.target_tx_id = self._calculate_tx_id(self.target)
 
-            object = generic_relationship(
-                object_type, object_id
-            )
+            object = generic_relationship(object_type, object_id)
 
             @hybrid_property
             def object_version_type(self):
@@ -286,9 +281,7 @@ class ActivityFactory(ModelFactory):
                 object_version_type, (object_id, object_tx_id)
             )
 
-            target = generic_relationship(
-                target_type, target_id
-            )
+            target = generic_relationship(target_type, target_id)
 
             @hybrid_property
             def target_version_type(self):
@@ -308,17 +301,16 @@ class ActivityFactory(ModelFactory):
                 'activities',
             ),
             primaryjoin=(
-                '%s.id == Activity.transaction_id' %
-                manager.transaction_cls.__name__
+                f'{manager.transaction_cls.__name__}.id == Activity.transaction_id'
             ),
-            foreign_keys=[Activity.transaction_id]
+            foreign_keys=[Activity.transaction_id],
         )
         return Activity
 
 
 class ActivityPlugin(Plugin):
     activity_cls = None
-    
+
     def after_build_models(self, manager):
         self.activity_cls = ActivityFactory()(manager)
         manager.activity_cls = self.activity_cls

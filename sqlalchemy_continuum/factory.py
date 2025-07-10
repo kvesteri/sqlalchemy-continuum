@@ -1,4 +1,4 @@
-class ModelFactory(object):
+class ModelFactory:
     model_name = None
 
     def __call__(self, manager):

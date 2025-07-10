@@ -1,11 +1,11 @@
-from copy import copy
 from collections import OrderedDict
+from copy import copy
 
 import sqlalchemy as sa
 from sqlalchemy_utils import identity
 
 
-class Operation(object):
+class Operation:
     INSERT = 0
     UPDATE = 1
     DELETE = 2
@@ -16,19 +16,17 @@ class Operation(object):
         self.processed = False
 
     def __eq__(self, other):
-        return (
-            self.target == other.target and
-            self.type == other.type
-        )
+        return self.target == other.target and self.type == other.type
 
     def __ne__(self, other):
         return not (self == other)
 
 
-class Operations(object):
+class Operations:
     """
     A collection of operations
     """
+
     def __init__(self):
         self.objects = OrderedDict()
 
@@ -65,7 +63,7 @@ class Operations(object):
 
         :param session: SQLAlchemy session object
         """
-        return set(k[0] for k in self.objects)
+        return {k[0] for k in self.objects}
 
     def items(self):
         return self.objects.items()

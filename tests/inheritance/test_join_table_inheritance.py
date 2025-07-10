@@ -1,46 +1,32 @@
 import pytest
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
-from tests import TestCase, uses_native_versioning, create_test_cases
+from tests import TestCase, create_test_cases, uses_native_versioning
 
 
 class JoinTableInheritanceTestCase(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
 
-            discriminator = sa.Column(
-                sa.Unicode(100)
-            )
+            discriminator = sa.Column(sa.Unicode(100))
 
-            __mapper_args__ = {
-                'polymorphic_on': discriminator,
-                'with_polymorphic': '*'
-            }
+            __mapper_args__ = {'polymorphic_on': discriminator, 'with_polymorphic': '*'}
 
         class Article(TextItem):
             __tablename__ = 'article'
-            __mapper_args__ = {'polymorphic_identity': u'article'}
-            id = sa.Column(
-                sa.Integer,
-                sa.ForeignKey(TextItem.id),
-                primary_key=True
-            )
+            __mapper_args__ = {'polymorphic_identity': 'article'}
+            id = sa.Column(sa.Integer, sa.ForeignKey(TextItem.id), primary_key=True)
 
         class BlogPost(TextItem):
             __tablename__ = 'blog_post'
-            __mapper_args__ = {'polymorphic_identity': u'blog_post'}
-            id = sa.Column(
-                sa.Integer,
-                sa.ForeignKey(TextItem.id),
-                primary_key=True
-            )
+            __mapper_args__ = {'polymorphic_identity': 'blog_post'}
+            id = sa.Column(sa.Integer, sa.ForeignKey(TextItem.id), primary_key=True)
 
         self.TextItem = TextItem
         self.Article = Article
@@ -71,8 +57,8 @@ class JoinTableInheritanceTestCase(TestCase):
         self.session.commit()
 
         # assert type(textitem.versions[0]) == self.TextItemVersion
-        assert type(article.versions[0]) == self.ArticleVersion
-        assert type(blogpost.versions[0]) == self.BlogPostVersion
+        assert isinstance(article.versions[0], self.ArticleVersion)
+        assert isinstance(blogpost.versions[0], self.BlogPostVersion)
 
     def test_all_tables_contain_transaction_id_column(self):
         tx_column = self.options['transaction_column_name']
@@ -101,12 +87,12 @@ class JoinTableInheritanceTestCase(TestCase):
         article = self.Article()
         self.session.add(article)
         self.session.commit()
-        assert self.session.execute(sa.text(
-            'SELECT %s FROM article_version' % tx_column
-        )).fetchone()[0]
-        assert self.session.execute(sa.text(
-            'SELECT %s FROM text_item_version' % tx_column
-        )).fetchone()[0]
+        assert self.session.execute(
+            sa.text(f'SELECT {tx_column} FROM article_version')
+        ).fetchone()[0]
+        assert self.session.execute(
+            sa.text(f'SELECT {tx_column} FROM text_item_version')
+        ).fetchone()[0]
 
     def test_primary_keys(self):
         tx_column = self.options['transaction_column_name']
@@ -129,18 +115,22 @@ class JoinTableInheritanceTestCase(TestCase):
         article = self.Article()
         self.session.add(article)
         self.session.commit()
-        article.name = u'Updated article'
+        article.name = 'Updated article'
         self.session.commit()
         assert article.versions.count() == 2
 
-        assert self.session.execute(sa.text(
-            'SELECT %s FROM text_item_version '
-            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
-        )).scalar()
-        assert self.session.execute(sa.text(
-            'SELECT %s FROM article_version '
-            'ORDER BY %s LIMIT 1' % (end_tx_column, tx_column)
-        )).scalar()
+        assert self.session.execute(
+            sa.text(
+                f'SELECT {end_tx_column} FROM text_item_version '
+                f'ORDER BY {tx_column} LIMIT 1'
+            )
+        ).scalar()
+        assert self.session.execute(
+            sa.text(
+                f'SELECT {end_tx_column} FROM article_version '
+                f'ORDER BY {tx_column} LIMIT 1'
+            )
+        ).scalar()
 
 
 create_test_cases(JoinTableInheritanceTestCase)
@@ -151,11 +141,11 @@ class TestDeepJoinedTableInheritance(TestCase):
         class Node(self.Model):
             __versioned__ = {}
             __tablename__ = 'node'
-            __mapper_args__ = dict(
-                polymorphic_on='type',
-                polymorphic_identity='node',
-                with_polymorphic='*',
-            )
+            __mapper_args__ = {
+                'polymorphic_on': 'type',
+                'polymorphic_identity': 'node',
+                'with_polymorphic': '*',
+            }
 
             id = sa.Column(sa.Integer, primary_key=True)
             type = sa.Column(sa.String(30), nullable=False)
@@ -163,27 +153,15 @@ class TestDeepJoinedTableInheritance(TestCase):
         class Content(Node):
             __versioned__ = {}
             __tablename__ = 'content'
-            __mapper_args__ = {
-                'polymorphic_identity': 'content'
-            }
-            id = sa.Column(
-                sa.Integer,
-                sa.ForeignKey('node.id'),
-                primary_key=True
-            )
+            __mapper_args__ = {'polymorphic_identity': 'content'}
+            id = sa.Column(sa.Integer, sa.ForeignKey('node.id'), primary_key=True)
             description = sa.Column(sa.UnicodeText())
 
         class Document(Content):
             __versioned__ = {}
             __tablename__ = 'document'
-            __mapper_args__ = {
-                'polymorphic_identity': 'document'
-            }
-            id = sa.Column(
-                sa.Integer,
-                sa.ForeignKey('content.id'),
-                primary_key=True
-            )
+            __mapper_args__ = {'polymorphic_identity': 'document'}
+            id = sa.Column(sa.Integer, sa.ForeignKey('content.id'), primary_key=True)
             body = sa.Column(sa.UnicodeText)
 
         self.Node = Node
@@ -194,12 +172,19 @@ class TestDeepJoinedTableInheritance(TestCase):
         document = self.Document()
         self.session.add(document)
         self.session.commit()
-        assert self.session.execute(sa.text(
-            'SELECT COUNT(1) FROM document_version'
-        )).scalar() == 1
-        assert self.session.execute(sa.text(
-            'SELECT COUNT(1) FROM content_version'
-        )).scalar() == 1
-        assert self.session.execute(sa.text(
-            'SELECT COUNT(1) FROM node_version'
-        )).scalar() == 1
+        assert (
+            self.session.execute(
+                sa.text('SELECT COUNT(1) FROM document_version')
+            ).scalar()
+            == 1
+        )
+        assert (
+            self.session.execute(
+                sa.text('SELECT COUNT(1) FROM content_version')
+            ).scalar()
+            == 1
+        )
+        assert (
+            self.session.execute(sa.text('SELECT COUNT(1) FROM node_version')).scalar()
+            == 1
+        )

@@ -1,4 +1,5 @@
 from copy import copy
+
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import column_property
@@ -16,6 +17,7 @@ def find_closest_versioned_parent(manager, model):
         if class_ in manager.version_class_map:
             return manager.version_class_map[class_]
 
+
 def versioned_parents(manager, model):
     """
     Finds all versioned ancestors for current parent model.
@@ -29,11 +31,7 @@ def get_base_class(manager, model):
     """
     Returns all base classes for history model.
     """
-    return (
-        option(model, 'base_classes')
-        or
-        (get_declarative_base(model), )
-    )
+    return option(model, 'base_classes') or (get_declarative_base(model),)
 
 
 def version_base(manager, parent_cls, base_class_factory=None):
@@ -45,8 +43,8 @@ def version_base(manager, parent_cls, base_class_factory=None):
     if not VersionBase:
         VersionBase = type(
             'VersionBase',
-            (base_class_factory(manager, parent_cls) + (VersionClassBase, )),
-            {'__abstract__': True}
+            (base_class_factory(manager, parent_cls) + (VersionClassBase,)),
+            {'__abstract__': True},
         )
 
     return VersionBase
@@ -55,16 +53,10 @@ def version_base(manager, parent_cls, base_class_factory=None):
 def copy_mapper_args(model):
     args = {}
     if hasattr(model, '__mapper_args__'):
-        arg_names = (
-            'with_polymorphic',
-            'polymorphic_identity',
-            'concrete'
-        )
+        arg_names = ('with_polymorphic', 'polymorphic_identity', 'concrete')
         for arg in arg_names:
             if arg in model.__mapper_args__:
-                args[arg] = (
-                    model.__mapper_args__[arg]
-                )
+                args[arg] = model.__mapper_args__[arg]
 
         if 'order_by' in model.__mapper_args__:
             arg = model.__mapper_args__['order_by']
@@ -82,11 +74,12 @@ def copy_mapper_args(model):
     return args
 
 
-class ModelBuilder(object):
+class ModelBuilder:
     """
     VersionedModelBuilder handles the building of Version models based on
     parent table attributes and versioning configuration.
     """
+
     def __init__(self, versioning_manager, model):
         """
         :param versioning_manager:
@@ -110,16 +103,10 @@ class ModelBuilder(object):
         for key, column in sa.inspect(self.model).columns.items():
             if column.primary_key:
                 conditions.append(
-                    getattr(self.model, key)
-                    ==
-                    getattr(self.version_class, key)
+                    getattr(self.model, key) == getattr(self.version_class, key)
                 )
-                foreign_keys.append(
-                    getattr(self.version_class, key)
-                )
-                model_keys.append(
-                    getattr(self.model, key)
-                )
+                foreign_keys.append(getattr(self.version_class, key))
+                model_keys.append(getattr(self.model, key))
 
         # We need to check if versions relation was already set for parent
         # class.
@@ -129,11 +116,10 @@ class ModelBuilder(object):
                 primaryjoin=sa.and_(*conditions),
                 foreign_keys=foreign_keys,
                 order_by=lambda: getattr(
-                    self.version_class,
-                    option(self.model, 'transaction_column_name')
+                    self.version_class, option(self.model, 'transaction_column_name')
                 ),
                 lazy='dynamic',
-                viewonly=True
+                viewonly=True,
             )
             # We must explicitly declare this relationship, instead of
             # specifying as a backref to the one above, since they are
@@ -157,8 +143,7 @@ class ModelBuilder(object):
         # parent class.
 
         transaction_column = getattr(
-            self.version_class,
-            option(self.model, 'transaction_column_name')
+            self.version_class, option(self.model, 'transaction_column_name')
         )
 
         if not hasattr(self.version_class, 'transaction'):
@@ -172,7 +157,7 @@ class ModelBuilder(object):
         """
         Returns all base classes for history model.
         """
-        return (version_base(self.manager, self.model), )
+        return (version_base(self.manager, self.model),)
 
     def inheritance_args(self, cls, version_table, table):
         """
@@ -181,9 +166,7 @@ class ModelBuilder(object):
         args = {}
 
         if not sa.inspect(self.model).single:
-            parent = find_closest_versioned_parent(
-                self.manager, self.model
-            )
+            parent = find_closest_versioned_parent(self.manager, self.model)
             if parent:
                 # The version classes do not contain foreign keys, hence we
                 # need to map inheritance condition manually for classes that
@@ -191,16 +174,12 @@ class ModelBuilder(object):
                 if parent.__table__.name != table.name:
                     mapper = sa.inspect(self.model)
 
-                    inherit_condition = adapt_columns(
-                        mapper.inherit_condition
-                    )
-                    tx_column_name = self.manager.options[
-                        'transaction_column_name'
-                    ]
+                    inherit_condition = adapt_columns(mapper.inherit_condition)
+                    tx_column_name = self.manager.options['transaction_column_name']
                     args['inherit_condition'] = sa.and_(
                         inherit_condition,
-                        getattr(parent.__table__.c, tx_column_name) ==
-                        getattr(cls.__table__.c, tx_column_name)
+                        getattr(parent.__table__.c, tx_column_name)
+                        == getattr(cls.__table__.c, tx_column_name),
                     )
                     args['inherit_foreign_keys'] = [
                         version_table.c[column.key]
@@ -220,20 +199,16 @@ class ModelBuilder(object):
         if parent_models and not (mapper.single or mapper.concrete):
             columns = [
                 self.manager.option(self.model, 'operation_type_column_name'),
-                self.manager.option(self.model, 'transaction_column_name')
+                self.manager.option(self.model, 'transaction_column_name'),
             ]
             if self.manager.option(self.model, 'strategy') == 'validity':
                 columns.append(
-                    self.manager.option(
-                        self.model,
-                        'end_transaction_column_name'
-                    )
+                    self.manager.option(self.model, 'end_transaction_column_name')
                 )
 
             for column in columns:
                 args[column] = column_property(
-                    table.c[column],
-                    *[m.__table__.c[column] for m in parent_models]
+                    table.c[column], *[m.__table__.c[column] for m in parent_models]
                 )
         return args
 
@@ -246,9 +221,7 @@ class ModelBuilder(object):
         @declared_attr
         def mapper_args(cls):
             mapper_args = {}
-            mapper_args.update(self.inheritance_args(
-                cls, table, self.model.__table__)
-            )
+            mapper_args.update(self.inheritance_args(cls, table, self.model.__table__))
             return mapper_args
 
         args['__mapper_args__'] = mapper_args
@@ -263,14 +236,13 @@ class ModelBuilder(object):
         args.update(self.get_inherited_denormalized_columns(table))
 
         if self.manager.options.get('use_module_name', True):
-            name = '%s%sVersion' % (
+            name = '{}{}Version'.format(
                 self.model.__module__.title().replace('.', ''),
-                self.model.__name__
+                self.model.__name__,
             )
         else:
-            name = '%sVersion' % (self.model.__name__,)
+            name = f'{self.model.__name__}Version'
         return type(name, self.base_classes(), args)
-
 
     def __call__(self, table, tx_class):
         """

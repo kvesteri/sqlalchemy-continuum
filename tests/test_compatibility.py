@@ -1,7 +1,6 @@
-from pytest import mark
-from packaging import version
-
 import sqlalchemy as sa
+from packaging import version
+from pytest import mark
 
 from tests import TestCase
 
@@ -12,5 +11,6 @@ class TestCompatibility1_4(TestCase):
         self.connection.execute('select 1')
 
     def test_execute_string_insert(self):
-        self.connection.execute('insert into article (id, name) values (1, "Test article")')
-
+        self.connection.execute(
+            'insert into article (id, name) values (1, "Test article")'
+        )

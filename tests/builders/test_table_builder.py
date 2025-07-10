@@ -1,22 +1,23 @@
 from copy import copy
 from datetime import datetime
+
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
-from pytest import mark
 
 
 class TestTableBuilder(TestCase):
     def test_assigns_foreign_keys_for_versions(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        article.tags.append(self.Tag(name=u'some tag'))
+        article.name = 'Some article'
+        article.content = 'Some content'
+        article.tags.append(self.Tag(name='some tag'))
         self.session.add(article)
         self.session.commit()
         cls = version_class(self.Tag)
         version = self.session.query(cls).first()
-        assert version.name == u'some tag'
+        assert version.name == 'some tag'
         assert version.id == 1
         assert version.article_id == 1
 
@@ -25,7 +26,7 @@ class TestTableBuilder(TestCase):
         assert 'id' in table.c
         assert 'name' in table.c
         assert 'content' in table.c
-        assert 'description'in table.c
+        assert 'description' in table.c
         assert 'transaction_id' in table.c
         assert 'operation_type' in table.c
 
@@ -52,7 +53,9 @@ class TestTableBuilder(TestCase):
 class TestTableBuilderWithOnUpdate(TestCase):
     def create_models(self):
         options = copy(self.options)
-        options['include'] = ['last_update', ]
+        options['include'] = [
+            'last_update',
+        ]
 
         class Article(self.Model):
             __tablename__ = 'article'
@@ -63,13 +66,15 @@ class TestTableBuilderWithOnUpdate(TestCase):
                 sa.DateTime,
                 default=datetime.utcnow,
                 onupdate=datetime.utcnow,
-                nullable=False
+                nullable=False,
             )
+
         self.Article = Article
 
     def test_takes_out_onupdate_triggers(self):
         table = version_class(self.Article).__table__
         assert table.c.last_update.onupdate is None
+
 
 class TestTableBuilderInOtherSchema(TestCase):
     def create_models(self):
@@ -83,12 +88,12 @@ class TestTableBuilderInOtherSchema(TestCase):
                 sa.DateTime,
                 default=datetime.utcnow,
                 onupdate=datetime.utcnow,
-                nullable=False
+                nullable=False,
             )
+
         self.Article = Article
 
     def test_created_tables_retain_schema(self):
         table = version_class(self.Article).__table__
         assert table.schema is not None
         assert table.schema == self.Article.__table__.schema
-

@@ -1,10 +1,10 @@
 from copy import copy
-from inspect import getmro
 from functools import wraps
+from inspect import getmro
 
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import get_declarative_base
 from sqlalchemy.orm.descriptor_props import ConcreteInheritedProperty
+from sqlalchemy_utils.functions import get_declarative_base
 
 from .dialects.postgresql import create_versioning_trigger_listeners
 from .model_builder import ModelBuilder
@@ -14,6 +14,7 @@ from .table_builder import TableBuilder
 
 def prevent_reentry(handler):
     in_handler = False
+
     @wraps(handler)
     def check_reentry(*args, **kwargs):
         nonlocal in_handler
@@ -22,9 +23,11 @@ def prevent_reentry(handler):
         in_handler = True
         handler(*args, **kwargs)
         in_handler = False
+
     return check_reentry
 
-class Builder(object):
+
+class Builder:
     def build_triggers(self):
         """
         Build native database versioning triggers for all versioned models that
@@ -54,16 +57,11 @@ class Builder(object):
             if self.manager.option(cls, 'create_tables'):
                 inherited_table = None
                 for class_ in self.manager.tables:
-                    if (issubclass(cls, class_) and
-                            cls.__table__ == class_.__table__):
+                    if issubclass(cls, class_) and cls.__table__ == class_.__table__:
                         inherited_table = self.manager.tables[class_]
                         break
 
-                builder = TableBuilder(
-                    self.manager,
-                    cls.__table__,
-                    model=cls
-                )
+                builder = TableBuilder(self.manager, cls.__table__, model=cls)
                 if inherited_table is not None:
                     self.manager.tables[class_] = builder(inherited_table)
                 else:
@@ -82,8 +80,9 @@ class Builder(object):
             return self.manager.tables[model]
         subclasses = [cls for cls in self.manager.tables if issubclass(model, cls)]
         ordered_subclasses = [cls for cls in getmro(model) if cls in subclasses]
-        return self.manager.tables[ordered_subclasses[0]] if ordered_subclasses else None
-
+        return (
+            self.manager.tables[ordered_subclasses[0]] if ordered_subclasses else None
+        )
 
     def build_models(self):
         """
@@ -98,15 +97,9 @@ class Builder(object):
                 table = self.closest_matching_table(cls)
                 if table is not None:
                     builder = ModelBuilder(self.manager, cls)
-                    version_cls = builder(
-                        table,
-                        self.manager.transaction_cls
-                    )
+                    version_cls = builder(table, self.manager.transaction_cls)
 
-                    self.manager.plugins.after_version_class_built(
-                        cls,
-                        version_cls
-                    )
+                    self.manager.plugins.after_version_class_built(cls, version_cls)
 
             self.manager.plugins.after_build_models(self.manager)
 
@@ -137,8 +130,10 @@ class Builder(object):
             return
 
         if hasattr(cls, '__versioned__'):
-            if (not cls.__versioned__.get('class')
-                    and cls not in self.manager.pending_classes):
+            if (
+                not cls.__versioned__.get('class')
+                and cls not in self.manager.pending_classes
+            ):
                 self.manager.pending_classes.append(cls)
                 self.manager.metadata = cls.metadata
 
@@ -225,4 +220,6 @@ class Builder(object):
                     if version_class_column is None:
                         continue
 
-                    version_class_mapper.add_property(key, sa.orm.column_property(version_class_column))
+                    version_class_mapper.add_property(
+                        key, sa.orm.column_property(version_class_column)
+                    )

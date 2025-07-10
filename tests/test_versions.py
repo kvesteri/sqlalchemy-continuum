@@ -4,10 +4,10 @@ from tests import TestCase
 class TestVersions(TestCase):
     def test_versions_ordered_by_transaction_id(self):
         names = [
-            u'Some article',
-            u'Update 1 article',
-            u'Update 2 article',
-            u'Update 3 article',
+            'Some article',
+            'Update 1 article',
+            'Update 2 article',
+            'Update 3 article',
         ]
 
         article = self.Article(name=names[0])

@@ -21,18 +21,15 @@ transaction_id          entity_name
 233678                  Article
 ================    =================
 """
+
 import sqlalchemy as sa
 
-from .base import Plugin
 from ..factory import ModelFactory
-from ..utils import option
+from .base import Plugin
 
 
-class TransactionChangesBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
+class TransactionChangesBase:
+    transaction_id = sa.Column(sa.BigInteger, primary_key=True)
     entity_name = sa.Column(sa.Unicode(255), primary_key=True)
 
 
@@ -43,10 +40,8 @@ class TransactionChangesFactory(ModelFactory):
         """
         Create TransactionChanges class.
         """
-        class TransactionChanges(
-            manager.declarative_base,
-            TransactionChangesBase
-        ):
+
+        class TransactionChanges(manager.declarative_base, TransactionChangesBase):
             __tablename__ = 'transaction_changes'
 
         TransactionChanges.transaction = sa.orm.relationship(
@@ -55,10 +50,9 @@ class TransactionChangesFactory(ModelFactory):
                 'changes',
             ),
             primaryjoin=(
-                '%s.id == TransactionChanges.transaction_id' %
-                manager.transaction_cls.__name__
+                f'{manager.transaction_cls.__name__}.id == TransactionChanges.transaction_id'
             ),
-            foreign_keys=[TransactionChanges.transaction_id]
+            foreign_keys=[TransactionChanges.transaction_id],
         )
         return TransactionChanges
 
@@ -81,7 +75,7 @@ class TransactionChangesPlugin(Plugin):
             if not changes:
                 changes = self.model_class(
                     transaction_id=uow.current_transaction.id,
-                    entity_name=str(entity.__name__)
+                    entity_name=str(entity.__name__),
                 )
                 session.add(changes)
 

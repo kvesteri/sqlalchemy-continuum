@@ -1,6 +1,7 @@
 import sqlalchemy as sa
+
 from .operation import Operation
-from .utils import versioned_column_properties, parent_class
+from .utils import parent_class, versioned_column_properties
 
 
 def first_level(paths):
@@ -19,8 +20,10 @@ class ReverterException(Exception):
     pass
 
 
-class Reverter(object):
-    def __init__(self, obj, visited_objects=None, relations=[]):
+class Reverter:
+    def __init__(self, obj, visited_objects=None, relations=None):
+        if relations is None:
+            relations = []
         self.visited_objects = visited_objects or []
         self.obj = obj
         self.version_parent = self.obj.version_parent
@@ -33,20 +36,13 @@ class Reverter(object):
             subpath = path.split('.')[0]
             if subpath not in self.parent_mapper.relationships:
                 raise ReverterException(
-                    "Could not initialize Reverter. Class '%s' does not have "
-                    "relationship '%s'." % (
-                        parent_class(self.obj.__class__).__name__,
-                        subpath
-                    )
+                    f"Could not initialize Reverter. Class '{parent_class(self.obj.__class__).__name__}' does not have "
+                    f"relationship '{subpath}'."
                 )
 
     def revert_properties(self):
         for prop in versioned_column_properties(self.parent_class):
-            setattr(
-                self.version_parent,
-                prop.key,
-                getattr(self.obj, prop.key)
-            )
+            setattr(self.version_parent, prop.key, getattr(self.obj, prop.key))
 
     def revert_association(self, prop):
         if prop.uselist:
@@ -54,15 +50,11 @@ class Reverter(object):
             for child_obj in getattr(self.obj, prop.key):
                 value = self.revert_child(child_obj, prop)
                 if value:
-                    getattr(self.version_parent, prop.key).append(
-                        value
-                    )
+                    getattr(self.version_parent, prop.key).append(value)
         else:
             setattr(self.version_parent, prop.key, None)
             value = getattr(self.obj, prop.key)
-            value = self.revert_child(
-                value, prop
-            )
+            value = self.revert_child(value, prop)
             if value:
                 setattr(self.version_parent, prop.key, value)
 
@@ -87,7 +79,7 @@ class Reverter(object):
         return self.__class__(
             child,
             visited_objects=self.visited_objects,
-            relations=subpaths(self.relations, prop.key)
+            relations=subpaths(self.relations, prop.key),
         )()
 
     def revert_relationships(self):
@@ -104,7 +96,8 @@ class Reverter(object):
     def __call__(self):
         if self.obj in self.visited_objects:
             return (
-                None if self.obj.operation_type == Operation.DELETE
+                None
+                if self.obj.operation_type == Operation.DELETE
                 else self.version_parent
             )
 

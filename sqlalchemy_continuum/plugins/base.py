@@ -1,4 +1,4 @@
-class Plugin(object):
+class Plugin:
     def is_session_modified(self, session):
         return False
 
@@ -33,7 +33,7 @@ class Plugin(object):
         pass
 
 
-class PluginCollection(object):
+class PluginCollection:
     def __init__(self, plugins=None):
         if plugins is None:
             plugins = []
@@ -43,16 +43,15 @@ class PluginCollection(object):
             self.plugins = plugins
 
     def __iter__(self):
-        for plugin in self.plugins:
-            yield plugin
+        yield from self.plugins
 
     def __len__(self):
         return len(self.plugins)
 
     def __repr__(self):
-        return '<%s [%s]>' % (
+        return '<{} [{}]>'.format(
             self.__class__.__name__,
-            ', '.join(map(repr, self.plugins))
+            ', '.join(map(repr, self.plugins)),
         )
 
     def __getitem__(self, index):
@@ -66,10 +65,8 @@ class PluginCollection(object):
 
     def __getattr__(self, attr):
         def wrapper(*args, **kwargs):
-            return [
-                getattr(plugin, attr)(*args, **kwargs)
-                for plugin in self.plugins
-            ]
+            return [getattr(plugin, attr)(*args, **kwargs) for plugin in self.plugins]
+
         return wrapper
 
     def append(self, el):

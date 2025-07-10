@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -14,7 +15,7 @@ class TestCommonBaseClass(TestCase):
 
             __mapper_args__ = {
                 'polymorphic_on': discriminator,
-                'polymorphic_identity': 'product'
+                'polymorphic_identity': 'product',
             }
 
         class FirstLevel(BaseModel):
@@ -22,14 +23,10 @@ class TestCommonBaseClass(TestCase):
 
             id = sa.Column(sa.Integer, sa.ForeignKey('base_model.id'), primary_key=True)
 
-            __mapper_args__ = {
-                'polymorphic_identity': 'first_level'
-            }
+            __mapper_args__ = {'polymorphic_identity': 'first_level'}
 
         class SecondLevel(FirstLevel):
-            __mapper_args__ = {
-                'polymorphic_identity': 'second_level'
-            }
+            __mapper_args__ = {'polymorphic_identity': 'second_level'}
 
         self.BaseModel = BaseModel
         self.FirstLevel = FirstLevel

@@ -1,12 +1,6 @@
-import os
-
 import pytest
-import sqlalchemy as sa
 
-from sqlalchemy_continuum.dialects.postgresql import (
-    drop_trigger,
-    sync_trigger
-)
+from sqlalchemy_continuum.dialects.postgresql import drop_trigger, sync_trigger
 from tests import (
     QueryPool,
     TestCase,

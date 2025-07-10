@@ -4,10 +4,10 @@ from .exc import ClassNotVersioned
 from .expression_reflector import VersionExpressionReflector
 from .operation import Operation
 from .table_builder import TableBuilder
-from .utils import adapt_columns, version_class, option
+from .utils import adapt_columns, option, version_class
 
 
-class RelationshipBuilder(object):
+class RelationshipBuilder:
     def __init__(self, versioning_manager, model, property_):
         self.manager = versioning_manager
         self.property = property_
@@ -18,40 +18,38 @@ class RelationshipBuilder(object):
 
         remote_alias = sa.orm.aliased(self.remote_cls)
         primary_keys = [
-            getattr(remote_alias, column.name) for column
-            in sa.inspect(remote_alias).mapper.columns
+            getattr(remote_alias, column.name)
+            for column in sa.inspect(remote_alias).mapper.columns
             if column.primary_key and column.name != tx_column
         ]
 
         return sa.exists(
-            sa.select(1).where(
+            sa.select(1)
+            .where(
                 sa.and_(
-                    getattr(remote_alias, tx_column) <=
-                    getattr(obj, tx_column),
+                    getattr(remote_alias, tx_column) <= getattr(obj, tx_column),
                     *[
-                        getattr(remote_alias, pk.name) ==
-                        getattr(self.remote_cls, pk.name)
+                        getattr(remote_alias, pk.name)
+                        == getattr(self.remote_cls, pk.name)
                         for pk in primary_keys
-                    ]
+                    ],
                 )
-            ).group_by(
-                *primary_keys
-            ).having(
-                sa.func.max(getattr(remote_alias, tx_column)) ==
-                getattr(self.remote_cls, tx_column)
-            ).correlate(self.local_cls, self.remote_cls)
+            )
+            .group_by(*primary_keys)
+            .having(
+                sa.func.max(getattr(remote_alias, tx_column))
+                == getattr(self.remote_cls, tx_column)
+            )
+            .correlate(self.local_cls, self.remote_cls)
         )
 
     def many_to_one_subquery(self, obj):
         tx_column = option(obj, 'transaction_column_name')
         reflector = VersionExpressionReflector(obj, self.property)
-        subquery = sa.select(
-            sa.func.max(getattr(self.remote_cls, tx_column))
-        ).where(
+        subquery = sa.select(sa.func.max(getattr(self.remote_cls, tx_column))).where(
             sa.and_(
-                getattr(self.remote_cls, tx_column) <=
-                getattr(obj, tx_column),
-                reflector(self.property.primaryjoin)
+                getattr(self.remote_cls, tx_column) <= getattr(obj, tx_column),
+                reflector(self.property.primaryjoin),
             )
         )
         subquery = subquery.scalar_subquery()
@@ -60,12 +58,7 @@ class RelationshipBuilder(object):
 
     def query(self, obj):
         session = sa.orm.object_session(obj)
-        return (
-            session.query(self.remote_cls)
-            .filter(
-                self.criteria(obj)
-            )
-        )
+        return session.query(self.remote_cls).filter(self.criteria(obj))
 
     def process_query(self, query):
         """
@@ -141,7 +134,7 @@ class RelationshipBuilder(object):
         return sa.and_(
             self.association_subquery(obj),
             self.one_to_many_subquery(obj),
-            self.remote_cls.operation_type != Operation.DELETE
+            self.remote_cls.operation_type != Operation.DELETE,
         )
 
     def many_to_one_criteria(self, obj):
@@ -173,7 +166,7 @@ class RelationshipBuilder(object):
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.many_to_one_subquery(obj),
-            self.remote_cls.operation_type != Operation.DELETE
+            self.remote_cls.operation_type != Operation.DELETE,
         )
 
     def one_to_many_criteria(self, obj):
@@ -211,7 +204,7 @@ class RelationshipBuilder(object):
         return sa.and_(
             reflector(self.property.primaryjoin),
             self.one_to_many_subquery(obj),
-            self.remote_cls.operation_type != Operation.DELETE
+            self.remote_cls.operation_type != Operation.DELETE,
         )
 
     @property
@@ -220,10 +213,12 @@ class RelationshipBuilder(object):
         Builds a reflected one-to-many, one-to-one and many-to-one
         relationship between two version classes.
         """
+
         @property
         def relationship(obj):
             query = self.query(obj)
             return self.process_query(query)
+
         return relationship
 
     def association_subquery(self, obj):
@@ -266,38 +261,41 @@ class RelationshipBuilder(object):
         association_table_alias = self.association_version_table.alias()
         association_cols = [
             association_table_alias.c[association_col.name]
-            for _, association_col
-            in self.remote_to_association_column_pairs
+            for _, association_col in self.remote_to_association_column_pairs
         ]
 
         association_exists = sa.exists(
-            sa.select(1).where(
+            sa.select(1)
+            .where(
                 sa.and_(
-                    association_table_alias.c[tx_column] <=
-                    getattr(obj, tx_column),
-                    association_table_alias.c[join_column] == getattr(obj, object_join_column),
-                    *[association_col ==
-                      self.association_version_table.c[association_col.name]
-                      for association_col
-                      in association_cols]
+                    association_table_alias.c[tx_column] <= getattr(obj, tx_column),
+                    association_table_alias.c[join_column]
+                    == getattr(obj, object_join_column),
+                    *[
+                        association_col
+                        == self.association_version_table.c[association_col.name]
+                        for association_col in association_cols
+                    ],
                 )
-            ).group_by(
-                *association_cols
-            ).having(
-                sa.func.max(association_table_alias.c[tx_column]) ==
-                self.association_version_table.c[tx_column]
-            ).correlate(self.association_version_table)
+            )
+            .group_by(*association_cols)
+            .having(
+                sa.func.max(association_table_alias.c[tx_column])
+                == self.association_version_table.c[tx_column]
+            )
+            .correlate(self.association_version_table)
         )
         return sa.exists(
-            sa.select(1).where(
+            sa.select(1)
+            .where(
                 sa.and_(
                     reflector(self.property.primaryjoin),
                     association_exists,
-                    self.association_version_table.c.operation_type !=
-                    Operation.DELETE,
+                    self.association_version_table.c.operation_type != Operation.DELETE,
                     adapt_columns(self.property.secondaryjoin),
                 )
-            ).correlate(self.local_cls, self.remote_cls)
+            )
+            .correlate(self.local_cls, self.remote_cls)
         )
 
     def build_association_version_tables(self):
@@ -309,10 +307,7 @@ class RelationshipBuilder(object):
         column = list(self.property.remote_side)[0]
 
         self.manager.association_tables.add(column.table)
-        builder = TableBuilder(
-            self.manager,
-            column.table
-        )
+        builder = TableBuilder(self.manager, column.table)
         metadata = column.table.metadata
         if builder.parent_table.schema:
             table_name = builder.parent_table.schema + '.' + builder.table_name
@@ -344,10 +339,11 @@ class RelationshipBuilder(object):
         except ClassNotVersioned:
             self.remote_cls = self.property.mapper.class_
 
-        if (self.property.secondary is not None and
-                not self.property.viewonly and
-                not self.manager.is_excluded_property(
-                    self.model, self.property.key)):
+        if (
+            self.property.secondary is not None
+            and not self.property.viewonly
+            and not self.manager.is_excluded_property(self.model, self.property.key)
+        ):
             self.build_association_version_tables()
 
             # store remote cls to association table column pairs
@@ -356,8 +352,4 @@ class RelationshipBuilder(object):
                 if column_pair[0] in self.property.target.c.values():
                     self.remote_to_association_column_pairs.append(column_pair)
 
-        setattr(
-            self.local_cls,
-            self.property.key,
-            self.reflected_relationship
-        )
+        setattr(self.local_cls, self.property.key, self.reflected_relationship)

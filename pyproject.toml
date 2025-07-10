@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SQLAlchemy-Continuum"
+version = "1.5.0"
+description = "Versioning and auditing extension for SQLAlchemy."
+readme = "README.rst"
+license = {text = "BSD"}
+authors = [
+    {name = "Konsta Vesterinen", email = "konsta@fastmonkeys.com"},
+    {name = "Mark Steward"},
+    {name = "Jose Soto"}
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+    "SQLAlchemy>=1.4.53,<2.1",
+    "SQLAlchemy-Utils>=0.41.2"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=2.3.5",
+    "psycopg2>=2.4.6",
+    "PyMySQL>=0.8.0",
+    "Flask>=0.9",
+    "Flask-Login>=0.2.9",
+    "Flask-SQLAlchemy>=1.0",
+    "SQLAlchemy-i18n>=0.8.4,!=1.1.0",
+    "packaging",
+]
+flask = ["Flask>=0.9"]
+flask-login = ["Flask-Login>=0.2.9"]
+flask-sqlalchemy = ["Flask-SQLAlchemy>=1.0"]
+i18n = ["SQLAlchemy-i18n>=0.8.4,!=1.1.0"]
+dev = [
+    "ruff>=0.1.0",
+    "tox>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/kvesteri/sqlalchemy-continuum"
+
+[tool.setuptools.packages.find]
+include = ["sqlalchemy_continuum*"]
+
+[tool.setuptools.package-data]
+"*" = ["*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E231", "E402","E702", "E501", "F403", "F541", "E713"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/test_*.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sqlalchemy_continuum"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"

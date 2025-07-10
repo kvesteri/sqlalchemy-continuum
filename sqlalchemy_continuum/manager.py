@@ -1,4 +1,3 @@
-import re
 from functools import wraps
 
 import sqlalchemy as sa
@@ -22,10 +21,11 @@ def tracked_operation(func):
         session = object_session(target)
         uow = self._uow_from_conn(session.connection())
         return func(self, uow, target)
+
     return wrapper
 
 
-class VersioningManager(object):
+class VersioningManager:
     """
     VersioningManager delegates versioning configuration operations to builder
     classes and the actual versioning to UnitOfWork class. Manager contains
@@ -48,15 +48,18 @@ class VersioningManager(object):
         Builder object which handles the building of versioning tables and
         models.
     """
+
     def __init__(
         self,
         unit_of_work_cls=UnitOfWork,
         transaction_cls=None,
         user_cls=None,
-        options={},
+        options=None,
         plugins=None,
-        builder=None
+        builder=None,
     ):
+        if options is None:
+            options = {}
         self.uow_class = unit_of_work_cls
         if builder is None:
             self.builder = Builder()
@@ -84,7 +87,7 @@ class VersioningManager(object):
             'end_transaction_column_name': 'end_transaction_id',
             'operation_type_column_name': 'operation_type',
             'strategy': 'validity',
-            'use_module_name': False
+            'use_module_name': False,
         }
         if plugins is None:
             self.plugins = []
@@ -185,7 +188,7 @@ class VersioningManager(object):
         :param name: name of the versioning option
         """
         if not hasattr(model, '__versioned__'):
-            raise TypeError('Model %r is not versioned.' % model)
+            raise TypeError(f'Model {model!r} is not versioned.')
         try:
             return model.__versioned__[name]
         except KeyError:
@@ -321,8 +324,11 @@ class VersioningManager(object):
                 uow = self.units_of_work[conn.engine]
             except KeyError:
                 for connection in self.units_of_work.keys():
-                    if not connection.closed and connection.connection is conn.connection:
-                        uow = self.unit_of_work(session)
+                    if (
+                        not connection.closed
+                        and connection.connection is conn.connection
+                    ):
+                        uow = self.units_of_work[connection]
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
                     raise
@@ -389,18 +395,15 @@ class VersioningManager(object):
             uow.reset()
             del self.units_of_work[conn]
 
-
         for session, connection in dict(self.session_connection_map).items():
             if connection is conn:
                 del self.session_connection_map[session]
-
 
         for connection in dict(self.units_of_work).keys():
             if connection.closed or conn.connection is connection.connection:
                 uow = self.units_of_work[connection]
                 uow.reset()
                 del self.units_of_work[connection]
-
 
     def append_association_operation(self, conn, table_name, params, op):
         """
@@ -420,17 +423,20 @@ class VersioningManager(object):
         """
         if c not in self.units_of_work.keys():
             for connection, uow in dict(self.units_of_work).items():
-                if not connection.closed and connection.connection is c.connection:  # ConnectionFairy is the same - this is a clone
+                if (
+                    not connection.closed and connection.connection is c.connection
+                ):  # ConnectionFairy is the same - this is a clone
                     self.units_of_work[c] = uow
 
     def track_association_operations(
-        self, conn, clauseelement, multiparams, params, execution_options,
+        self,
+        conn,
+        clauseelement,
+        multiparams,
+        params,
+        execution_options,
     ):
-
-        if (
-            not self.options['versioning'] and
-            not self.options['native_versioning']
-        ):
+        if not self.options['versioning'] and not self.options['native_versioning']:
             return
 
         if isinstance(clauseelement, str):
@@ -449,9 +455,14 @@ class VersioningManager(object):
             uow = self._uow_from_conn(conn)
 
             for params in multiparams:
-                stmt = version_table(clauseelement.table).insert().values({
-                    **params,
-                    'operation_type': op,
-                })
+                stmt = (
+                    version_table(clauseelement.table)
+                    .insert()
+                    .values(
+                        {
+                            **params,
+                            'operation_type': op,
+                        }
+                    )
+                )
                 uow.pending_statements.append(stmt)
-

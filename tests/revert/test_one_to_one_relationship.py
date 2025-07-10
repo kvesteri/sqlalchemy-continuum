@@ -1,6 +1,8 @@
 from copy import copy
-from tests import TestCase
+
 import sqlalchemy as sa
+
+from tests import TestCase
 
 
 class TestRevertOneToOneRelationship(TestCase):
@@ -22,11 +24,7 @@ class TestRevertOneToOneRelationship(TestCase):
             description = sa.Column(sa.UnicodeText)
             category_id = sa.Column(sa.Integer, sa.ForeignKey(Category.id))
             category = sa.orm.relationship(
-                Category,
-                backref=sa.orm.backref(
-                    'article',
-                    uselist=False
-                )
+                Category, backref=sa.orm.backref('article', uselist=False)
             )
 
         self.Article = Article
@@ -34,9 +32,9 @@ class TestRevertOneToOneRelationship(TestCase):
 
     def test_revert_relationship(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        category = self.Category(name=u'some category')
+        article.name = 'Some article'
+        article.content = 'Some content'
+        category = self.Category(name='some category')
         article.category = category
         self.session.add(article)
         self.session.commit()
@@ -49,4 +47,4 @@ class TestRevertOneToOneRelationship(TestCase):
         self.session.commit()
 
         assert article.category == category
-        assert article.category.name == u'some category'
+        assert article.category.name == 'some category'
