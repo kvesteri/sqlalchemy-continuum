@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=77.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,7 @@ name = "SQLAlchemy-Continuum"
 version = "1.5.0"
 description = "Versioning and auditing extension for SQLAlchemy."
 readme = "README.rst"
-license = {text = "BSD"}
+license = "BSD-3-Clause"
 authors = [
     {name = "Konsta Vesterinen", email = "konsta@fastmonkeys.com"},
     {name = "Mark Steward"},
@@ -17,7 +17,6 @@ requires-python = ">=3.9"
 classifiers = [
     "Environment :: Web Environment",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
