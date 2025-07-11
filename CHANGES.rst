@@ -8,6 +8,7 @@ Unreleased changes
 
 - Migrate to `uv <https://docs.astral.sh/uv/>`_ for dependency management and package installation, improving build performance and reproducibility. (#364)
 - Migrate to `ruff <https://docs.astral.sh/ruff/>`_ for code linting and formatting, replacing flake8 with a faster Rust-based tool. (#364)
+- Add Python 3.13 support. (#364)
 - Drop Python 3.8 support. (#364)
 
 1.3.14 (2023-01-04)
