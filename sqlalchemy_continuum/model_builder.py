@@ -179,12 +179,14 @@ class ModelBuilder(object):
         Return mapper inheritance args for currently built history model.
         """
         args = {}
+        inspected = sa.inspect(self.model)
+        parent = None
+        if inspected.inherits:
+            parent = find_closest_versioned_parent(self.manager, self.model)
 
-        if not sa.inspect(self.model).single:
-            parent = find_closest_versioned_parent(
-                self.manager, self.model
-            )
-            if parent:
+
+        if parent:
+            if not inspected.single:
                 # The version classes do not contain foreign keys, hence we
                 # need to map inheritance condition manually for classes that
                 # use joined table inheritance
@@ -207,6 +209,9 @@ class ModelBuilder(object):
                         for column in sa.inspect(self.model).columns
                         if column.primary_key
                     ]
+            else:
+                mapper = sa.inspect(self.model)
+                args["polymorphic_identity"] = mapper.polymorphic_identity
 
         args.update(copy_mapper_args(self.model))
 
@@ -255,10 +260,14 @@ class ModelBuilder(object):
         args['__versioning_manager__'] = self.manager
         args['__version_parent__'] = self.model
 
+
         parent = find_closest_versioned_parent(self.manager, self.model)
 
         if not parent or parent.__table__.name != table.name:
+
             args['__table__'] = table
+        elif parent and parent.__table__.name == table.name:
+            args["__tablename__"] = None
 
         args.update(self.get_inherited_denormalized_columns(table))
 
