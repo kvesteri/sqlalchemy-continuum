@@ -1,0 +1,55 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# -------------------------------------------------------------------
+
+[project]
+name = "SQLAlchemy-Continuum"
+dynamic = ["version"]
+description = "Versioning and auditing extension for SQLAlchemy."
+readme = "README.rst"
+authors = [
+    { name = "Konsta Vesterinen", email = "konsta@fastmonkeys.com" },
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "SQLAlchemy>=1.4.0",
+    "SQLAlchemy-Utils>=0.41.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/kvesteri/sqlalchemy-continuum"
+
+[project.optional-dependencies]
+flask = [
+    "Flask>=0.9",
+]
+flask-login = [
+    "Flask-Login>=0.2.9",
+]
+flask-sqlalchemy = [
+    "Flask-SQLAlchemy>=1.0",
+]
+i18n = [
+    "SQLAlchemy-i18n>=0.8.4,!=1.1.0",
+]
+test = [
+    "pytest>=2.3.5",
+    "psycopg2>=2.4.6",
+    "PyMySQL>=0.8.0",
+    "SQLAlchemy-Continuum[flask,flask-login,flask-sqlalchemy,i18n]",
+]
+
+# -------------------------------------------------------------------
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+platforms = ["any"]
+packages = { find = {} }
+
+[tool.setuptools.dynamic]
+version = { attr = "sqlalchemy_continuum.__version__" }
