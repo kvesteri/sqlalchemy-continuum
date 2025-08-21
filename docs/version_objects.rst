@@ -230,4 +230,3 @@ If the parent class has a dynamic relationship it will be reflected as a propert
     tag_query.all()  # return all tags for given version
 
     tag_query.count()  # return the tag count for given version
-

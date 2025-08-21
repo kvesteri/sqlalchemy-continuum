@@ -51,6 +51,7 @@ i18n = ["SQLAlchemy-i18n>=0.8.4,!=1.1.0"]
 dev = [
     "ruff>=0.1.0",
     "tox>=4.0.0",
+    "pre-commit>=3.0.0",
 ]
 
 [project.urls]
@@ -104,3 +105,9 @@ known-first-party = ["sqlalchemy_continuum"]
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "tox>=4.27.0",
+]

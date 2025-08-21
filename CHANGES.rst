@@ -6,10 +6,41 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 Unreleased changes
 ^^^^^^^^^^^^^^^^^^
 
-- Migrate to `uv <https://docs.astral.sh/uv/>`_ for dependency management and package installation, improving build performance and reproducibility. (#364)
 - Migrate to `ruff <https://docs.astral.sh/ruff/>`_ for code linting and formatting, replacing flake8 with a faster Rust-based tool. (#364)
 - Add Python 3.13 support. (#364)
 - Drop Python 3.8 support. (#364)
+- Add comprehensive pre-commit hooks configuration with ruff, pyupgrade, and code quality checks
+- Add `pyupgrade <https://github.com/asottile/pyupgrade>`_ integration to automatically modernize Python 3.9+ syntax
+- Enhance tox configuration with matrix testing for multiple Python (3.9-3.13) and SQLAlchemy versions (1.4, 2.x)
+- Add dedicated ruff testing environment in tox for consistent code quality checks
+- Modernize codebase with Python 3.9+ idioms and formatting improvements
+
+1.4.2 (2024-03-26)
+^^^^^^^^^^^^^^^^^^
+
+- Add SQLAlchemy 2.0 support with mechanical changes for compatibility
+- Fix deadlock issues in MySQL on concurrent inserts
+- Remove deprecated Flask `_app_ctx_stack` and `_request_ctx_stack` references
+- Remove six dependency and Python 2 compatibility code
+- Update connection management and schema handling for tests
+- Allow overriding of DATABASE_URL for Docker Compose integration
+- Rework association tracking to use `before_execute` event
+- Remove SQLAlchemy < 1.4 compatibility code
+- Update SQLAlchemy-Utils library dependency
+
+1.4.1 (2024-03-14)
+^^^^^^^^^^^^^^^^^^
+
+- Declare six as explicit dependency for transitional support
+- Update version_objects.rst documentation
+
+1.4.0 (2023-06-05)
+^^^^^^^^^^^^^^^^^^
+
+- Add initial SQLAlchemy 2.0 compatibility support
+- Migrate to modern Python packaging with pyproject.toml
+- Update test matrix to include SQLAlchemy 2.0
+- Remove unused dependencies and legacy code
 
 1.3.14 (2023-01-04)
 ^^^^^^^^^^^^^^^^^^^
