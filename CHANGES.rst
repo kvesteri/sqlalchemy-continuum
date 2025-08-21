@@ -14,33 +14,41 @@ Unreleased changes
 - Enhance tox configuration with matrix testing for multiple Python (3.9-3.13) and SQLAlchemy versions (1.4, 2.x)
 - Add dedicated ruff testing environment in tox for consistent code quality checks
 - Modernize codebase with Python 3.9+ idioms and formatting improvements
+- Migrate to modern Python packaging with pyproject.toml
 
 1.4.2 (2024-03-26)
 ^^^^^^^^^^^^^^^^^^
 
-- Add SQLAlchemy 2.0 support with mechanical changes for compatibility
-- Fix deadlock issues in MySQL on concurrent inserts
-- Remove deprecated Flask `_app_ctx_stack` and `_request_ctx_stack` references
-- Remove six dependency and Python 2 compatibility code
-- Update connection management and schema handling for tests
-- Allow overriding of DATABASE_URL for Docker Compose integration
-- Rework association tracking to use `before_execute` event
-- Remove SQLAlchemy < 1.4 compatibility code
-- Update SQLAlchemy-Utils library dependency
+- Remove SQLAlchemy pin and require latest SQLAlchemy-Utils
+
 
 1.4.1 (2024-03-14)
 ^^^^^^^^^^^^^^^^^^
 
-- Declare six as explicit dependency for transitional support
-- Update version_objects.rst documentation
+- Pin SQLAlchemy due to SQLAlchemy-Utils breakage
+- Fix docs (#335, thanks to gnu-lorien)
+- Remove use of deprecated `_app_ctx_stack` and `_request_ctx_stack` (#307, thanks to rubencho)
 
-1.4.0 (2023-06-05)
+
+1.4.0 (2023-07-12)
 ^^^^^^^^^^^^^^^^^^
 
-- Add initial SQLAlchemy 2.0 compatibility support
-- Migrate to modern Python packaging with pyproject.toml
-- Update test matrix to include SQLAlchemy 2.0
-- Remove unused dependencies and legacy code
+- Add support for SQLAlchemy 2.0
+- Remove compatibility code for SQLAlchemy < 1.4 and Python 2
+- Fix deadlock issues in MySQL on concurrent inserts (#172, thanks to mfulgo)
+- Allow overriding of DATABASE_URL for docker compose
+- Switch to before_execute for association tracking
+- Use ORM instead of deadlock-prone validity update query
+- create_trigger and sync_trigger now take a session, not a connection
+- Removed Operation.iteritems
+
+
+1.3.15 (2023-06-07)
+^^^^^^^^^^^^^^^^^^^
+
+- Fix docs (#329, thanks to kelvinscuesta)
+- Declare six as a dependency (#327, thanks to zupo)
+
 
 1.3.14 (2023-01-04)
 ^^^^^^^^^^^^^^^^^^^
