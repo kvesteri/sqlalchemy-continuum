@@ -1,10 +1,12 @@
-from pytest import raises, skip
 import sqlalchemy as sa
+from pytest import raises, skip
 from sqlalchemy.orm import declarative_base
-from sqlalchemy_continuum import (
-    versioning_manager, ImproperlyConfigured, TransactionFactory
-)
 
+from sqlalchemy_continuum import (
+    ImproperlyConfigured,
+    TransactionFactory,
+    versioning_manager,
+)
 from tests import TestCase
 
 
@@ -12,9 +14,7 @@ class TestVersionedModelWithoutVersioning(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'versioning': False
-            }
+            __versioned__ = {'versioning': False}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
@@ -31,7 +31,7 @@ class TestVersionedModelWithoutVersioning(TestCase):
         self.session.commit()
 
 
-class TestWithUnknownUserClass(object):
+class TestWithUnknownUserClass:
     def test_raises_improperly_configured_error(self):
         self.Model = declarative_base()
 
@@ -72,11 +72,7 @@ class TestWithCreateModelsAsFalse(TestCase):
             name = sa.Column(sa.Unicode(255))
             article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
             article = sa.orm.relationship(
-                Article,
-                backref=sa.orm.backref(
-                    'category',
-                    uselist=False
-                )
+                Article, backref=sa.orm.backref('category', uselist=False)
             )
 
         self.Article = Article
@@ -88,14 +84,16 @@ class TestWithCreateModelsAsFalse(TestCase):
     def test_insert(self):
         if self.options['native_versioning'] is False:
             skip()
-        article = self.Article(name=u'Some article')
+        article = self.Article(name='Some article')
         self.session.add(article)
         self.session.commit()
 
-        version = self.session.execute(sa.text('SELECT * FROM article_version')).fetchone()
+        version = self.session.execute(
+            sa.text('SELECT * FROM article_version')
+        ).fetchone()
         assert version.transaction_id > 0
         assert version.id == article.id
-        assert version.name == u'Some article'
+        assert version.name == 'Some article'
 
 
 class TestWithoutAnyVersionedModels(TestCase):
@@ -111,6 +109,6 @@ class TestWithoutAnyVersionedModels(TestCase):
         self.Article = Article
 
     def test_insert(self):
-        article = self.Article(name=u'Some article')
+        article = self.Article(name='Some article')
         self.session.add(article)
         self.session.commit()

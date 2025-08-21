@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -7,20 +8,14 @@ class TestValidityStrategy(TestCase):
     def create_models(self):
         class BlogPost(self.Model):
             __tablename__ = 'blog_post'
-            __versioned__ = {
-                'base_classes': (self.Model, ),
-                'strategy': 'validity'
-            }
+            __versioned__ = {'base_classes': (self.Model,), 'strategy': 'validity'}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
 
         class Article(self.Model):
             __tablename__ = 'article'
-            __versioned__ = {
-                'base_classes': (self.Model, ),
-                'strategy': 'validity'
-            }
+            __versioned__ = {'base_classes': (self.Model,), 'strategy': 'validity'}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
@@ -36,21 +31,21 @@ class TestValidityStrategy(TestCase):
         assert not table.c.end_transaction_id.primary_key
 
     def test_end_transaction_id_none_for_newly_inserted_record(self):
-        article = self.Article(name=u'Something')
+        article = self.Article(name='Something')
         self.session.add(article)
         self.session.commit()
         assert list(article.versions)[-1].end_transaction_id is None
 
     def test_updated_end_transaction_id_of_previous_version(self):
-        article = self.Article(name=u'Something')
+        article = self.Article(name='Something')
         self.session.add(article)
         self.session.commit()
 
-        article.name = u'Some other thing'
+        article.name = 'Some other thing'
         self.session.commit()
         assert (
-            list(article.versions)[-2].end_transaction_id ==
-            list(article.versions)[-1].transaction_id
+            list(article.versions)[-2].end_transaction_id
+            == list(article.versions)[-1].transaction_id
         )
 
 
@@ -59,14 +54,12 @@ class TestJoinTableInheritanceWithValidityVersioning(TestCase):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
             __versioned__ = {
-                'base_classes': (self.Model, ),
+                'base_classes': (self.Model,),
                 'strategy': 'validity',
             }
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
-            discriminator = sa.Column(
-                sa.Unicode(100)
-            )
+            discriminator = sa.Column(sa.Unicode(100))
 
             __mapper_args__ = {
                 'polymorphic_on': discriminator,
@@ -74,20 +67,22 @@ class TestJoinTableInheritanceWithValidityVersioning(TestCase):
 
         class Article(TextItem):
             __tablename__ = 'article'
-            __mapper_args__ = {'polymorphic_identity': u'article'}
+            __mapper_args__ = {'polymorphic_identity': 'article'}
             id = sa.Column(
                 sa.Integer,
                 sa.ForeignKey(TextItem.id),
-                autoincrement=True, primary_key=True
+                autoincrement=True,
+                primary_key=True,
             )
 
         class BlogPost(TextItem):
             __tablename__ = 'blog_post'
-            __mapper_args__ = {'polymorphic_identity': u'blog_post'}
+            __mapper_args__ = {'polymorphic_identity': 'blog_post'}
             id = sa.Column(
                 sa.Integer,
                 sa.ForeignKey(TextItem.id),
-                autoincrement=True, primary_key=True
+                autoincrement=True,
+                primary_key=True,
             )
 
         self.TextItem = TextItem

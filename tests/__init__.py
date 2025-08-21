@@ -1,41 +1,37 @@
-
-from copy import copy
 import inspect
 import itertools as it
 import os
 import warnings
+from copy import copy
+
 import sqlalchemy as sa
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, column_property, close_all_sessions, declarative_base
+from sqlalchemy.orm import (
+    close_all_sessions,
+    column_property,
+    declarative_base,
+    sessionmaker,
+)
+
 from sqlalchemy_continuum import (
     ClassNotVersioned,
-    version_class,
     make_versioned,
+    remove_versioning,
+    version_class,
     versioning_manager,
-    remove_versioning
 )
+from sqlalchemy_continuum.plugins import TransactionChangesPlugin, TransactionMetaPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
-from sqlalchemy_continuum.plugins import (
-    TransactionMetaPlugin,
-    TransactionChangesPlugin
-)
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
 
-class QueryPool(object):
+class QueryPool:
     queries = []
 
 
 @sa.event.listens_for(sa.engine.Engine, 'before_cursor_execute')
-def log_sql(
-    conn,
-    cursor,
-    statement,
-    parameters,
-    context,
-    executemany
-):
+def log_sql(conn, cursor, statement, parameters, context, executemany):
     QueryPool.queries.append(statement)
 
 
@@ -52,18 +48,18 @@ def get_url_from_driver(driver):
     elif driver == 'sqlite':
         return 'sqlite:///:memory:'
     else:
-        raise Exception('Unknown driver given: %r' % driver)
+        raise Exception(f'Unknown driver given: {driver!r}')
 
 
 def get_driver_name(driver):
-    return driver[0:-len('-native')] if driver.endswith('-native') else driver
+    return driver[0 : -len('-native')] if driver.endswith('-native') else driver
 
 
 def uses_native_versioning():
     return os.environ.get('DB', 'sqlite').endswith('-native')
 
 
-class TestCase(object):
+class TestCase:
     versioning_strategy = 'subquery'
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
@@ -78,7 +74,7 @@ class TestCase(object):
         return {
             'create_models': self.should_create_models,
             'native_versioning': uses_native_versioning(),
-            'base_classes': (self.Model, ),
+            'base_classes': (self.Model,),
             'strategy': self.versioning_strategy,
             'transaction_column_name': self.transaction_column_name,
             'end_transaction_column_name': self.end_transaction_column_name,
@@ -125,7 +121,6 @@ class TestCase(object):
         # Using an engine here instead of connection will call commit for us,
         # which lets us use the same syntax for 1.4 and 2.0
         self.Model.metadata.create_all(self.engine)
-
 
     def teardown_method(self, method):
         self.session.rollback()
@@ -193,7 +188,6 @@ class TestCase(object):
         else:
             raise NotImplementedError
 
-
     def drop_schema(self, schema):
         if self.driver == 'postgres':
             self.session.execute(sa.text(f'DROP SCHEMA IF EXISTS {schema} CASCADE'))
@@ -207,19 +201,14 @@ class TestCase(object):
         else:
             raise NotImplementedError
 
+
 setting_variants = {
     'versioning_strategy': [
         'subquery',
         'validity',
     ],
-    'transaction_column_name': [
-        'transaction_id',
-        'tx_id'
-    ],
-    'end_transaction_column_name': [
-        'end_transaction_id',
-        'end_tx_id'
-    ]
+    'transaction_column_name': ['transaction_id', 'tx_id'],
+    'end_transaction_column_name': ['end_transaction_id', 'end_tx_id'],
 }
 
 
@@ -238,24 +227,15 @@ def create_test_cases(base_class, setting_variants=setting_variants):
     names = sorted(setting_variants)
     combinations = [
         dict(zip(names, prod))
-        for prod in
-        it.product(*(setting_variants[name] for name in names))
+        for prod in it.product(*(setting_variants[name] for name in names))
     ]
 
     # Get the module where this function was called in.
     frm = inspect.stack()[1]
     module = inspect.getmodule(frm[0])
 
-    class_suffix = base_class.__name__[0:-len('TestCase')]
+    class_suffix = base_class.__name__[0 : -len('TestCase')]
     for index, combination in enumerate(combinations):
-        class_name = 'Test%s%i' % (class_suffix, index)
+        class_name = f'Test{class_suffix}{index}'
         # Assign a new test case class for current module.
-        setattr(
-            module,
-            class_name,
-            type(
-                class_name,
-                (base_class, ),
-                combination
-            )
-        )
+        setattr(module, class_name, type(class_name, (base_class,), combination))

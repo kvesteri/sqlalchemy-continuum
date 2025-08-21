@@ -2,17 +2,18 @@ from copy import copy
 
 import sqlalchemy as sa
 from sqlalchemy_utils import get_primary_keys, identity
+
 from .operation import Operations
 from .utils import (
     end_tx_column_name,
-    version_class,
     is_session_modified,
     tx_column_name,
-    versioned_column_properties
+    version_class,
+    versioned_column_properties,
 )
 
 
-class UnitOfWork(object):
+class UnitOfWork:
     def __init__(self, manager):
         self.manager = manager
         self.reset()
@@ -37,9 +38,8 @@ class UnitOfWork(object):
 
         :param session: SQLAlchemy session object
         """
-        return (
-            is_session_modified(session) or
-            any(self.manager.plugins.is_session_modified(session))
+        return is_session_modified(session) or any(
+            self.manager.plugins.is_session_modified(session)
         )
 
     def process_before_flush(self, session):
@@ -63,9 +63,7 @@ class UnitOfWork(object):
             return
 
         if not self.version_session:
-            self.version_session = sa.orm.session.Session(
-                bind=session.connection()
-            )
+            self.version_session = sa.orm.session.Session(bind=session.connection())
 
         if not self.current_transaction:
             self.create_transaction(session)
@@ -88,9 +86,7 @@ class UnitOfWork(object):
             return
 
         if not self.version_session:
-            self.version_session = sa.orm.session.Session(
-                bind=session.connection()
-            )
+            self.version_session = sa.orm.session.Session(bind=session.connection())
 
         self.make_versions(session)
 
@@ -114,9 +110,7 @@ class UnitOfWork(object):
         for key, value in args.items():
             setattr(self.current_transaction, key, value)
         if not self.version_session:
-            self.version_session = sa.orm.session.Session(
-                bind=session.connection()
-            )
+            self.version_session = sa.orm.session.Session(bind=session.connection())
         self.version_session.add(self.current_transaction)
         self.version_session.flush()
         self.version_session.expunge(self.current_transaction)
@@ -131,22 +125,15 @@ class UnitOfWork(object):
         :param target: Parent object to create the version object for
         """
         version_cls = version_class(target.__class__)
-        version_id = identity(target) + (self.current_transaction.id, )
+        version_id = identity(target) + (self.current_transaction.id,)
         version_key = (version_cls, version_id)
 
         if version_key not in self.version_objs:
             version_obj = version_cls()
             self.version_objs[version_key] = version_obj
             self.version_session.add(version_obj)
-            tx_column = self.manager.option(
-                target,
-                'transaction_column_name'
-            )
-            setattr(
-                version_obj,
-                tx_column,
-                self.current_transaction.id
-            )
+            tx_column = self.manager.option(target, 'transaction_column_name')
+            setattr(version_obj, tx_column, self.current_transaction.id)
             return version_obj
         else:
             return self.version_objs[version_key]
@@ -168,14 +155,9 @@ class UnitOfWork(object):
         version_obj.operation_type = operation.type
         self.assign_attributes(target, version_obj)
 
-        self.manager.plugins.after_create_version_object(
-            self, target, version_obj
-        )
+        self.manager.plugins.after_create_version_object(self, target, version_obj)
         if self.manager.option(target, 'strategy') == 'validity':
-            self.update_version_validity(
-                target,
-                version_obj
-            )
+            self.update_version_validity(target, version_obj)
         operation.processed = True
 
     def create_version_objects(self, session):
@@ -186,19 +168,17 @@ class UnitOfWork(object):
         :param session: SQLAlchemy session object
         """
         if (
-            not self.manager.options['versioning'] or
-            self.manager.options['native_versioning']
+            not self.manager.options['versioning']
+            or self.manager.options['native_versioning']
         ):
             return
 
-        for key, operation in copy(self.operations).items():
+        for _key, operation in copy(self.operations).items():
             if operation.processed:
                 continue
 
             if not self.current_transaction:
-                raise Exception(
-                    'Current transaction not available.'
-                )
+                raise Exception('Current transaction not available.')
             self.process_operation(operation)
 
         self.version_session.flush()
@@ -215,12 +195,10 @@ class UnitOfWork(object):
         .. seealso:: :func:`update_version_validity`
         """
         fetcher = self.manager.fetcher(parent)
-        session = sa.orm.object_session(version_obj)
+        sa.orm.object_session(version_obj)
 
         subquery = fetcher._transaction_id_subquery(
-            version_obj,
-            next_or_prev='prev',
-            alias=alias
+            version_obj, next_or_prev='prev', alias=alias
         )
         return subquery
 
@@ -240,11 +218,8 @@ class UnitOfWork(object):
 
         for class_ in version_obj.__class__.__mro__:
             if class_ in self.manager.parent_class_map:
-
                 subquery = self.version_validity_subquery(
-                    parent,
-                    version_obj,
-                    alias=sa.orm.aliased(class_.__table__)
+                    parent, version_obj, alias=sa.orm.aliased(class_.__table__)
                 )
                 subquery = subquery.scalar_subquery()
 
@@ -254,19 +229,21 @@ class UnitOfWork(object):
                     .where(
                         vobj_tx_col == subquery,
                         *[
-                            getattr(version_obj, pk) ==
-                            getattr(class_.__table__.c, pk)
+                            getattr(version_obj, pk) == getattr(class_.__table__.c, pk)
                             for pk in get_primary_keys(class_)
                             if pk != tx_column_name(class_)
-                        ]
+                        ],
                     )
                     .execution_options(synchronize_session=False)
                 )
 
                 old_versions = session.scalars(query).all()
                 for old_version in old_versions:
-                    setattr(old_version, end_tx_column_name(version_obj), self.current_transaction.id)
-
+                    setattr(
+                        old_version,
+                        end_tx_column_name(version_obj),
+                        self.current_transaction.id,
+                    )
 
     def create_association_versions(self, session):
         """
@@ -278,8 +255,9 @@ class UnitOfWork(object):
         for stmt in statements:
             stmt = stmt.values(
                 **{
-                    self.manager.options['transaction_column_name']:
-                    self.current_transaction.id
+                    self.manager.options[
+                        'transaction_column_name'
+                    ]: self.current_transaction.id
                 }
             )
             session.execute(stmt)

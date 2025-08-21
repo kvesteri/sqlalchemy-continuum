@@ -1,6 +1,6 @@
-from .base import Plugin
 from ..operation import Operation
-from ..utils import versioned_column_properties, is_internal_column
+from ..utils import is_internal_column, versioned_column_properties
+from .base import Plugin
 
 
 class NullDeletePlugin(Plugin):
@@ -15,9 +15,9 @@ class NullDeletePlugin(Plugin):
             SQLAlchemy ColumnProperty object
         """
         return (
-            version_obj.operation_type == Operation.DELETE and
-            not prop.columns[0].primary_key and
-            not is_internal_column(version_obj, prop.key)
+            version_obj.operation_type == Operation.DELETE
+            and not prop.columns[0].primary_key
+            and not is_internal_column(version_obj, prop.key)
         )
 
     def after_create_version_object(self, uow, parent_obj, version_obj):

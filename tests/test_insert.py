@@ -1,14 +1,14 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import count_versions, versioning_manager
 
+from sqlalchemy_continuum import count_versions, versioning_manager
 from tests import TestCase
 
 
 class TestInsert(TestCase):
     def _insert(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.session.add(article)
         self.session.commit()
         return article
@@ -16,8 +16,8 @@ class TestInsert(TestCase):
     def test_insert_creates_version(self):
         article = self._insert()
         version = list(article.versions)[-1]
-        assert version.name == u'Some article'
-        assert version.content == u'Some content'
+        assert version.name == 'Some article'
+        assert version.content == 'Some content'
         assert version.transaction.id == version.transaction_id
 
     def test_stores_operation_type(self):
@@ -26,13 +26,13 @@ class TestInsert(TestCase):
 
     def test_multiple_consecutive_flushes(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.session.add(article)
         self.session.flush()
         article2 = self.Article()
-        article2.name = u'Some article'
-        article2.content = u'Some content'
+        article2.name = 'Some article'
+        article2.content = 'Some content'
         self.session.add(article2)
         self.session.flush()
         self.session.commit()
@@ -77,6 +77,4 @@ class TestInsertNonVersionedObject(TestCase):
         self.session.add(item)
         self.session.commit()
 
-        assert self.session.query(
-            versioning_manager.transaction_cls
-        ).count() == 0
+        assert self.session.query(versioning_manager.transaction_cls).count() == 0

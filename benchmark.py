@@ -5,28 +5,21 @@ from time import time
 
 import sqlalchemy as sa
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, close_all_sessions, declarative_base
-from sqlalchemy_continuum import (
-    make_versioned,
-    versioning_manager,
-    remove_versioning
-)
-from sqlalchemy_continuum.transaction import TransactionFactory
+from sqlalchemy.orm import close_all_sessions, declarative_base, sessionmaker
+from termcolor import colored
+
+from sqlalchemy_continuum import make_versioned, remove_versioning, versioning_manager
 from sqlalchemy_continuum.plugins import (
     PropertyModTrackerPlugin,
+    TransactionChangesPlugin,
     TransactionMetaPlugin,
-    TransactionChangesPlugin
 )
-from termcolor import colored
+from sqlalchemy_continuum.transaction import TransactionFactory
 
 warnings.simplefilter('error', sa.exc.SAWarning)
 
 
-def test_versioning(
-    native_versioning,
-    versioning_strategy,
-    property_mod_tracking
-):
+def test_versioning(native_versioning, versioning_strategy, property_mod_tracking):
     transaction_column_name = 'transaction_id'
     end_transaction_column_name = 'end_transaction_id'
     plugins = [TransactionChangesPlugin(), TransactionMetaPlugin()]
@@ -41,7 +34,7 @@ def test_versioning(
     options = {
         'create_models': True,
         'native_versioning': native_versioning,
-        'base_classes': (Model, ),
+        'base_classes': (Model,),
         'strategy': versioning_strategy,
         'transaction_column_name': transaction_column_name,
         'end_transaction_column_name': end_transaction_column_name,
@@ -74,7 +67,6 @@ def test_versioning(
         article_id = sa.Column(sa.Integer, sa.ForeignKey(Article.id))
         article = sa.orm.relationship(Article, backref='tags')
 
-
     sa.orm.configure_mappers()
 
     connection = engine.connect()
@@ -91,14 +83,14 @@ def test_versioning(
 
     for i in range(20):
         for i in range(20):
-            session.add(Article(name=u'Article', tags=[Tag(), Tag()]))
+            session.add(Article(name='Article', tags=[Tag(), Tag()]))
         session.commit()
 
-    print 'Testing with:'
-    print '   native_versioning=%r' % native_versioning
-    print '   versioning_strategy=%r' % versioning_strategy
-    print '   property_mod_tracking=%r' % property_mod_tracking
-    print colored('%r seconds' % (time() - start), 'red')
+    print('Testing with:')
+    print(f'   native_versioning={native_versioning!r}')
+    print(f'   versioning_strategy={versioning_strategy!r}')
+    print(f'   property_mod_tracking={property_mod_tracking!r}')
+    print(colored(f'{time() - start!r} seconds', 'red'))
 
     Model.metadata.drop_all(connection)
 
@@ -112,28 +104,20 @@ def test_versioning(
     connection.close()
 
 
-
 setting_variants = {
     'versioning_strategy': [
         'subquery',
         'validity',
     ],
-    'native_versioning': [
-        True,
-        False
-    ],
-    'property_mod_tracking': [
-        False,
-        True
-    ]
+    'native_versioning': [True, False],
+    'property_mod_tracking': [False, True],
 }
 
 
 names = sorted(setting_variants)
 combinations = [
     dict(zip(names, prod))
-    for prod in
-    it.product(*(setting_variants[name] for name in names))
+    for prod in it.product(*(setting_variants[name] for name in names))
 ]
 for combination in combinations:
     test_versioning(**combination)

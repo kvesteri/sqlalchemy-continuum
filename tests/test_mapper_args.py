@@ -1,7 +1,7 @@
-from pytest import mark
-from packaging import version
-
 import sqlalchemy as sa
+from packaging import version
+from pytest import mark
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -10,16 +10,12 @@ class TestColumnPrefix(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
 
-            __mapper_args__ = {
-                'column_prefix': '_'
-            }
+            __mapper_args__ = {'column_prefix': '_'}
 
         self.TextItem = TextItem
 
@@ -37,17 +33,12 @@ class TestOrderByWithStringArg(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
 
-            __mapper_args__ = {
-                'order_by': 'id',
-                'column_prefix': '_'
-            }
+            __mapper_args__ = {'order_by': 'id', 'column_prefix': '_'}
 
         self.TextItem = TextItem
 
@@ -64,16 +55,12 @@ class TestOrderByWithInstrumentedAttribute(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column(sa.Unicode(255))
 
-            __mapper_args__ = {
-                'order_by': id
-            }
+            __mapper_args__ = {'order_by': id}
 
         self.TextItem = TextItem
 

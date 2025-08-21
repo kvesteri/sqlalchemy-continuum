@@ -1,6 +1,7 @@
-from pytest import mark
 import sqlalchemy as sa
-from sqlalchemy_continuum import versioning_manager, version_class
+from pytest import mark
+
+from sqlalchemy_continuum import version_class, versioning_manager
 from tests import TestCase
 
 
@@ -8,34 +9,22 @@ class TestConcreteTableInheritance(TestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
-            discriminator = sa.Column(
-                sa.Unicode(100)
-            )
+            discriminator = sa.Column(sa.Unicode(100))
 
-            __mapper_args__ = {
-                'polymorphic_on': discriminator
-            }
+            __mapper_args__ = {'polymorphic_on': discriminator}
 
         class Article(TextItem):
             __tablename__ = 'article'
-            __mapper_args__ = {
-                'polymorphic_identity': u'article',
-                'concrete': True
-            }
+            __mapper_args__ = {'polymorphic_identity': 'article', 'concrete': True}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
 
         class BlogPost(TextItem):
             __tablename__ = 'blog_post'
-            __mapper_args__ = {
-                'polymorphic_identity': u'blog_post',
-                'concrete': True
-            }
+            __mapper_args__ = {'polymorphic_identity': 'blog_post', 'concrete': True}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             title = sa.Column(sa.Unicode(255))
 
@@ -73,19 +62,20 @@ class TestConcreteTableInheritance(TestCase):
         self.session.add(textitem)
         self.session.commit()
 
-        assert type(textitem.versions[0]) == self.TextItemVersion
-        assert type(article.versions[0]) == self.ArticleVersion
-        assert type(blogpost.versions[0]) == self.BlogPostVersion
+        assert isinstance(textitem.versions[0], self.TextItemVersion)
+        assert isinstance(article.versions[0], self.ArticleVersion)
+        assert isinstance(blogpost.versions[0], self.BlogPostVersion)
 
     def test_transaction_changed_entities(self):
         article = self.Article()
-        article.name = u'Text 1'
+        article.name = 'Text 1'
         self.session.add(article)
         self.session.commit()
         Transaction = versioning_manager.transaction_cls
         transaction = (
-            self.session.query(Transaction)
-            .order_by(sa.sql.expression.desc(Transaction.issued_at))
+            self.session.query(Transaction).order_by(
+                sa.sql.expression.desc(Transaction.issued_at)
+            )
         ).first()
-        assert transaction.entity_names == [u'Article']
+        assert transaction.entity_names == ['Article']
         assert transaction.changed_entities

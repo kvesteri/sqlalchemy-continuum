@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -16,9 +17,7 @@ class TestCommonBaseClass(TestCase):
 
         class Article(self.Model):
             __tablename__ = 'article'
-            __versioned__ = {
-                'base_classes': (ArticleVersionBase, )
-            }
+            __versioned__ = {'base_classes': (ArticleVersionBase,)}
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
 
         self.TextItem = TextItem

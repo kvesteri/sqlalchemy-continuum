@@ -1,31 +1,27 @@
 import os
 
+import sqlalchemy as sa
 from flask import Flask, url_for
 from flask_login import LoginManager, UserMixin, login_user
 from flask_sqlalchemy import SQLAlchemy
-
-import sqlalchemy as sa
 from sqlalchemy.orm import close_all_sessions
-from sqlalchemy_continuum import (
-    make_versioned, remove_versioning, versioning_manager
-)
+
+from sqlalchemy_continuum import make_versioned, remove_versioning, versioning_manager
 from sqlalchemy_continuum.plugins import FlaskPlugin
 from sqlalchemy_continuum.transaction import TransactionFactory
-from tests import (
-    TestCase,
-    get_driver_name,
-    get_url_from_driver,
-    uses_native_versioning
-)
+from tests import TestCase, get_driver_name, get_url_from_driver, uses_native_versioning
 
 
-class TestFlaskPluginConfiguration(object):
+class TestFlaskPluginConfiguration:
     def test_set_factories(self):
-        some_func = lambda: None
-        some_other_func = lambda: None
+        def some_func():
+            return None
+
+        def some_other_func():
+            return None
+
         plugin = FlaskPlugin(
-            current_user_id_factory=some_func,
-            remote_addr_factory=some_other_func
+            current_user_id_factory=some_func, remote_addr_factory=some_other_func
         )
         assert plugin.current_user_id_factory is some_func
         assert plugin.remote_addr_factory is some_other_func
@@ -64,40 +60,39 @@ class TestFlaskPlugin(TestCase):
 
         class User(self.Model, UserMixin):
             __tablename__ = 'user'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
+
         self.User = User
 
     def setup_views(self):
         @self.app.route('/simple-flush')
         def test_simple_flush():
             article = self.Article()
-            article.name = u'Some article'
+            article.name = 'Some article'
             self.session.add(article)
             self.session.commit()
             return ''
 
         @self.app.route('/raw-sql-and-flush')
         def test_raw_sql_and_flush():
-            self.session.execute(sa.text(
-                "INSERT INTO article (name) VALUES ('some article')"
-            ))
+            self.session.execute(
+                sa.text("INSERT INTO article (name) VALUES ('some article')")
+            )
             article = self.Article()
-            article.name = u'Some article'
+            article.name = 'Some article'
             self.session.add(article)
             self.session.flush()
-            self.session.execute(sa.text(
-                "INSERT INTO article (name) VALUES ('some article')"
-            ))
+            self.session.execute(
+                sa.text("INSERT INTO article (name) VALUES ('some article')")
+            )
             self.session.commit()
             return ''
 
     def test_versioning_inside_request(self):
-        user = self.User(name=u'Rambo')
+        user = self.User(name='Rambo')
         self.session.add(user)
         self.session.commit()
         login_user(user)
@@ -108,14 +103,12 @@ class TestFlaskPlugin(TestCase):
         assert tx.user.id == user.id
 
     def test_raw_sql_and_flush(self):
-        user = self.User(name=u'Rambo')
+        user = self.User(name='Rambo')
         self.session.add(user)
         self.session.commit()
         login_user(user)
         self.client.get(url_for('.test_raw_sql_and_flush'))
-        assert (
-            self.session.query(versioning_manager.transaction_cls).count() == 2
-        )
+        assert self.session.query(versioning_manager.transaction_cls).count() == 2
 
 
 class TestFlaskPluginWithoutRequestContext(TestCase):
@@ -125,40 +118,35 @@ class TestFlaskPluginWithoutRequestContext(TestCase):
     def create_models(self):
         class User(self.Model):
             __tablename__ = 'user'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
+
         self.User = User
 
         TestCase.create_models(self)
 
     def test_versioning_outside_request(self):
-        user = self.User(name=u'Rambo')
+        user = self.User(name='Rambo')
         self.session.add(user)
         self.session.commit()
 
 
-class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
+class TestFlaskPluginWithFlaskSQLAlchemyExtension:
     versioning_strategy = 'validity'
 
     def create_models(self):
         class User(self.db.Model):
             __tablename__ = 'user'
-            __versioned__ = {
-                'base_classes': (self.db.Model, )
-            }
+            __versioned__ = {'base_classes': (self.db.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
 
         class Article(self.db.Model):
             __tablename__ = 'article'
-            __versioned__ = {
-                'base_classes': (self.db.Model, )
-            }
+            __versioned__ = {'base_classes': (self.db.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -172,27 +160,18 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
                 sa.ForeignKey('article.id'),
                 primary_key=True,
             ),
-            sa.Column(
-                'tag_id',
-                sa.Integer,
-                sa.ForeignKey('tag.id'),
-                primary_key=True
-            )
+            sa.Column('tag_id', sa.Integer, sa.ForeignKey('tag.id'), primary_key=True),
         )
 
         class Tag(self.db.Model):
             __tablename__ = 'tag'
-            __versioned__ = {
-                'base_classes': (self.db.Model, )
-            }
+            __versioned__ = {'base_classes': (self.db.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
 
         Tag.articles = sa.orm.relationship(
-            Article,
-            secondary=article_tag,
-            backref='tags'
+            Article, secondary=article_tag, backref='tags'
         )
 
         self.User = User
@@ -204,9 +183,7 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
         make_versioned()
 
         versioning_manager.transaction_cls = TransactionFactory()
-        versioning_manager.options['native_versioning'] = (
-            uses_native_versioning()
-        )
+        versioning_manager.options['native_versioning'] = uses_native_versioning()
 
         self.create_models()
 
@@ -240,17 +217,17 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
 
     def test_version_relations(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.db.session.add(article)
         self.db.session.commit()
         assert not article.versions[0].tags
 
     def test_single_insert(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
-        tag = self.Tag(name=u'some tag')
+        article.name = 'Some article'
+        article.content = 'Some content'
+        tag = self.Tag(name='some tag')
         article.tags.append(tag)
         self.db.session.add(article)
         self.db.session.commit()
@@ -258,8 +235,8 @@ class TestFlaskPluginWithFlaskSQLAlchemyExtension(object):
 
     def test_create_transaction_with_scoped_session(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.db.session.add(article)
         uow = versioning_manager.unit_of_work(self.db.session)
         transaction = uow.create_transaction(self.db.session)

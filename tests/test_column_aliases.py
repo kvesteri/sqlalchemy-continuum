@@ -1,7 +1,7 @@
-from pytest import mark
 import sqlalchemy as sa
-from sqlalchemy_continuum import version_class
+from pytest import mark
 
+from sqlalchemy_continuum import version_class
 from tests import TestCase, create_test_cases
 
 
@@ -11,9 +11,7 @@ class ColumnAliasesBaseTestCase(TestCase):
             __tablename__ = 'text_item'
             __versioned__ = {}
 
-            id = sa.Column(
-                '_id', sa.Integer, autoincrement=True, primary_key=True
-            )
+            id = sa.Column('_id', sa.Integer, autoincrement=True, primary_key=True)
 
             name = sa.Column('_name', sa.Unicode(255))
 
@@ -28,24 +26,24 @@ class TestVersionTableWithColumnAliases(ColumnAliasesBaseTestCase):
 
 class ColumnAliasesTestCase(ColumnAliasesBaseTestCase):
     def test_insert(self):
-        item = self.TextItem(name=u'Something')
+        item = self.TextItem(name='Something')
         self.session.add(item)
         self.session.commit()
-        assert item.versions[0].name == u'Something'
+        assert item.versions[0].name == 'Something'
 
     def test_revert(self):
-        item = self.TextItem(name=u'Something')
+        item = self.TextItem(name='Something')
         self.session.add(item)
         self.session.commit()
-        item.name = u'Some other thing'
+        item.name = 'Some other thing'
         self.session.commit()
         item.versions[0].revert()
         self.session.commit()
 
     def test_previous_for_deleted_parent(self):
         item = self.TextItem()
-        item.name = u'Some item'
-        item.content = u'Some content'
+        item.name = 'Some item'
+        item.content = 'Some content'
         self.session.add(item)
         self.session.commit()
         self.session.delete(item)
@@ -53,15 +51,11 @@ class ColumnAliasesTestCase(ColumnAliasesBaseTestCase):
         TextItemVersion = version_class(self.TextItem)
 
         versions = (
-            self.session.query(TextItemVersion)
-            .order_by(
-                getattr(
-                    TextItemVersion,
-                    self.options['transaction_column_name']
-                )
+            self.session.query(TextItemVersion).order_by(
+                getattr(TextItemVersion, self.options['transaction_column_name'])
             )
         ).all()
-        assert versions[1].previous.name == u'Some item'
+        assert versions[1].previous.name == 'Some item'
 
 
 create_test_cases(ColumnAliasesTestCase)

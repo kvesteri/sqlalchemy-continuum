@@ -4,7 +4,7 @@ from .reverter import Reverter
 from .utils import get_versioning_manager, is_internal_column, parent_class
 
 
-class VersionClassBase(object):
+class VersionClassBase:
     @property
     def previous(self):
         """
@@ -67,5 +67,7 @@ class VersionClassBase(object):
         manager.plugins.after_construct_changeset(self, data)
         return data
 
-    def revert(self, relations=[]):
+    def revert(self, relations=None):
+        if relations is None:
+            relations = []
         return Reverter(self, relations=relations)()

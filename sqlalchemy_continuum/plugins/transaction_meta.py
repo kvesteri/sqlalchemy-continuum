@@ -48,18 +48,15 @@ keys and values to the meta property of Transaction class.
 """
 
 import sqlalchemy as sa
-from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
-from .base import Plugin
 from ..factory import ModelFactory
+from .base import Plugin
 
 
-class TransactionMetaBase(object):
-    transaction_id = sa.Column(
-        sa.BigInteger,
-        primary_key=True
-    )
+class TransactionMetaBase:
+    transaction_id = sa.Column(sa.BigInteger, primary_key=True)
     key = sa.Column(sa.Unicode(255), primary_key=True)
     value = sa.Column(sa.UnicodeText)
 
@@ -71,29 +68,25 @@ class TransactionMetaFactory(ModelFactory):
         """
         Create TransactionMeta class.
         """
-        class TransactionMeta(
-            manager.declarative_base,
-            TransactionMetaBase
-        ):
+
+        class TransactionMeta(manager.declarative_base, TransactionMetaBase):
             __tablename__ = 'transaction_meta'
 
         TransactionMeta.transaction = sa.orm.relationship(
             manager.transaction_cls,
             backref=sa.orm.backref(
-                'meta_relation',
-                collection_class=attribute_mapped_collection('key')
+                'meta_relation', collection_class=attribute_mapped_collection('key')
             ),
             primaryjoin=(
-                '%s.id == TransactionMeta.transaction_id' %
-                manager.transaction_cls.__name__
+                f'{manager.transaction_cls.__name__}.id == TransactionMeta.transaction_id'
             ),
-            foreign_keys=[TransactionMeta.transaction_id]
+            foreign_keys=[TransactionMeta.transaction_id],
         )
 
         manager.transaction_cls.meta = association_proxy(
             'meta_relation',
             'value',
-            creator=lambda key, value: TransactionMeta(key=key, value=value)
+            creator=lambda key, value: TransactionMeta(key=key, value=value),
         )
 
         return TransactionMeta

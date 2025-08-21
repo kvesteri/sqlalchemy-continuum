@@ -1,7 +1,6 @@
-import os
 import sqlalchemy as sa
-from pytest import mark
 from sqlalchemy.orm import declarative_base
+
 from tests import TestCase
 
 
@@ -11,9 +10,7 @@ class TestCustomSchema(TestCase):
 
         class Article(self.Model):
             __tablename__ = 'article'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -31,23 +28,19 @@ class TestCustomSchema(TestCase):
                 'tag_id',
                 sa.Integer,
                 sa.ForeignKey('tag.id', ondelete='CASCADE'),
-                primary_key=True
-            )
+                primary_key=True,
+            ),
         )
 
         class Tag(self.Model):
             __tablename__ = 'tag'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
 
         Tag.articles = sa.orm.relationship(
-            Article,
-            secondary=article_tag,
-            backref='tags'
+            Article, secondary=article_tag, backref='tags'
         )
 
         self.Article = Article
@@ -55,8 +48,8 @@ class TestCustomSchema(TestCase):
 
     def test_version_relations(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.session.add(article)
         self.session.commit()
         assert article.versions[0].tags == []

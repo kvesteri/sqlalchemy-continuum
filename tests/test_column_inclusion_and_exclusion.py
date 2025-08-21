@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from tests import TestCase
 
@@ -10,17 +11,17 @@ class ColumnExclusionTestCase(TestCase):
         assert 'content' not in manager.keys()
 
     def test_versioning_with_column_exclusion(self):
-        item = self.TextItem(name=u'Some textitem', content=u'Some content')
+        item = self.TextItem(name='Some textitem', content='Some content')
         self.session.add(item)
         self.session.commit()
 
-        assert item.versions[0].name == u'Some textitem'
+        assert item.versions[0].name == 'Some textitem'
 
     def test_does_not_create_record_if_only_excluded_column_updated(self):
-        item = self.TextItem(name=u'Some textitem')
+        item = self.TextItem(name='Some textitem')
         self.session.add(item)
         self.session.commit()
-        item.content = u'Some content'
+        item.content = 'Some content'
         self.session.commit()
         assert item.versions.count() == 1
 
@@ -29,9 +30,7 @@ class TestColumnExclusion(ColumnExclusionTestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'exclude': ['content']
-            }
+            __versioned__ = {'exclude': ['content']}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -44,9 +43,7 @@ class TestColumnExclusionWithAliasedColumn(ColumnExclusionTestCase):
     def create_models(self):
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'exclude': ['content']
-            }
+            __versioned__ = {'exclude': ['content']}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -57,7 +54,6 @@ class TestColumnExclusionWithAliasedColumn(ColumnExclusionTestCase):
 
 class TestColumnExclusionWithRelationship(TestCase):
     def create_models(self):
-
         class Word(self.Model):
             __tablename__ = 'word'
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
@@ -66,14 +62,14 @@ class TestColumnExclusionWithRelationship(TestCase):
         class TextItemWord(self.Model):
             __tablename__ = 'text_item_word'
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
-            text_item_id = sa.Column(sa.Integer, sa.ForeignKey('text_item.id'), nullable=False)
+            text_item_id = sa.Column(
+                sa.Integer, sa.ForeignKey('text_item.id'), nullable=False
+            )
             word_id = sa.Column(sa.Integer, sa.ForeignKey('word.id'), nullable=False)
 
         class TextItem(self.Model):
             __tablename__ = 'text_item'
-            __versioned__ = {
-                'exclude': ['content']
-            }
+            __versioned__ = {'exclude': ['content']}
 
             id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
             name = sa.Column(sa.Unicode(255))
@@ -88,17 +84,16 @@ class TestColumnExclusionWithRelationship(TestCase):
         assert 'content' not in manager.keys()
 
     def test_versioning_with_column_exclusion(self):
-        item = self.TextItem(name=u'Some textitem',
-                             content=[self.Word(word=u'bird')])
+        item = self.TextItem(name='Some textitem', content=[self.Word(word='bird')])
         self.session.add(item)
         self.session.commit()
 
-        assert item.versions[0].name == u'Some textitem'
+        assert item.versions[0].name == 'Some textitem'
 
     def test_does_not_create_record_if_only_excluded_column_updated(self):
-        item = self.TextItem(name=u'Some textitem')
+        item = self.TextItem(name='Some textitem')
         self.session.add(item)
         self.session.commit()
-        item.content.append(self.Word(word=u'Some content'))
+        item.content.append(self.Word(word='Some content'))
         self.session.commit()
         assert item.versions.count() == 1

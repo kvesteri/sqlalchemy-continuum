@@ -1,18 +1,17 @@
 import sqlalchemy as sa
-from sqlalchemy_continuum import versioning_manager
-from tests import TestCase
-from pytest import mark
-from sqlalchemy_continuum.plugins import TransactionMetaPlugin
 
+from sqlalchemy_continuum import versioning_manager
+from sqlalchemy_continuum.plugins import TransactionMetaPlugin
+from tests import TestCase
 
 
 class TestTransaction(TestCase):
     def setup_method(self, method):
         TestCase.setup_method(self, method)
         self.article = self.Article()
-        self.article.name = u'Some article'
-        self.article.content = u'Some content'
-        self.article.tags.append(self.Tag(name=u'Some tag'))
+        self.article.name = 'Some article'
+        self.article.content = 'Some content'
+        self.article.tags.append(self.Tag(name='Some tag'))
         self.session.add(self.article)
         self.session.commit()
 
@@ -20,24 +19,17 @@ class TestTransaction(TestCase):
         assert self.article.versions[0].transaction
 
     def test_only_saves_transaction_if_actual_modifications(self):
-        self.article.name = u'Some article'
+        self.article.name = 'Some article'
         self.session.commit()
-        self.article.name = u'Some article'
+        self.article.name = 'Some article'
         self.session.commit()
-        assert self.session.query(
-            versioning_manager.transaction_cls
-        ).count() == 1
+        assert self.session.query(versioning_manager.transaction_cls).count() == 1
 
     def test_repr(self):
-        transaction = self.session.query(
-            versioning_manager.transaction_cls
-        ).first()
+        transaction = self.session.query(versioning_manager.transaction_cls).first()
         assert (
-            '<Transaction id=%d, issued_at=%r>' % (
-                transaction.id,
-                transaction.issued_at
-            ) ==
-            repr(transaction)
+            f'<Transaction id={transaction.id}, issued_at={transaction.issued_at!r}>'
+            == repr(transaction)
         )
 
     def test_changed_entities(self):
@@ -60,9 +52,7 @@ class TestAssigningUserClass(TestCase):
     def create_models(self):
         class User(self.Model):
             __tablename__ = 'user'
-            __versioned__ = {
-                'base_classes': (self.Model, )
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
 
             id = sa.Column(sa.Unicode(255), primary_key=True)
             name = sa.Column(sa.Unicode(255), nullable=False)
@@ -80,9 +70,7 @@ class TestAssigningUserClassInOtherSchema(TestCase):
     def create_models(self):
         class User(self.Model):
             __tablename__ = 'user'
-            __versioned__ = {
-                    'base_classes': (self.Model,)
-            }
+            __versioned__ = {'base_classes': (self.Model,)}
             __table_args__ = {'schema': 'other'}
 
             id = sa.Column(sa.Unicode(255), primary_key=True)
@@ -93,4 +81,3 @@ class TestAssigningUserClassInOtherSchema(TestCase):
     def test_can_build_transaction_model(self):
         # If create_models didn't crash this should be good
         pass
-

@@ -77,5 +77,3 @@ This would execute the following SQL queries (on PostgreSQL)
     params: (datetime.utcnow())
 3. INSERT INTO article_version (id, name, content, transaction_id) VALUES (?, ?, ?, ?)
     params: (<article id from query 1>, 'Some article', 'Some content', <transaction id from query 2>)
-
-

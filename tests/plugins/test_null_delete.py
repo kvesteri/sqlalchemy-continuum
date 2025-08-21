@@ -1,4 +1,5 @@
 import pytest
+
 from sqlalchemy_continuum.plugins import NullDeletePlugin
 from tests import TestCase, uses_native_versioning
 
@@ -6,8 +7,8 @@ from tests import TestCase, uses_native_versioning
 class DeleteTestCase(TestCase):
     def _delete(self):
         article = self.Article()
-        article.name = u'Some article'
-        article.content = u'Some content'
+        article.name = 'Some article'
+        article.content = 'Some content'
         self.session.add(article)
         self.session.commit()
 

@@ -1,6 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
+
 from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.plugins import PropertyModTrackerPlugin
 from sqlalchemy_continuum.schema import update_property_mod_flags
@@ -33,7 +34,7 @@ class TestSchemaTools(TestCase):
                 'id': 1,
                 'transaction_id': 1,
                 'end_transaction_id': 2,
-                'name': u'Article 1',
+                'name': 'Article 1',
                 'name_mod': False,
                 'operation_type': 1,
             }
@@ -43,7 +44,7 @@ class TestSchemaTools(TestCase):
                 'id': 1,
                 'transaction_id': 2,
                 'end_transaction_id': 4,
-                'name': u'Article 1',
+                'name': 'Article 1',
                 'name_mod': False,
                 'operation_type': 2,
             }
@@ -53,7 +54,7 @@ class TestSchemaTools(TestCase):
                 'id': 2,
                 'transaction_id': 3,
                 'end_transaction_id': 5,
-                'name': u'Article 2',
+                'name': 'Article 2',
                 'name_mod': False,
                 'operation_type': 1,
             }
@@ -63,7 +64,7 @@ class TestSchemaTools(TestCase):
                 'id': 1,
                 'transaction_id': 4,
                 'end_transaction_id': None,
-                'name': u'Article 1 updated',
+                'name': 'Article 1 updated',
                 'name_mod': False,
                 'operation_type': 2,
             }
@@ -73,20 +74,16 @@ class TestSchemaTools(TestCase):
                 'id': 2,
                 'transaction_id': 5,
                 'end_transaction_id': None,
-                'name': u'Article 2',
+                'name': 'Article 2',
                 'name_mod': False,
                 'operation_type': 2,
             }
         )
 
-        update_property_mod_flags(
-            table,
-            ['name'],
-            conn=self.session
-        )
-        rows = self.session.execute(sa.text(
-            'SELECT * FROM article_version ORDER BY transaction_id'
-        )).fetchall()
+        update_property_mod_flags(table, ['name'], conn=self.session)
+        rows = self.session.execute(
+            sa.text('SELECT * FROM article_version ORDER BY transaction_id')
+        ).fetchall()
         assert rows[0].transaction_id == 1
         assert rows[0].name_mod
         assert rows[1].transaction_id == 2

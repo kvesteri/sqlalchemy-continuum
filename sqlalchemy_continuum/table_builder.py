@@ -1,8 +1,7 @@
 import sqlalchemy as sa
-from sqlalchemy_utils import get_column_key
 
 
-class ColumnReflector(object):
+class ColumnReflector:
     def __init__(self, manager, parent_table, model=None):
         self.parent_table = parent_table
         self.model = model
@@ -49,7 +48,7 @@ class ColumnReflector(object):
             self.option('operation_type_column_name'),
             sa.SmallInteger,
             nullable=False,
-            index=True
+            index=True,
         )
 
     @property
@@ -63,7 +62,7 @@ class ColumnReflector(object):
             sa.BigInteger,
             primary_key=True,
             index=True,
-            autoincrement=False  # This is needed for MySQL
+            autoincrement=False,  # This is needed for MySQL
         )
 
     @property
@@ -73,25 +72,19 @@ class ColumnReflector(object):
         'end_transaction_id'.
         """
         return sa.Column(
-            self.option('end_transaction_column_name'),
-            sa.BigInteger,
-            index=True
+            self.option('end_transaction_column_name'), sa.BigInteger, index=True
         )
 
     @property
     def reflected_parent_columns(self):
         for column in self.parent_table.c:
-            if (
-                self.model and
-                self.manager.is_excluded_column(self.model, column)
-            ):
+            if self.model and self.manager.is_excluded_column(self.model, column):
                 continue
             reflected_column = self.reflect_column(column)
             yield reflected_column
 
     def __iter__(self):
-        for column in self.reflected_parent_columns:
-            yield column
+        yield from self.reflected_parent_columns
 
         # Only yield internal version columns if parent model is not using
         # single table inheritance
@@ -102,17 +95,13 @@ class ColumnReflector(object):
             yield self.operation_type_column
 
 
-class TableBuilder(object):
+class TableBuilder:
     """
     TableBuilder handles the building of version tables based on parent
     table's structure and versioning configuration options.
     """
-    def __init__(
-        self,
-        versioning_manager,
-        parent_table,
-        model=None
-    ):
+
+    def __init__(self, versioning_manager, parent_table, model=None):
         self.manager = versioning_manager
         self.parent_table = parent_table
         self.model = model
@@ -132,10 +121,7 @@ class TableBuilder(object):
 
     @property
     def columns(self):
-        return list(
-            column for column in
-            ColumnReflector(self.manager, self.parent_table, self.model)
-        )
+        return list(ColumnReflector(self.manager, self.parent_table, self.model))
 
     def __call__(self, extends=None):
         """
@@ -148,5 +134,5 @@ class TableBuilder(object):
             self.parent_table.metadata,
             *columns,
             schema=self.parent_table.schema,
-            extend_existing=extends is not None
+            extend_existing=extends is not None,
         )

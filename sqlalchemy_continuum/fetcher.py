@@ -1,7 +1,9 @@
 import operator
+
 import sqlalchemy as sa
 from sqlalchemy_utils import get_primary_keys, identity
-from .utils import tx_column_name, end_tx_column_name
+
+from .utils import end_tx_column_name, tx_column_name
 
 
 def parent_identity(obj_or_class):
@@ -23,7 +25,7 @@ def parent_criteria(obj, class_=None):
     return eqmap(parent_identity, (class_, obj))
 
 
-class VersionObjectFetcher(object):
+class VersionObjectFetcher:
     def __init__(self, manager):
         self.manager = manager
 
@@ -69,23 +71,19 @@ class VersionObjectFetcher(object):
             table = alias.original
             attrs = alias.c
         query = (
-            sa.select(
-                func(
-                    getattr(attrs, tx_column_name(obj))
-                )
-            )
+            sa.select(func(getattr(attrs, tx_column_name(obj))))
             .select_from(table)
             .where(
                 sa.and_(
                     op(
                         getattr(attrs, tx_column_name(obj)),
-                        getattr(obj, tx_column_name(obj))
+                        getattr(obj, tx_column_name(obj)),
                     ),
                     *[
                         getattr(attrs, pk) == getattr(obj, pk)
                         for pk in get_primary_keys(obj.__class__)
                         if pk != tx_column_name(obj)
-                    ]
+                    ],
                 )
             )
             .correlate(table)
@@ -95,21 +93,13 @@ class VersionObjectFetcher(object):
     def _next_prev_query(self, obj, next_or_prev='next'):
         session = sa.orm.object_session(obj)
 
-        subquery = self._transaction_id_subquery(
-            obj, next_or_prev=next_or_prev
-        )
+        subquery = self._transaction_id_subquery(obj, next_or_prev=next_or_prev)
         subquery = subquery.scalar_subquery()
 
-        return (
-            session.query(obj.__class__)
-            .filter(
-                sa.and_(
-                    getattr(
-                        obj.__class__,
-                        tx_column_name(obj)
-                    ) == subquery,
-                    *parent_criteria(obj)
-                )
+        return session.query(obj.__class__).filter(
+            sa.and_(
+                getattr(obj.__class__, tx_column_name(obj)) == subquery,
+                *parent_criteria(obj),
             )
         )
 
@@ -121,23 +111,19 @@ class VersionObjectFetcher(object):
         alias = sa.orm.aliased(obj.__class__)
 
         subquery = (
-            sa.select(sa.func.count()).select_from(alias.__table__)
+            sa.select(sa.func.count())
+            .select_from(alias.__table__)
             .where(
-                getattr(alias, tx_column_name(obj))
-                <
-                getattr(obj, tx_column_name(obj))
+                getattr(alias, tx_column_name(obj)) < getattr(obj, tx_column_name(obj))
             )
             .correlate(alias.__table__)
             .label('position')
         )
         query = (
-            sa.select(subquery).select_from(obj.__table__)
-            .where(
-                sa.and_(*eqmap(identity, (obj.__class__, obj)))
-            )
-            .order_by(
-                getattr(obj.__class__, tx_column_name(obj))
-            )
+            sa.select(subquery)
+            .select_from(obj.__table__)
+            .where(sa.and_(*eqmap(identity, (obj.__class__, obj))))
+            .order_by(getattr(obj.__class__, tx_column_name(obj)))
         )
         return query
 
@@ -166,15 +152,11 @@ class ValidityFetcher(VersionObjectFetcher):
         """
         session = sa.orm.object_session(obj)
 
-        return (
-            session.query(obj.__class__)
-            .filter(
-                sa.and_(
-                    getattr(obj.__class__, tx_column_name(obj))
-                    ==
-                    getattr(obj, end_tx_column_name(obj)),
-                    *parent_criteria(obj)
-                )
+        return session.query(obj.__class__).filter(
+            sa.and_(
+                getattr(obj.__class__, tx_column_name(obj))
+                == getattr(obj, end_tx_column_name(obj)),
+                *parent_criteria(obj),
             )
         )
 
@@ -185,14 +167,10 @@ class ValidityFetcher(VersionObjectFetcher):
         """
         session = sa.orm.object_session(obj)
 
-        return (
-            session.query(obj.__class__)
-            .filter(
-                sa.and_(
-                    getattr(obj.__class__, end_tx_column_name(obj))
-                    ==
-                    getattr(obj, tx_column_name(obj)),
-                    *parent_criteria(obj)
-                )
+        return session.query(obj.__class__).filter(
+            sa.and_(
+                getattr(obj.__class__, end_tx_column_name(obj))
+                == getattr(obj, tx_column_name(obj)),
+                *parent_criteria(obj),
             )
         )
