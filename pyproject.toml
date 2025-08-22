@@ -53,6 +53,10 @@ dev = [
     "tox>=4.0.0",
     "pre-commit>=3.0.0",
 ]
+docs = [
+    "sphinx>=4.0.0",
+    "furo>=2021.11.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/kvesteri/sqlalchemy-continuum"

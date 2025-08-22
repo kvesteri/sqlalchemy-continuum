@@ -2,11 +2,7 @@ name: "Test"
 
 on:
   push:
-    paths-ignore:
-      - "docs/**"
   pull_request:
-    paths-ignore:
-      - "docs/**"
   schedule:
     - cron: '40 1 * * 3'
 
