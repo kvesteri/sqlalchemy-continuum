@@ -328,7 +328,7 @@ class VersioningManager:
                         not connection.closed
                         and connection.connection is conn.connection
                     ):
-                        uow = self.units_of_work[connection]
+                        uow = self.unit_of_work(conn.session)
                         break  # The ConnectionFairy is the same, this connection is a clone
                 else:
                     raise
