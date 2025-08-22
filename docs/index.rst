@@ -18,4 +18,5 @@ SQLAlchemy-Continuum is a versioning extension for SQLAlchemy.
    schema
    alembic
    utilities
+   api
    license
