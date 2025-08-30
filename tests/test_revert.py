@@ -58,13 +58,13 @@ class RevertTestCase(TestCase):
         version.revert()
         self.session.commit()
         assert self.session.query(self.Article).count() == 1
-        article = self.session.query(self.Article).get(old_article_id)
+        article = self.session.get(self.Article, old_article_id)
 
         assert version.next.next
 
         version.next.revert()
         self.session.commit()
-        assert not self.session.query(self.Article).get(old_article_id)
+        assert not self.session.get(self.Article, old_article_id)
 
     def test_revert_version_with_one_to_many_relation(self):
         article = self.Article()
