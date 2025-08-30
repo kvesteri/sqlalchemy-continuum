@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SQLAlchemy-Continuum"
-version = "1.5.0"
+version = "2.0.0"
 description = "Versioning and auditing extension for SQLAlchemy."
 readme = "README.rst"
 license = "BSD-3-Clause"
@@ -29,8 +29,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
-    "SQLAlchemy>=1.4.53,<2.1",
-    "SQLAlchemy-Utils>=0.42.0"
+    "SQLAlchemy>=1.4.53,<2.1"
 ]
 
 [project.optional-dependencies]
