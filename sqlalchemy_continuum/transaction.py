@@ -18,13 +18,14 @@ from .factory import ModelFactory
 def utc_now():
     """
     Return current UTC datetime in a way that's compatible across Python versions.
-    
+
     In Python 3.11+, datetime.UTC is available and datetime.utcnow() is deprecated.
     For older versions, we fall back to datetime.utcnow().
     """
     if sys.version_info >= (3, 11):
         # Use the new recommended approach
         from datetime import timezone
+
         return datetime.now(timezone.utc)
     else:
         # Fall back to the old approach for compatibility

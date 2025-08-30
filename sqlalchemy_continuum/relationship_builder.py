@@ -86,12 +86,15 @@ class RelationshipBuilder:
         else:
             reflector = VersionExpressionReflector(obj, self.property)
             criteria = reflector(self.property.primaryjoin)
-            
+
             # For many-to-many relationships, we also need to include the secondary join
-            if direction.name == 'MANYTOMANY' and self.property.secondaryjoin is not None:
+            if (
+                direction.name == 'MANYTOMANY'
+                and self.property.secondaryjoin is not None
+            ):
                 secondary_criteria = reflector(self.property.secondaryjoin)
                 criteria = sa.and_(criteria, secondary_criteria)
-            
+
             return criteria
 
     def many_to_many_criteria(self, obj):
