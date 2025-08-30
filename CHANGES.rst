@@ -5,6 +5,10 @@ Here you can see the full list of changes between each SQLAlchemy-Continuum rele
 
 Unreleased changes
 ^^^^^^^^^^^^^^^^^^
+- TODO
+
+1.5.0 (2025-08-30)
+^^^^^^^^^^^^^^^^^^
 
 - Migrate to `ruff <https://docs.astral.sh/ruff/>`_ for code linting and formatting, replacing flake8 with a faster Rust-based tool. (#364)
 - Add Python 3.13 support. (#364)
