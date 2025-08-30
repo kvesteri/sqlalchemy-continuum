@@ -15,6 +15,11 @@ Unreleased changes
 - Add dedicated ruff testing environment in tox for consistent code quality checks
 - Modernize codebase with Python 3.9+ idioms and formatting improvements
 - Migrate to modern Python packaging with pyproject.toml
+- Remove SQLAlchemy-i18n support
+- Fix SQLAlchemy 2.0 deprecation warnings: replace Query.get() with Session.get() for improved compatibility
+- Fix datetime.utcnow() deprecation warnings with cross-version compatibility function supporting Python 3.9-3.13+
+- Eliminate cartesian product warnings in many-to-many relationship queries with non-versioned classes
+- Improve code quality by modernizing mixed string formatting patterns to f-strings
 
 1.4.2 (2024-03-26)
 ^^^^^^^^^^^^^^^^^^

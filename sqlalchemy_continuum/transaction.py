@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from datetime import datetime
+import sys
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
@@ -13,6 +14,23 @@ from .exc import ImproperlyConfigured
 from .factory import ModelFactory
 
 
+# Compatibility function for datetime.utcnow() deprecation
+def utc_now():
+    """
+    Return current UTC datetime in a way that's compatible across Python versions.
+    
+    In Python 3.11+, datetime.UTC is available and datetime.utcnow() is deprecated.
+    For older versions, we fall back to datetime.utcnow().
+    """
+    if sys.version_info >= (3, 11):
+        # Use the new recommended approach
+        from datetime import timezone
+        return datetime.now(timezone.utc)
+    else:
+        # Fall back to the old approach for compatibility
+        return datetime.utcnow()
+
+
 @compiles(sa.types.BigInteger, 'sqlite')
 def compile_big_integer(element, compiler, **kw):
     return 'INTEGER'
@@ -23,7 +41,7 @@ class NoChangesAttribute(Exception):
 
 
 class TransactionBase:
-    issued_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+    issued_at = sa.Column(sa.DateTime, default=utc_now)
 
     @property
     def entity_names(self):

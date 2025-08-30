@@ -409,7 +409,7 @@ def create_versioning_trigger_listeners(manager, cls):
         cls.__table__,
         'after_drop',
         sa.schema.DDL(
-            'DROP FUNCTION IF EXISTS {}()'.format('%s_audit') % cls.__table__.name,
+            f'DROP FUNCTION IF EXISTS {cls.__table__.name}_audit()',
         ),
     )
 
