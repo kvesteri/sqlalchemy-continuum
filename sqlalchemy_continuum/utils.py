@@ -194,6 +194,10 @@ def versioned_column_properties(obj_or_class):
         if not is_table_column(column):
             continue
 
+        # Ignores computed columns
+        if column.expression.computed:
+            continue
+
         if not manager.is_excluded_property(obj_or_class, key):
             yield getattr(mapper.attrs, key)
 
