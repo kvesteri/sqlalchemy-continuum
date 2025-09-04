@@ -28,7 +28,7 @@ This document outlines the process for creating a new release of SQLAlchemy-Cont
    ```bash
    git add CHANGES.rst pyproject.toml
    git commit -m "Bump version to X.Y.Z"
-   git push origin master
+   git push origin main
    ```
 
 ### 2. Create Git Tag
