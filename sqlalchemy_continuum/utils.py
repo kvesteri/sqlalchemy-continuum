@@ -5,7 +5,7 @@ from itertools import chain
 import sqlalchemy as sa
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.orm.util import AliasedClass
-from sqlalchemy_utils.functions import (
+from ._compat import (
     get_primary_keys,
     identity,
     naturally_equivalent,

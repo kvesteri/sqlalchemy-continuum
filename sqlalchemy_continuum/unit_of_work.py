@@ -1,7 +1,7 @@
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils import get_primary_keys, identity
+from ._compat import get_primary_keys, identity
 
 from .operation import Operations
 from .utils import (

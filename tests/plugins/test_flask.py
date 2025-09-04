@@ -46,7 +46,7 @@ class TestFlaskPlugin(TestCase):
 
         @login_manager.user_loader
         def load_user(id):
-            return self.session.query(self.User).get(id)
+            return self.session.get(self.User, id)
 
     def teardown_method(self, method):
         TestCase.teardown_method(self, method)

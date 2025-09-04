@@ -1,7 +1,7 @@
 import operator
 
 import sqlalchemy as sa
-from sqlalchemy_utils import get_primary_keys, identity
+from ._compat import get_primary_keys, identity
 
 from .utils import end_tx_column_name, tx_column_name
 

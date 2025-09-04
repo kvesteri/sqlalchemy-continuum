@@ -23,7 +23,7 @@ try:
     from flask import has_app_context, has_request_context, request
 except ImportError:
     pass
-from sqlalchemy_utils import ImproperlyConfigured
+from .._compat import ImproperlyConfigured
 
 from .base import Plugin
 

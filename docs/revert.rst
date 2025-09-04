@@ -107,6 +107,6 @@ Now the first user wants to set the article back to its original state. It can b
 ::
 
 
-    article = session.query(Article).get(1)
+    article = session.get(Article, 1)
     article.versions[0].revert(relations=['tags'])
     session.commit()

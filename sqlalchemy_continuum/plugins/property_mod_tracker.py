@@ -17,7 +17,7 @@ transactions the plugin automatically updates these boolean columns.
 from copy import copy
 
 import sqlalchemy as sa
-from sqlalchemy_utils.functions import has_changes
+from .._compat import has_changes
 
 from ..utils import versioned_column_properties
 from .base import Plugin

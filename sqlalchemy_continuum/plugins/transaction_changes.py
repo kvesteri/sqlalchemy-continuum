@@ -71,7 +71,7 @@ class TransactionChangesPlugin(Plugin):
             if not hasattr(entity, '__name__'):
                 breakpoint()
             params = uow.current_transaction.id, str(entity.__name__)
-            changes = session.query(self.model_class).get(params)
+            changes = session.get(self.model_class, params)
             if not changes:
                 changes = self.model_class(
                     transaction_id=uow.current_transaction.id,
