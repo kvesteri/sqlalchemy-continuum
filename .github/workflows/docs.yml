@@ -2,12 +2,12 @@ name: Build and Deploy Documentation
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - "docs/**"
       - ".github/workflows/docs.yml"
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - "docs/**"
       - ".github/workflows/docs.yml"
