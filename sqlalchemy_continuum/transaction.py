@@ -140,7 +140,7 @@ class TransactionFactory(ModelFactory):
 
             id = sa.Column(
                 sa.types.BigInteger,
-                sa.schema.Sequence('transaction_id_seq'),
+                sa.schema.Sequence('transaction_id_seq', schema=manager.declarative_base.metadata.schema),
                 primary_key=True,
                 autoincrement=True,
             )
