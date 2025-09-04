@@ -24,9 +24,15 @@ This document outlines the process for creating a new release of SQLAlchemy-Cont
    version = "X.Y.Z"
    ```
 
-3. **Commit the changes**
+3. **Update version in __init__.py**
    ```bash
-   git add CHANGES.rst pyproject.toml
+   # Edit sqlalchemy_continuum/__init__.py and update the __version__ field
+   __version__ = 'X.Y.Z'
+   ```
+
+4. **Commit the changes**
+   ```bash
+   git add CHANGES.rst pyproject.toml sqlalchemy_continuum/__init__.py
    git commit -m "Bump version to X.Y.Z"
    git push origin main
    ```
